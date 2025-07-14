@@ -1,11 +1,11 @@
 import { Model, Schema } from 'mongoose';
-import { IGeoLocation } from '../business/business.interface';
 import { USER_ROLES } from './user.enums';
 
-export interface IRecentSearchLocation {
-     locationName: string; // e.g., "New York City", "My Home Address"
-     geoLocation?: IGeoLocation; // The coordinates (optional if only text searched)
-     searchDate: Date; // When the search was performed
+
+
+export interface IGeoLocation {
+     type: 'Point';
+     coordinates: [number, number]; // [longitude, latitude]
 }
 
 export type IUser = {
@@ -21,15 +21,15 @@ export type IUser = {
      joinDate: Date;
      isDeleted: boolean;
      address?:
-          | {
-                 province: string;
-                 territory: string;
-                 city: string;
-                 country?: string;
-                 detail_address?: string;
-            }
-          | string;
-     business_informations: Schema.Types.ObjectId[];
+     | {
+          province: string;
+          territory: string;
+          city: string;
+          country?: string;
+          detail_address?: string;
+     }
+     | string;
+     businesses: Schema.Types.ObjectId[];
      lastLogin: Date;
      tokenVersion: number;
      loginCount: number;
@@ -42,8 +42,10 @@ export type IUser = {
           oneTimeCode: number;
           expireAt: Date;
      };
-     recentSearchLocations?: IRecentSearchLocation[];
      balance: number;
+     geoLocation?: IGeoLocation;
+     paymentCards:Schema.Types.ObjectId[]
+     revenuePercent:number
 };
 
 export type UserModel = {

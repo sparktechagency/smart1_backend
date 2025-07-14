@@ -6,31 +6,19 @@ import AppError from '../../../errors/AppError';
 import { USER_ROLES } from './user.enums';
 import { IUser, UserModel } from './user.interface';
 
-const RecentSearchLocationSchema = new Schema(
-     {
-          locationName: { type: String, required: true },
-          geoLocation: {
-               type: { type: String, enum: ['Point'] },
-               coordinates: { type: [Number] }, // [longitude, latitude]
-          },
-          searchDate: { type: Date, default: Date.now },
-     },
-     { _id: false },
-); // No _id for sub-documents
-
 // Define the user schema
 const userSchema = new Schema<IUser, UserModel>(
      {
           googleId: {
                type: String,
                default: '',
-               unique: true,
+               // unique: true,
                required: false,
           },
           facebookId: {
                type: String,
                default: '',
-               unique: true,
+               // unique: true,
                required: false,
           },
           provider: {
@@ -69,23 +57,6 @@ const userSchema = new Schema<IUser, UserModel>(
                type: String,
                default: '',
           },
-          // address: {
-          //      province: {
-          //           type: String,
-          //      },
-          //      territory: {
-          //           type: String,
-          //      },
-          //      city: {
-          //           type: String,
-          //      },
-          //      country: {
-          //           type: String,
-          //      },
-          //      detail_address: {
-          //           type: String,
-          //      },
-          // },
           address: {
                type: Schema.Types.Mixed, // Allows both object or string
                validate: {
@@ -109,7 +80,7 @@ const userSchema = new Schema<IUser, UserModel>(
                },
                required: false, // The address field itself is optional
           },
-          business_informations: [
+          businesses: [
                {
                     type: Schema.Types.ObjectId,
                     ref: 'Business',
@@ -164,8 +135,26 @@ const userSchema = new Schema<IUser, UserModel>(
                },
                select: false,
           },
-          recentSearchLocations: [RecentSearchLocationSchema],
           balance: { type: Number, default: 0 },
+          geoLocation: {
+               type: {
+                    type: String,
+                    enum: ['Point'],
+                    default: 'Point',
+               },
+               coordinates: {
+                    type: [Number],
+                    default: [0, 0],
+                    index: '2dsphere',
+               },
+          },
+          paymentCards: [
+               {
+                    type: Schema.Types.ObjectId,
+                    ref: 'PaymentCard',
+               },
+          ],
+          revenuePercent: { type: Number, default: 0 },
      },
      { timestamps: true },
 );

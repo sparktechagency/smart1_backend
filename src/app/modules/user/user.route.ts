@@ -23,6 +23,8 @@ router
           validateRequest(UserValidation.updateUserZodSchema),
           UserController.updateProfile,
      );
+// createAdminToDB
+router.route('/admin').post(auth(USER_ROLES.SUPER_ADMIN), validateRequest(UserValidation.createAdminZodSchema), UserController.createAdminToDB);
 router.route('/admin/:id').patch(auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), validateRequest(UserValidation.updateUserByIdZodSchema), UserController.updateUserById);
 
 router.route('/').post(validateRequest(UserValidation.createUserZodSchema), UserController.createUser);

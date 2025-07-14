@@ -66,7 +66,7 @@ const createAdminToDB = async (payload: Partial<IUser>): Promise<IUser> => {
      }
 
      //send email
-     const otp = generateOTP(6);
+     const otp = generateOTP(4);
      const values = {
           name: createAdmin.full_name,
           otp: otp,

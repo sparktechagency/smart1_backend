@@ -1,11 +1,9 @@
-import mongoose from 'mongoose';
-import { User } from '../app/modules/user/user.model';
-import { Category } from '../app/modules/category/category.model'; // adjust the import path if needed
-import config from '../config';
-import { USER_ROLES } from '../app/modules/user/user.enums';
-import { logger } from '../shared/logger';
 import bcrypt from 'bcrypt';
-
+import mongoose from 'mongoose';
+import { USER_ROLES } from '../app/modules/user/user.enums';
+import { User } from '../app/modules/user/user.model';
+import config from '../config';
+import { logger } from '../shared/logger';
 
 // User data for seeding
 const usersData = [
@@ -41,13 +39,12 @@ const seedUsers = async () => {
      }
 };
 
-
 // Main seeding function
 const seedSuperAdmin = async () => {
      try {
           console.log('--------------> Database seeding start <--------------');
           await seedUsers();
-          
+
           console.log('--------------> Database seeding completed <--------------');
      } catch (error) {
           logger.error('Error creating Super Admin:', error);

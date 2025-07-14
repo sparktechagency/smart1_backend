@@ -157,19 +157,6 @@ const googleCallback = (req: Request, res: Response, next: NextFunction) => {
                          return await passportHandlers.setErrorDataAndRedirect(res, err, user);
                     }
                     console.log('user from google callback', user)
-                    // Generate JWT token
-                    // const token = await jwtHelper.createToken(
-                    //      {
-                    //           id: user._id,
-                    //           role: user.role,
-                    //           email: user.email
-                    //      } as IJwtPayload,
-                    //      config.jwt.jwt_secret as Secret,
-                    //      config.jwt.jwt_expire_in as string
-                    // );
-
-                    // // Handle the successful authentication
-                    // await passportHandlers.setSuccessDataAndRedirect(res, user, token);
 
 
                     const result = await AuthService.SocialLoginUserFromDB({ email: user.email });

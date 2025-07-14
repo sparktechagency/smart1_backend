@@ -95,12 +95,24 @@ const updateUserById = catchAsync(async (req, res) => {
      });
 });
 
+const createAdminToDB = catchAsync(async (req, res) => {
+     const { ...userData } = req.body;
+     const result = await UserService.createAdminToDB(userData);
+
+     sendResponse(res, {
+          success: true,
+          statusCode: StatusCodes.OK,
+          message: 'Admin created successfully',
+          data: result,
+     });
+});
+
 export const UserController = {
      createUser,
      getUserProfile,
      updateProfile,
      deleteProfile,
      getAllRoleBasedUser,
-
      updateUserById,
+     createAdminToDB
 };
