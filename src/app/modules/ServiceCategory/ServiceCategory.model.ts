@@ -13,4 +13,14 @@ ServiceCategorySchema.pre('find', function (next) {
      next();
 });
 
+ServiceCategorySchema.pre('findOne', function (next) {
+     this.findOne({ isDeleted: false });
+     next();
+});
+
+ServiceCategorySchema.pre('aggregate', function (next) {
+     this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
+     next();
+});  
+
 export const ServiceCategory = model<IServiceCategory>('ServiceCategory', ServiceCategorySchema);

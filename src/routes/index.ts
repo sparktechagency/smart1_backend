@@ -4,6 +4,8 @@ import stripeAccountRoutes from '../app/modules/stripeAccount/stripeAccount.rout
 import { UserRouter } from '../app/modules/user/user.route';
 import { sliderImageRoutes } from '../app/modules/sliderImage/sliderImage.route';
 import { ServiceCategoryRoutes } from '../app/modules/ServiceCategory/ServiceCategory.route';
+import { FaqRoutes } from '../app/modules/Faq/Faq.route';
+import { ServiceRoutes } from '../app/modules/Service/Service.route';
 const router = express.Router();
 const routes = [
      {
@@ -25,6 +27,14 @@ const routes = [
      {
           path: '/service-category',
           route: ServiceCategoryRoutes,
+     },
+     {
+          path: '/faq',
+          route: FaqRoutes,
+     },
+     {
+          path: '/service',
+          route: ServiceRoutes,
      },
 ];
 

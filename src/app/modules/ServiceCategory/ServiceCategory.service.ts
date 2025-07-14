@@ -64,11 +64,20 @@ const hardDeleteServiceCategory = async (id: string): Promise<IServiceCategory |
      return result;
 };
 
+const getServiceCategoryById = async (id: string): Promise<IServiceCategory | null> => {
+     const result = await ServiceCategory.findById(id);
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'ServiceCategory not found.');
+     }
+     return result;
+};   
+
 export const ServiceCategoryService = {
      createServiceCategory,
      getAllServiceCategorys,
      getAllUnpaginatedServiceCategorys,
      updateServiceCategory,
      deleteServiceCategory,
-     hardDeleteServiceCategory
+     hardDeleteServiceCategory,
+     getServiceCategoryById
 };

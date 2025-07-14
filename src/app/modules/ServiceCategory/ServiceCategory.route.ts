@@ -16,13 +16,17 @@ router.post('/', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     validateRequest(ServiceCategoryValidation.createServiceCategoryZodSchema), ServiceCategoryController.createServiceCategory);
 
 router.get('/', ServiceCategoryController.getAllServiceCategorys);
+
 router.get('/unpaginated', ServiceCategoryController.getAllUnpaginatedServiceCategorys);
+
+router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ServiceCategoryController.hardDeleteServiceCategory);
 
 router.patch('/:id', fileUploadHandler(),
     parseFileData(FOLDER_NAMES.LOGO), auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     validateRequest(ServiceCategoryValidation.updateServiceCategoryZodSchema), ServiceCategoryController.updateServiceCategory);
 
 router.delete('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ServiceCategoryController.deleteServiceCategory);
-router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ServiceCategoryController.hardDeleteServiceCategory);
+
+router.get('/:id', ServiceCategoryController.getServiceCategoryById);
 
 export const ServiceCategoryRoutes = router;

@@ -73,11 +73,24 @@ const hardDeleteServiceCategory = catchAsync(async (req: Request, res: Response)
      });
 });
 
+const getServiceCategoryById = catchAsync(async (req: Request, res: Response) => {
+     const { id } = req.params;
+     const result = await ServiceCategoryService.getServiceCategoryById(id);
+
+     sendResponse<IServiceCategory>(res, {
+          statusCode: 200,
+          success: true,
+          message: 'ServiceCategory retrieved successfully',
+          data: result || undefined,
+     });
+});
+
 export const ServiceCategoryController = {
      createServiceCategory,
      getAllServiceCategorys,
      getAllUnpaginatedServiceCategorys,
      updateServiceCategory,
      deleteServiceCategory,
-     hardDeleteServiceCategory
+     hardDeleteServiceCategory,
+     getServiceCategoryById
 };
