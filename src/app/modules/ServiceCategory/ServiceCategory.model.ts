@@ -1,0 +1,16 @@
+import { Schema, model } from 'mongoose';
+import { IServiceCategory } from './ServiceCategory.interface';
+
+const ServiceCategorySchema = new Schema<IServiceCategory>({
+     name: { type: String, required: true },
+     logo: { type: String, required: true },
+     isDeleted: { type: Boolean, default: false },
+     deletedAt: { type: Date },
+}, { timestamps: true });
+
+ServiceCategorySchema.pre('find', function (next) {
+     this.find({ isDeleted: false });
+     next();
+});
+
+export const ServiceCategory = model<IServiceCategory>('ServiceCategory', ServiceCategorySchema);

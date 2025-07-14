@@ -3,6 +3,7 @@ import { AuthRouter } from '../app/modules/auth/auth.route';
 import stripeAccountRoutes from '../app/modules/stripeAccount/stripeAccount.route';
 import { UserRouter } from '../app/modules/user/user.route';
 import { sliderImageRoutes } from '../app/modules/sliderImage/sliderImage.route';
+import { ServiceCategoryRoutes } from '../app/modules/ServiceCategory/ServiceCategory.route';
 const router = express.Router();
 const routes = [
      {
@@ -20,6 +21,10 @@ const routes = [
      {
           path: '/slider-image',
           route: sliderImageRoutes,
+     },
+     {
+          path: '/service-category',
+          route: ServiceCategoryRoutes,
      },
 ];
 
