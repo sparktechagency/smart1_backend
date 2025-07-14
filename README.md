@@ -64,3 +64,8 @@ Design crafted with care by **Md. Rakibur Rahman** ✨🎨🚀
 ## Additional Resources
 
 Happy Coding! 🚀 Thank you for using the **Backend Template**! 🚴‍♂️
+
+# Automate Module Structure
+
+- goto createModuleStructure.js and change the module name to desired (from "PaymentCard" to "Business")
+- run the file in terminal with command "node createModuleStructure.js"

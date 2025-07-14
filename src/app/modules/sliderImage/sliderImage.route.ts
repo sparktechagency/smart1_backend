@@ -13,7 +13,7 @@ router.post('/', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     fileUploadHandler(),
     parseFileData(FOLDER_NAMES.IMAGE),
     validateRequest(SliderImageValidation.createSliderImageZodSchema), sliderImageController.createSliderImage);
-router.get('/', sliderImageController.getAllSliderImages);
+router.get('/', sliderImageController.getAllSliderImages).get('/unpaginated', sliderImageController.getAllUnpaginatedSliderImages);
 router.patch('/:id',
     fileUploadHandler(),
     parseFileData(FOLDER_NAMES.IMAGE), auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
