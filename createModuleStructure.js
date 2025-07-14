@@ -208,6 +208,16 @@ ${capitalize(moduleName)}Schema.pre('find', function (next) {
      next();
 });
 
+${capitalize(moduleName)}Schema.pre('findOne', function (next) {
+     this.findOne({ isDeleted: false });
+     next();
+});
+
+${capitalize(moduleName)}Schema.pre('aggregate', function (next) {
+     this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
+     next();
+});       
+
 export const ${capitalize(moduleName)} = model<I${moduleName}>('${capitalize(moduleName)}', ${capitalize(moduleName)}Schema);
 `;
 }
