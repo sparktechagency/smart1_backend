@@ -112,13 +112,26 @@ const hardDelete${capitalize(moduleName)} = catchAsync(async (req: Request, res:
      });
 });
 
+const get${capitalize(moduleName)}ById = catchAsync(async (req: Request, res: Response) => {
+     const { id } = req.params;
+     const result = await ${moduleName}Service.get${capitalize(moduleName)}ById(id);
+
+     sendResponse<I${moduleName}>(res, {
+          statusCode: 200,
+          success: true,
+          message: '${capitalize(moduleName)} retrieved successfully',
+          data: result || undefined,
+     });
+});  
+
 export const ${moduleName}Controller = {
      create${capitalize(moduleName)},
      getAll${capitalize(moduleName)}s,
      getAllUnpaginated${capitalize(moduleName)}s,
      update${capitalize(moduleName)},
      delete${capitalize(moduleName)},
-     hardDelete${capitalize(moduleName)}
+     hardDelete${capitalize(moduleName)},
+     get${capitalize(moduleName)}ById
 };
 `;
 }
@@ -180,13 +193,22 @@ const hardDelete${capitalize(moduleName)} = async (id: string): Promise<I${modul
      return result;
 };
 
+const get${capitalize(moduleName)}ById = async (id: string): Promise<I${moduleName} | null> => {
+     const result = await ${capitalize(moduleName)}.findById(id);
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, '${capitalize(moduleName)} not found.');
+     }
+     return result;
+};   
+
 export const ${moduleName}Service = {
      create${capitalize(moduleName)},
      getAll${capitalize(moduleName)}s,
      getAllUnpaginated${capitalize(moduleName)}s,
      update${capitalize(moduleName)},
      delete${capitalize(moduleName)},
-     hardDelete${capitalize(moduleName)}
+     hardDelete${capitalize(moduleName)},
+     get${capitalize(moduleName)}ById
 };
 `;
 }
@@ -242,14 +264,18 @@ router.post('/', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     validateRequest(${moduleName}Validation.create${capitalize(moduleName)}ZodSchema), ${moduleName}Controller.create${capitalize(moduleName)});
 
 router.get('/', ${moduleName}Controller.getAll${capitalize(moduleName)}s);
+
 router.get('/unpaginated', ${moduleName}Controller.getAllUnpaginated${capitalize(moduleName)}s);
+
+router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ${moduleName}Controller.hardDelete${capitalize(moduleName)});
 
 router.patch('/:id', fileUploadHandler(),
     parseFileData(FOLDER_NAMES.IMAGE), auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     validateRequest(${moduleName}Validation.update${capitalize(moduleName)}ZodSchema), ${moduleName}Controller.update${capitalize(moduleName)});
 
 router.delete('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ${moduleName}Controller.delete${capitalize(moduleName)});
-router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ${moduleName}Controller.hardDelete${capitalize(moduleName)});
+
+router.get('/:id', ${moduleName}Controller.get${capitalize(moduleName)}ById);
 
 export const ${moduleName}Routes = router;
 `;
@@ -303,4 +329,4 @@ function capitalize(str) {
 }
 
 // Example usage: Create a new module called 'sliderImage'
-createModuleStructure('PaymentCard');
+createModuleStructure('TestModule');
