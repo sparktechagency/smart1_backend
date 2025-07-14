@@ -40,13 +40,13 @@ function getControllerContent(moduleName) {
   return `import { Request, Response } from 'express';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
-import { ISliderImage } from './${moduleName}.interface';
+import { I${moduleName} } from './${moduleName}.interface';
 import { ${moduleName}Service } from './${moduleName}.service';
 
 const create${capitalize(moduleName)} = catchAsync(async (req: Request, res: Response) => {
      const result = await ${moduleName}Service.create${capitalize(moduleName)}(req.body);
 
-     sendResponse<ISliderImage>(res, {
+     sendResponse<I${moduleName}>(res, {
           statusCode: 200,
           success: true,
           message: '${capitalize(moduleName)} created successfully',
@@ -57,7 +57,7 @@ const create${capitalize(moduleName)} = catchAsync(async (req: Request, res: Res
 const getAll${capitalize(moduleName)}s = catchAsync(async (req: Request, res: Response) => {
      const result = await ${moduleName}Service.getAll${capitalize(moduleName)}s(req.query);
 
-     sendResponse<{ meta: { total: number; page: number; limit: number; }; result: ISliderImage[]; }>(res, {
+     sendResponse<{ meta: { total: number; page: number; limit: number; }; result: I${moduleName}[]; }>(res, {
           statusCode: 200,
           success: true,
           message: '${capitalize(moduleName)}s retrieved successfully',
@@ -68,7 +68,7 @@ const getAll${capitalize(moduleName)}s = catchAsync(async (req: Request, res: Re
 const getAllUnpaginated${capitalize(moduleName)}s = catchAsync(async (req: Request, res: Response) => {
      const result = await ${moduleName}Service.getAllUnpaginated${capitalize(moduleName)}s();
 
-     sendResponse<ISliderImage[]>(res, {
+     sendResponse<I${moduleName}[]>(res, {
           statusCode: 200,
           success: true,
           message: '${capitalize(moduleName)}s retrieved successfully',
@@ -80,7 +80,7 @@ const update${capitalize(moduleName)} = catchAsync(async (req: Request, res: Res
      const { id } = req.params;
      const result = await ${moduleName}Service.update${capitalize(moduleName)}(id, req.body);
 
-     sendResponse<ISliderImage>(res, {
+     sendResponse<I${moduleName}>(res, {
           statusCode: 200,
           success: true,
           message: '${capitalize(moduleName)} updated successfully',
@@ -92,7 +92,7 @@ const delete${capitalize(moduleName)} = catchAsync(async (req: Request, res: Res
      const { id } = req.params;
      const result = await ${moduleName}Service.delete${capitalize(moduleName)}(id);
 
-     sendResponse<ISliderImage>(res, {
+     sendResponse<I${moduleName}>(res, {
           statusCode: 200,
           success: true,
           message: '${capitalize(moduleName)} deleted successfully',
@@ -104,7 +104,7 @@ const hardDelete${capitalize(moduleName)} = catchAsync(async (req: Request, res:
      const { id } = req.params;
      const result = await ${moduleName}Service.hardDelete${capitalize(moduleName)}(id);
 
-     sendResponse<ISliderImage>(res, {
+     sendResponse<I${moduleName}>(res, {
           statusCode: 200,
           success: true,
           message: '${capitalize(moduleName)} deleted successfully',
@@ -127,29 +127,29 @@ export const ${moduleName}Controller = {
 function getServiceContent(moduleName) {
   return `import { StatusCodes } from 'http-status-codes';
 import AppError from '../../../errors/AppError';
-import { ISliderImage } from './${moduleName}.interface';
+import { I${moduleName} } from './${moduleName}.interface';
 import { ${capitalize(moduleName)} } from './${moduleName}.model';
 import QueryBuilder from '../../builder/QueryBuilder';
 import unlinkFile from '../../../shared/unlinkFile';
 
-const create${capitalize(moduleName)} = async (payload: ISliderImage): Promise<ISliderImage> => {
+const create${capitalize(moduleName)} = async (payload: I${moduleName}): Promise<I${moduleName}> => {
      const result = await ${capitalize(moduleName)}.create(payload);
      return result;
 };
 
-const getAll${capitalize(moduleName)}s = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: ISliderImage[]; }> => {
+const getAll${capitalize(moduleName)}s = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: I${moduleName}[]; }> => {
      const queryBuilder = new QueryBuilder(${capitalize(moduleName)}.find(), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      const meta = await queryBuilder.countTotal();
      return { meta, result };
 };
 
-const getAllUnpaginated${capitalize(moduleName)}s = async (): Promise<ISliderImage[]> => {
+const getAllUnpaginated${capitalize(moduleName)}s = async (): Promise<I${moduleName}[]> => {
      const result = await ${capitalize(moduleName)}.find();
      return result;
 };
 
-const update${capitalize(moduleName)} = async (id: string, payload: Partial<ISliderImage>): Promise<ISliderImage | null> => {
+const update${capitalize(moduleName)} = async (id: string, payload: Partial<I${moduleName}>): Promise<I${moduleName} | null> => {
      const isExist = await ${capitalize(moduleName)}.findById(id);
      if (!isExist) {
           unlinkFile(payload.image!);
@@ -160,7 +160,7 @@ const update${capitalize(moduleName)} = async (id: string, payload: Partial<ISli
      return await ${capitalize(moduleName)}.findByIdAndUpdate(id, payload, { new: true });
 };
 
-const delete${capitalize(moduleName)} = async (id: string): Promise<ISliderImage | null> => {
+const delete${capitalize(moduleName)} = async (id: string): Promise<I${moduleName} | null> => {
      const result = await ${capitalize(moduleName)}.findById(id);
      if (!result) {
           throw new AppError(StatusCodes.NOT_FOUND, '${capitalize(moduleName)} not found.');
@@ -171,7 +171,7 @@ const delete${capitalize(moduleName)} = async (id: string): Promise<ISliderImage
      return result;
 };
 
-const hardDelete${capitalize(moduleName)} = async (id: string): Promise<ISliderImage | null> => {
+const hardDelete${capitalize(moduleName)} = async (id: string): Promise<I${moduleName} | null> => {
      const result = await ${capitalize(moduleName)}.findByIdAndDelete(id);
      if (!result) {
           throw new AppError(StatusCodes.NOT_FOUND, '${capitalize(moduleName)} not found.');
@@ -194,9 +194,9 @@ export const ${moduleName}Service = {
 // Helper function to create the model content
 function getModelContent(moduleName) {
   return `import { Schema, model } from 'mongoose';
-import { ISliderImage } from './${moduleName}.interface';
+import { I${moduleName} } from './${moduleName}.interface';
 
-const ${capitalize(moduleName)}Schema = new Schema<ISliderImage>({
+const ${capitalize(moduleName)}Schema = new Schema<I${moduleName}>({
      image: { type: String, required: true },
      altText: { type: String, required: true },
      isDeleted: { type: Boolean, default: false },
@@ -208,7 +208,7 @@ ${capitalize(moduleName)}Schema.pre('find', function (next) {
      next();
 });
 
-export const ${capitalize(moduleName)} = model<ISliderImage>('${capitalize(moduleName)}', ${capitalize(moduleName)}Schema);
+export const ${capitalize(moduleName)} = model<I${moduleName}>('${capitalize(moduleName)}', ${capitalize(moduleName)}Schema);
 `;
 }
 
@@ -272,7 +272,7 @@ export const ${moduleName}Validation = {
 
 // Helper function to create interface content
 function getInterfaceContent(moduleName) {
-  return `export interface ISliderImage {
+  return `export interface I${moduleName} {
      image: string;
      altText: string;
      createdAt: Date;
@@ -281,7 +281,7 @@ function getInterfaceContent(moduleName) {
      deletedAt?: Date;
 }
 
-export type ISliderImageFilters = {
+export type I${moduleName}Filters = {
      searchTerm?: string;
 };
 `;
