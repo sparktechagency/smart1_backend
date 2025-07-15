@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import { Offered } from '../offered/offered.model';
 import { IService } from './Service.interface';
 
 const ServiceSchema = new Schema<IService>({
@@ -28,5 +29,17 @@ ServiceSchema.pre('aggregate', function (next) {
      this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
      next();
 });
+
+
+ServiceSchema.methods.calculateOfferPrice = async function () {
+     const offer = await Offered.findOne({ service: this._id });
+   
+     if (offer) {
+       const discount = (offer.discountPercentage / 100) * this.serviceCharge;
+       return this.serviceCharge - discount;
+     }
+   
+     return 0;
+   };
 
 export const Service = model<IService>('Service', ServiceSchema);

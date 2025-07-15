@@ -17,7 +17,8 @@ export interface ICoupon extends Document {
   description?: string;
   usageLimit?: number;
   usedCount: number;
-  userUsageLimit?: number;
+  userUsageLimitPerUser?: number;
+  couponUsedCountByUser: { user: { type: mongoose.Types.ObjectId, ref: 'User' }, count: number }[];
   applicableServices?: mongoose.Types.ObjectId[];
   applicableServiceCategories?: mongoose.Types.ObjectId[];
   createdAt: Date;

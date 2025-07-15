@@ -15,7 +15,7 @@ export const createCouponSchema = z.object({
         name: z.string(),
         description: z.string().optional(),
         usageLimit: z.number().optional(),
-        userUsageLimit: z.number().optional(),
+        userUsageLimitPerUser: z.number().optional(),
         applicableServices: z.array(objectIdSchema).optional(),
         applicableServiceCategories: z.array(objectIdSchema).optional(),
     })
@@ -34,7 +34,7 @@ export const updateCouponSchema = z.object({
         name: z.string().optional(),
         description: z.string().optional(),
         usageLimit: z.number().optional(),
-        userUsageLimit: z.number().optional(),
+        userUsageLimitPerUser: z.number().optional(),
         applicableServices: z.array(objectIdSchema).optional(),
         applicableServiceCategories: z.array(objectIdSchema).optional(),
     })

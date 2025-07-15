@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
-import { ICoupon } from './coupon.interface';
 import { COUPON_DISCOUNT_TYPE } from './coupon.enums';
+import { ICoupon } from './coupon.interface';
 
 const couponSchema = new Schema<ICoupon>(
    {
@@ -59,11 +59,19 @@ const couponSchema = new Schema<ICoupon>(
          default: 0,
          min: 0,
       },
-      userUsageLimit: {
+      userUsageLimitPerUser: {
          type: Number,
          default: null,
          min: 0,
       },
+      name: {
+         type: String,
+         required: true,
+      },
+      description: {
+         type: String,
+      },
+      couponUsedCountByUser: [{ user: { type: Schema.Types.ObjectId, ref: 'User' }, count: Number }],
       applicableServices: [{ type: Schema.Types.ObjectId, ref: 'Service' }],
       applicableServiceCategories: [{ type: Schema.Types.ObjectId, ref: 'ServiceCategory' }],
       isActive: {

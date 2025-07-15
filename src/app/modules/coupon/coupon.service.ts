@@ -1,12 +1,11 @@
 import { StatusCodes } from 'http-status-codes';
+import AppError from '../../../errors/AppError';
 import QueryBuilder from '../../builder/QueryBuilder';
+import { IJwtPayload } from '../auth/auth.interface';
+import { Service } from '../Service/Service.model';
 import { ICoupon } from './coupon.interface';
 import { Coupon } from './coupon.model';
-import { IJwtPayload } from '../auth/auth.interface';
-import AppError from '../../../errors/AppError';
-import { USER_ROLES } from '../user/user.enums';
 import { calculateDiscount } from './coupon.utils';
-import { Service } from '../Service/Service.model';
 
 const createCoupon = async (couponData: Partial<ICoupon>, user: IJwtPayload) => {
     const service = await Service.findById(couponData.service);
@@ -80,7 +79,7 @@ const updateCoupon = async (payload: Partial<ICoupon>, couponCode: string, user:
     return updatedCoupon;
 };
 
-const getCouponByCode = async (orderAmount: number, couponCode: string, service: string) => {
+const getCouponByCode = async (orderAmount: number, couponCode: string, service: string, user: IJwtPayload) => {
     const currentDate = new Date();
 
     const coupon = await Coupon.findOne({ code: couponCode });
@@ -108,6 +107,37 @@ const getCouponByCode = async (orderAmount: number, couponCode: string, service:
     if (!(service === coupon.service.toString())) {
         throw new AppError(StatusCodes.BAD_REQUEST, 'Coupon is not applicable on your selected service!');
     }
+
+
+    // //  * first check coupon usage limit exceeded or not
+    // //  * if yes then throw error
+    // if (coupon.usageLimit && coupon.usageLimit <= coupon.usedCount) {
+    //     throw new AppError(StatusCodes.BAD_REQUEST, 'Coupon usage limit exceeded.');
+    // }
+    // //  * second check user have already used coupon or not 
+    // //  * if not set count vaule 1 for the user
+    // //  * if yes check userUsageLimitPerUser exists or not
+    // //  * * if userUsageLimitPerUser exists then check if he used less than userUsageLimitPerUser or not 
+    // //  * * * if yes then increase the count by 1 and finally increase the usedCount by 1
+    // //  * * * if no then throw error
+    // //  * * if userUsageLimitPerUser not exists then increase the count by 1 and finally increase the usedCount by 1
+
+    // const couponUsedCountByUser = coupon.couponUsedCountByUser.find((couponUser) => couponUser.user.toString() === user.id.toString());
+    // if (couponUsedCountByUser) {
+    //     if (coupon.userUsageLimitPerUser) {
+    //         if (couponUsedCountByUser.count < coupon.userUsageLimitPerUser) {
+    //             await Coupon.updateOne({ _id: coupon._id }, { couponUsedCountByUser: { user: user.id.toString(), count: couponUsedCountByUser.count + 1 }, usedCount: coupon.usedCount + 1 });
+    //         } else {
+    //             throw new AppError(StatusCodes.BAD_REQUEST, 'You have already used this coupon.');
+    //         }
+    //     } else {
+    //         await Coupon.updateOne({ _id: coupon._id }, { couponUsedCountByUser: { user: user.id.toString(), count: couponUsedCountByUser.count + 1 }, usedCount: coupon.usedCount + 1 });
+    //     }
+    // } else {
+    //     await Coupon.updateOne({ _id: coupon._id }, { couponUsedCountByUser: { user: user.id.toString(), count: 1 }, usedCount: coupon.usedCount + 1 });
+    // }
+
+
 
     const discountAmount = calculateDiscount(coupon, orderAmount);
 
@@ -147,8 +177,27 @@ const getAllCouponByServiceId = async (serviceId: string, user: IJwtPayload) => 
 
 const getCouponById = async (couponId: string) => {
     const coupon = await Coupon.findById(couponId);
-
+    if (!coupon) {
+        throw new AppError(StatusCodes.NOT_FOUND, 'Coupon not found.');
+    }
     return coupon;
+};
+
+const deleteCouponHard = async (couponId: string, user: IJwtPayload) => {
+    const coupon = await Coupon.findById(couponId);
+
+    if (!coupon) {
+        throw new AppError(StatusCodes.NOT_FOUND, 'Coupon not found.');
+    }
+
+    const service = await Service.findById(coupon.service);
+    if (!service) {
+        throw new AppError(StatusCodes.NOT_FOUND, 'Service not found');
+    }
+
+    await Coupon.deleteOne({ _id: coupon._id });
+
+    return { message: 'Coupon deleted successfully.' };
 };
 
 export const CouponService = {
@@ -160,4 +209,5 @@ export const CouponService = {
     deleteCoupon,
     getAllCouponByServiceId,
     getCouponById,
+    deleteCouponHard,
 };

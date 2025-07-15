@@ -54,7 +54,7 @@ const getCouponByCode = catchAsync(async (req: Request, res: Response) => {
    const { couponCode } = req.params;
    const { orderAmount, service } = req.body;
 
-   const result = await CouponService.getCouponByCode(orderAmount, couponCode, service);
+   const result = await CouponService.getCouponByCode(orderAmount, couponCode, service, req.user as IJwtPayload);
 
    sendResponse(res, {
       statusCode: StatusCodes.OK,
@@ -71,8 +71,8 @@ const deleteCoupon = catchAsync(async (req: Request, res: Response) => {
    res.status(StatusCodes.OK).json({
       statusCode: StatusCodes.OK,
       success: true,
-      message: result.message,
-      data: null,
+      message: 'Coupon deleted successfully.',
+      data: result,
    });
 });
 
@@ -102,6 +102,19 @@ const getCouponById = catchAsync(async (req: Request, res: Response) => {
    });
 });
 
+const deleteCouponHard = catchAsync(async (req: Request, res: Response) => {
+   const { couponId } = req.params;
+
+   const result = await CouponService.deleteCouponHard(couponId, req.user as IJwtPayload);
+
+   res.status(StatusCodes.OK).json({
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Coupon deleted successfully.',
+      data: result,
+   });
+});
+
 export const CouponController = {
    createCoupon,
    getAllCoupon,
@@ -111,4 +124,5 @@ export const CouponController = {
    deleteCoupon,
    getAllCouponByServiceId,
    getCouponById,
+   deleteCouponHard,
 };

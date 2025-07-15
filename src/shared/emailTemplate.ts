@@ -229,9 +229,9 @@ const createAdminAccount = (values: ICreateAccount) => {
   return data;
 };
 
-const orderInvoice = (values: { name: string; email: string; order: any }) => {
-  const { name, email, order } = values;
-  const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', {
+const bookingInvoice = (values: { name: string; email: string; booking: any }) => {
+  const { name, email, booking } = values;
+  const bookingDate = new Date(booking.createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -246,7 +246,7 @@ const orderInvoice = (values: { name: string; email: string; order: any }) => {
 
   const data = {
     to: email,
-    subject: `Order Confirmation - #${order._id}`,
+    subject: `Order Confirmation - #${booking._id}`,
     html: `
     <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0;">
       <div style="max-width: 600px; margin: 0 auto; padding: 20px; background: #fff;">
@@ -259,10 +259,10 @@ const orderInvoice = (values: { name: string; email: string; order: any }) => {
 
         <!-- Order Details -->
         <div style="padding: 20px 0;">
-          <h2 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">Order #${order._id}</h2>
-          <p style="margin: 5px 0; color: #666;"><strong>Order Date:</strong> ${orderDate}</p>
-          <p style="margin: 5px 0; color: #666;"><strong>Status:</strong> <span style="color: #277E16; font-weight: bold;">${order.status}</span></p>
-          <p style="margin: 5px 0; color: #666;"><strong>Payment Status:</strong> ${order.paymentStatus}</p>
+          <h2 style="color: #333; font-size: 18px; margin: 0 0 15px 0;">Order #${booking._id}</h2>
+          <p style="margin: 5px 0; color: #666;"><strong>Order Date:</strong> ${bookingDate}</p>
+          <p style="margin: 5px 0; color: #666;"><strong>Status:</strong> <span style="color: #277E16; font-weight: bold;">${booking.status}</span></p>
+          <p style="margin: 5px 0; color: #666;"><strong>Payment Status:</strong> ${booking.paymentStatus}</p>
         </div>
 
         <!-- Order Summary -->
@@ -274,28 +274,28 @@ const orderInvoice = (values: { name: string; email: string; order: any }) => {
               <span style="display: inline-block; width: 20%; text-align: right;">Qty</span>
               <span style="display: inline-block; width: 20%; text-align: right;">Price</span>
             </p>
-            ${order.products.map((item: any) => `
+            ${booking.services.map((item: any) => `
               <p style="margin: 10px 0;">
-                <span style="display: inline-block; width: 60%;">${item.product || 'Product'}</span>
+                <span style="display: inline-block; width: 60%;">${item.service || 'Service'}</span>
                 <span style="display: inline-block; width: 20%; text-align: right;">${item.quantity}</span>
-                <span style="display: inline-block; width: 20%; text-align: right;">${formatPrice(item.unitPrice)}</span>
+                <span style="display: inline-block; width: 20%; text-align: right;">${formatPrice(item.serviceCharge)}</span>
               </p>
             `).join('')}
           </div>
           <div style="border-top: 1px solid #ddd; margin-top: 15px; padding-top: 10px;">
             <p style="margin: 5px 0; text-align: right;">
               <span style="display: inline-block; width: 80%; text-align: right; padding-right: 10px;">Subtotal:</span>
-              <span style="display: inline-block; width: 20%; text-align: right;">${formatPrice(order.totalAmount)}</span>
+              <span style="display: inline-block; width: 20%; text-align: right;">${formatPrice(booking.totalAmount)}</span>
             </p>
-            ${order.discount > 0 ? `
+            ${booking.discount > 0 ? `
               <p style="margin: 5px 0; text-align: right; color: #277E16;">
                 <span style="display: inline-block; width: 80%; text-align: right; padding-right: 10px;">Discount:</span>
-                <span style="display: inline-block; width: 20%; text-align: right;">-${formatPrice(order.discount)}</span>
+                <span style="display: inline-block; width: 20%; text-align: right;">-${formatPrice(booking.discount)}</span>
               </p>
             ` : ''}
             <p style="margin: 5px 0; text-align: right; font-weight: bold;">
               <span style="display: inline-block; width: 80%; text-align: right; padding-right: 10px;">Total:</span>
-              <span style="display: inline-block; width: 20%; text-align: right;">${formatPrice(order.finalAmount)}</span>
+              <span style="display: inline-block; width: 20%; text-align: right;">${formatPrice(booking.finalAmount)}</span>
             </p>
           </div>
         </div>
@@ -303,7 +303,7 @@ const orderInvoice = (values: { name: string; email: string; order: any }) => {
         <!-- Shipping Information -->
         <div style="margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-radius: 5px;">
           <h3 style="color: #333; font-size: 16px; margin: 0 0 10px 0;">Shipping Information</h3>
-          <p style="margin: 5px 0; color: #666;">${order.shippingAddress || ''}</p>
+          <p style="margin: 5px 0; color: #666;">${booking.shippingAddress || ''}</p>
         </div>
 
         <!-- Footer -->
@@ -329,5 +329,5 @@ export const emailTemplate = {
   sendReEngagementEmail,
   sendTrialExpiredEmail,
   createAdminAccount,
-  orderInvoice
+  orderInvoice: bookingInvoice
 };

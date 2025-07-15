@@ -6,6 +6,8 @@ import { sliderImageRoutes } from '../app/modules/sliderImage/sliderImage.route'
 import { ServiceCategoryRoutes } from '../app/modules/ServiceCategory/ServiceCategory.route';
 import { FaqRoutes } from '../app/modules/Faq/Faq.route';
 import { ServiceRoutes } from '../app/modules/Service/Service.route';
+import { CouponRoutes } from '../app/modules/coupon/coupon.route';
+import { OfferedRoutes } from '../app/modules/offered/offered.route';
 const router = express.Router();
 const routes = [
      {
@@ -35,6 +37,14 @@ const routes = [
      {
           path: '/service',
           route: ServiceRoutes,
+     },
+     {
+          path: '/coupon',
+          route: CouponRoutes,
+     },
+     {
+          path: '/offered',
+          route: OfferedRoutes,
      },
 ];
 

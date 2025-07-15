@@ -69,3 +69,14 @@ Happy Coding! 🚀 Thank you for using the **Backend Template**! 🚴‍♂️
 
 - goto createModuleStructure.js and change the module name to desired (from "PaymentCard" to "Business")
 - run the file in terminal with command "node createModuleStructure.js"
+
+# Rough Plan
+// //  * first check coupon usage limit exceeded or not
+// //  * if yes then throw error
+// //  * second check user have already used coupon or not 
+// //  * if not set count vaule 1 for the user
+// //  * if yes check userUsageLimitPerUser exists or not
+// //  * * if userUsageLimitPerUser exists then check if he used less than userUsageLimitPerUser or not 
+// //  * * * if yes then increase the count by 1 and finally increase the usedCount by 1
+// //  * * * if no then throw error
+// //  * * if userUsageLimitPerUser not exists then increase the count by 1 and finally increase the usedCount by 1
