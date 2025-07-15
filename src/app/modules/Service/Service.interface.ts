@@ -6,12 +6,13 @@ export interface IService {
      serviceCharge: number;
      description?: string;
      faqs: Types.ObjectId[];
-     whatsIncluded:string;
-     whyChooseUs:string;
+     whatsIncluded: string;
+     whyChooseUs: string;
      createdAt: Date;
      updatedAt: Date;
      isDeleted: boolean;
      deletedAt?: Date;
+     calculateOfferPrice(): Promise<number | null>;
 }
 
 export type IServiceFilters = {
