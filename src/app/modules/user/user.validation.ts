@@ -1,5 +1,6 @@
 import { string, z } from 'zod';
-export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, { message: 'Invalid ObjectId' });
+export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, { message: 'Invalid ObjectId' }).optional();
+export const objectIdSchemaMendatory = (fieldName: string) => z.string().regex(/^[a-f\d]{24}$/i, { message: `Invalid ${fieldName} Id` });
 export const createUserZodSchema = z.object({
      body: z.object({
           full_name: z.string({ required_error: 'Name is required' }).min(2, 'Name must be at least 2 characters long'),
@@ -7,8 +8,6 @@ export const createUserZodSchema = z.object({
           password: z.string({ required_error: 'Password is required' }).min(8, 'Password must be at least 8 characters long'),
           phone: string().default('').optional(),
           profile: z.string().optional(),
-          store_name: z.string().optional(),
-          store_category: objectIdSchema.optional(),
      }),
 });
 

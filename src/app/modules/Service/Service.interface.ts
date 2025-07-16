@@ -3,7 +3,7 @@ export interface IService {
      name: string;
      serviceCategory: Types.ObjectId;
      image: string;
-     serviceCharge: number;
+     serviceCharge: number; // its base charge not final. final will be the of the bid price
      description?: string;
      faqs: Types.ObjectId[];
      whatsIncluded: string;

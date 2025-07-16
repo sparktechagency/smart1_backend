@@ -6,7 +6,7 @@ const serviceSchema = new Schema<IService>({
      name: { type: String, required: true },
      serviceCategory: { type: Schema.Types.ObjectId, ref: 'ServiceCategory', required: true },
      image: { type: String, required: true },
-     serviceCharge: { type: Number, required: true },
+     serviceCharge: { type: Number, required: true }, // its base charge not final. final will be the of the bid price
      description: { type: String },
      whatsIncluded: { type: String },
      whyChooseUs: { type: String },
