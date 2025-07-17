@@ -18,7 +18,7 @@ const createBooking = catchAsync(async (req: Request, res: Response) => {
 
 
 const getBookingDetails = catchAsync(async (req: Request, res: Response) => {
-     const result = await BookingService.getBookingDetails(req.params.BookingId, req.user as IJwtPayload);
+     const result = await BookingService.getBookingDetails(req.params.bookingId, req.user as IJwtPayload);
 
      sendResponse(res, {
           statusCode: StatusCodes.OK,
@@ -41,7 +41,7 @@ const getMyBooking = catchAsync(async (req: Request, res: Response) => {
 
 const changeBookingStatus = catchAsync(async (req: Request, res: Response) => {
      const { status } = req.body;
-     const result = await BookingService.changeBookingStatus(req.params.BookingId, status, req.user as IJwtPayload);
+     const result = await BookingService.changeBookingStatus(req.params.bookingId, status, req.user as IJwtPayload);
 
      sendResponse(res, {
           statusCode: StatusCodes.OK,
@@ -76,7 +76,7 @@ const getAllRefundBookingRequests = catchAsync(async (req: Request, res: Respons
 });
 
 const refundBooking = catchAsync(async (req: Request, res: Response) => {
-     const result = await BookingService.refundBooking(req.params.BookingId, req.user as IJwtPayload);
+     const result = await BookingService.refundBooking(req.params.bookingId, req.user as IJwtPayload);
 
      sendResponse(res, {
           statusCode: StatusCodes.OK,

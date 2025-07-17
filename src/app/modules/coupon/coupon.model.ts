@@ -11,9 +11,9 @@ const couponSchema = new Schema<ICoupon>(
          uppercase: true,
          trim: true,
       },
-      service: {
+      serviceCategory: {
          type: Schema.Types.ObjectId,
-         ref: 'Service',
+         ref: 'ServiceCategory',
          required: true,
       },
       createdBy: {

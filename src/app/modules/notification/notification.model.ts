@@ -1,18 +1,8 @@
 import { model, Schema } from 'mongoose';
 import { INotification } from './notification.interface';
+import { NOTIFICATION_MODEL_TYPE } from './notification.enum';
 
-enum NotificationType {
-     ADMIN = 'ADMIN',
-     SUPER_ADMIN = 'SUPER_ADMIN',
-     SYSTEM = 'SYSTEM',
-     PAYMENT = 'PAYMENT',
-     MESSAGE = 'MESSAGE',
-     REFUND = 'REFUND',
-     ALERT = 'ALERT',
-     ORDER = 'ORDER',
-     DELIVERY = 'DELIVERY',
-     CANCELLED = 'CANCELLED',
-}
+
 
 enum NotificationScreen {
      DASHBOARD = 'DASHBOARD',
@@ -48,7 +38,7 @@ const notificationSchema = new Schema<INotification>(
           },
           referenceModel: {
                type: String,
-               enum: ['PAYMENT', 'ORDER', 'MESSAGE', 'REFUND', 'ALERT', 'DELIVERY', 'CANCELLED'],
+               enum: Object.values(NOTIFICATION_MODEL_TYPE),
                required: false,
           },
           screen: {
@@ -63,7 +53,7 @@ const notificationSchema = new Schema<INotification>(
           },
           type: {
                type: String,
-               enum: Object.values(NotificationType),
+               enum: Object.values(NOTIFICATION_MODEL_TYPE),
                required: false,
           },
      },

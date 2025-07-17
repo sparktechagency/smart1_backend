@@ -1,15 +1,14 @@
 import { Types } from 'mongoose';
 import { z } from 'zod';
-import { BOOKING_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 import { objectIdSchema, objectIdSchemaMendatory } from '../user/user.validation';
+import { BOOKING_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 
 // Validation schema for order product
 const bookingServiceSchema = z.object({
   service: z.string().refine((val) => Types.ObjectId.isValid(val), {
     message: 'Invalid service ID',
   }),
-  quantity: z.number().int().positive('Quantity must be a positive number'),
-  serviceCharge: z.number().int().positive('Service charge must be a positive number'),
+  quantity: z.number().int().positive('Quantity must be a positive number')
 });
 
 // Validation schema for creating an order
@@ -29,21 +28,16 @@ export const createBookingSchema = z.object({
       type: z.string(),
       coordinates: z.array(z.number()),
     }).optional(),
-    attachmentImages: z.array(z.string()).optional(),
-    bookingDate: z.date().optional(),
-    bookingTime: z.date().optional(),
-    serviceTaskDetails: z.string().optional(),
-    serviceTaskAdditionalInfo: z.string().optional(),
-    servicingDestination: z.string().optional(),
+    images: z.array(z.string()),
+    bookingDate: z.union([z.date(), z.string()]),
+    bookingTime: z.union([z.date(), z.string()]),
+    serviceTaskDetails: z.string(),
+    serviceTaskAdditionalInfo: z.string(),
+    servicingDestination: z.string(),
     paymentMethod: z.nativeEnum(PAYMENT_METHOD, {
       required_error: 'Payment method is required',
       invalid_type_error: 'Invalid payment method',
-    }),
-    paymentStatus: z.nativeEnum(PAYMENT_STATUS, {
-      required_error: 'Payment status is required',
-      invalid_type_error: 'Invalid payment status',
-    }),
-    isNeedRefund: z.boolean().optional(),
+    }).optional(),
   }),
 });
 

@@ -1,4 +1,5 @@
 export enum BOOKING_STATUS {
+    PENDING = 'pending',
     CONFIRMED = 'confirmed',
     ON_THE_WAY = 'on the way',
     WORK_STARTED = 'work started',
@@ -7,6 +8,7 @@ export enum BOOKING_STATUS {
 }
 
 export enum PAYMENT_METHOD {
+    UNSPECIFIED = 'unspecified',
     CASH = 'cash',
     ONLINE = 'online',
 }

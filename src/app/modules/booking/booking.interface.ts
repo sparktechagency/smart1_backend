@@ -5,7 +5,6 @@ import { BOOKING_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums'
 export interface IBookingService {
      service: Types.ObjectId;
      quantity: number;
-     serviceCharge: number;
 }
 
 export interface IBooking extends Document {
@@ -19,7 +18,7 @@ export interface IBooking extends Document {
      isPaymentTransferd: boolean;
      status: BOOKING_STATUS;
      geoLocationOfDestination: IGeoLocation;
-     attachmentImages: string[];
+     images: string[];
      bookingDate: Date;
      bookingTime: Date;
      serviceProvider?: Types.ObjectId | null; // এটা শুরু তে null থাকবে আর যখন user কারো bid accept করবে তখন সেই bidder এর id এখানে save হবে
@@ -36,4 +35,5 @@ export interface IBooking extends Document {
      deletedAt?: Date;
      payment?: Types.ObjectId;
      isNeedRefund: boolean;
+     adminRevenuePercent: number;
 }

@@ -3,7 +3,7 @@ import { COUPON_DISCOUNT_TYPE } from "./coupon.enums";
 
 export interface ICoupon extends Document {
   code: string;
-  service: mongoose.Types.ObjectId;
+  serviceCategory: mongoose.Types.ObjectId;
   discountType: COUPON_DISCOUNT_TYPE;
   discountValue: number;
   maxDiscountAmount?: number;

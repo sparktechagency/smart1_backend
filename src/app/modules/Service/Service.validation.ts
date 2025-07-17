@@ -16,7 +16,7 @@ const createServiceZodSchema = z.object({
 const updateServiceZodSchema = z.object({
      body: z.object({
           name: z.string().optional(),
-          serviceCategory: objectIdSchema.optional(),
+          serviceCategory: objectIdSchema,
           image: z.string().optional(),
           serviceCharge: z.number().optional(),
           description: z.string().optional(),

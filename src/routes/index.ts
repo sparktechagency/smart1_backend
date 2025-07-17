@@ -8,6 +8,8 @@ import { FaqRoutes } from '../app/modules/Faq/Faq.route';
 import { ServiceRoutes } from '../app/modules/Service/Service.route';
 import { CouponRoutes } from '../app/modules/coupon/coupon.route';
 import { OfferedRoutes } from '../app/modules/offered/offered.route';
+import { BookingRoutes } from '../app/modules/booking/booking.route';
+import { BidRoutes } from '../app/modules/Bid/Bid.route';
 const router = express.Router();
 const routes = [
      {
@@ -45,6 +47,14 @@ const routes = [
      {
           path: '/offered',
           route: OfferedRoutes,
+     },
+     {
+          path: '/booking',
+          route: BookingRoutes,
+     },
+     {
+          path: '/bid',
+          route: BidRoutes,
      },
 ];
 

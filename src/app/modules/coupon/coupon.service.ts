@@ -2,20 +2,25 @@ import { StatusCodes } from 'http-status-codes';
 import AppError from '../../../errors/AppError';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { IJwtPayload } from '../auth/auth.interface';
-import { Service } from '../Service/Service.model';
+import { DEFAULT_ADMIN_REVENUE } from '../Bid/Bid.enum';
+import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
+import { COUPON_DISCOUNT_TYPE } from './coupon.enums';
 import { ICoupon } from './coupon.interface';
 import { Coupon } from './coupon.model';
 import { calculateDiscount } from './coupon.utils';
-
 const createCoupon = async (couponData: Partial<ICoupon>, user: IJwtPayload) => {
-    const service = await Service.findById(couponData.service);
-    if (!service) {
-        throw new AppError(StatusCodes.NOT_FOUND, 'Service not found');
+    const serviceCategory = await ServiceCategory.findById(couponData.serviceCategory);
+    if (!serviceCategory) {
+        throw new AppError(StatusCodes.NOT_FOUND, 'Service Category not found');
     }
 
+    // if coupon type is percentage can't be more than DEFAULT_ADMIN_REVENUE
+    if (couponData.discountType === COUPON_DISCOUNT_TYPE.PERCENTAGE && couponData.discountValue && couponData.discountValue > DEFAULT_ADMIN_REVENUE) {
+        throw new AppError(StatusCodes.BAD_REQUEST, 'Coupon discount value is greater than admin default revenue percentage.');
+    }
     const coupon = new Coupon({
         ...couponData,
-        service: service._id,
+        service: serviceCategory._id,
         createdBy: user.id,
     });
     return await coupon.save();
@@ -64,9 +69,9 @@ const updateCoupon = async (payload: Partial<ICoupon>, couponCode: string, user:
     if (coupon.endDate < currentDate) {
         throw new AppError(StatusCodes.BAD_REQUEST, 'Coupon has expired.');
     }
-    const service = await Service.findById(coupon.service);
-    if (!service) {
-        throw new AppError(StatusCodes.NOT_FOUND, 'Service not found');
+    const serviceCategory = await ServiceCategory.findById(coupon.serviceCategory);
+    if (!serviceCategory) {
+        throw new AppError(StatusCodes.NOT_FOUND, 'Service Category not found');
     }
 
 
@@ -79,7 +84,7 @@ const updateCoupon = async (payload: Partial<ICoupon>, couponCode: string, user:
     return updatedCoupon;
 };
 
-const getCouponByCode = async (orderAmount: number, couponCode: string, service: string, user: IJwtPayload) => {
+const getCouponByCode = async (orderAmount: number, couponCode: string, serviceCategory: string, user: IJwtPayload) => {
     const currentDate = new Date();
 
     const coupon = await Coupon.findOne({ code: couponCode });
@@ -104,40 +109,9 @@ const getCouponByCode = async (orderAmount: number, couponCode: string, service:
         throw new AppError(StatusCodes.BAD_REQUEST, 'Below Minimum order amount');
     }
 
-    if (!(service === coupon.service.toString())) {
+    if (!(serviceCategory === coupon.serviceCategory.toString())) {
         throw new AppError(StatusCodes.BAD_REQUEST, 'Coupon is not applicable on your selected service!');
     }
-
-
-    // //  * first check coupon usage limit exceeded or not
-    // //  * if yes then throw error
-    // if (coupon.usageLimit && coupon.usageLimit <= coupon.usedCount) {
-    //     throw new AppError(StatusCodes.BAD_REQUEST, 'Coupon usage limit exceeded.');
-    // }
-    // //  * second check user have already used coupon or not 
-    // //  * if not set count vaule 1 for the user
-    // //  * if yes check userUsageLimitPerUser exists or not
-    // //  * * if userUsageLimitPerUser exists then check if he used less than userUsageLimitPerUser or not 
-    // //  * * * if yes then increase the count by 1 and finally increase the usedCount by 1
-    // //  * * * if no then throw error
-    // //  * * if userUsageLimitPerUser not exists then increase the count by 1 and finally increase the usedCount by 1
-
-    // const couponUsedCountByUser = coupon.couponUsedCountByUser.find((couponUser) => couponUser.user.toString() === user.id.toString());
-    // if (couponUsedCountByUser) {
-    //     if (coupon.userUsageLimitPerUser) {
-    //         if (couponUsedCountByUser.count < coupon.userUsageLimitPerUser) {
-    //             await Coupon.updateOne({ _id: coupon._id }, { couponUsedCountByUser: { user: user.id.toString(), count: couponUsedCountByUser.count + 1 }, usedCount: coupon.usedCount + 1 });
-    //         } else {
-    //             throw new AppError(StatusCodes.BAD_REQUEST, 'You have already used this coupon.');
-    //         }
-    //     } else {
-    //         await Coupon.updateOne({ _id: coupon._id }, { couponUsedCountByUser: { user: user.id.toString(), count: couponUsedCountByUser.count + 1 }, usedCount: coupon.usedCount + 1 });
-    //     }
-    // } else {
-    //     await Coupon.updateOne({ _id: coupon._id }, { couponUsedCountByUser: { user: user.id.toString(), count: 1 }, usedCount: coupon.usedCount + 1 });
-    // }
-
-
 
     const discountAmount = calculateDiscount(coupon, orderAmount);
 
@@ -153,9 +127,9 @@ const deleteCoupon = async (couponId: string, user: IJwtPayload) => {
         throw new AppError(StatusCodes.NOT_FOUND, 'Coupon not found.');
     }
 
-    const service = await Service.findById(coupon.service);
-    if (!service) {
-        throw new AppError(StatusCodes.NOT_FOUND, 'Service not found');
+    const serviceCategory = await ServiceCategory.findById(coupon.serviceCategory);
+    if (!serviceCategory) {
+        throw new AppError(StatusCodes.NOT_FOUND, 'Service Category not found');
     }
 
     await Coupon.updateOne({ _id: coupon._id }, { isDeleted: true, deletedAt: new Date() });
@@ -163,14 +137,14 @@ const deleteCoupon = async (couponId: string, user: IJwtPayload) => {
     return { message: 'Coupon deleted successfully.' };
 };
 
-const getAllCouponByServiceId = async (serviceId: string, user: IJwtPayload) => {
-    const service = await Service.findById(serviceId);
-    if (!service) {
-        throw new AppError(StatusCodes.NOT_FOUND, 'Service not found');
+const getAllCouponByServiceId = async (serviceCategoryId: string, user: IJwtPayload) => {
+    const serviceCategory = await ServiceCategory.findById(serviceCategoryId);
+    if (!serviceCategory) {
+        throw new AppError(StatusCodes.NOT_FOUND, 'Service Category not found');
     }
 
 
-    const coupon = await Coupon.find({ service: serviceId });
+    const coupon = await Coupon.find({ service: serviceCategoryId });
 
     return coupon;
 };
@@ -190,9 +164,9 @@ const deleteCouponHard = async (couponId: string, user: IJwtPayload) => {
         throw new AppError(StatusCodes.NOT_FOUND, 'Coupon not found.');
     }
 
-    const service = await Service.findById(coupon.service);
-    if (!service) {
-        throw new AppError(StatusCodes.NOT_FOUND, 'Service not found');
+    const serviceCategory = await ServiceCategory.findById(coupon.serviceCategory);
+    if (!serviceCategory) {
+        throw new AppError(StatusCodes.NOT_FOUND, 'Service Category not found');
     }
 
     await Coupon.deleteOne({ _id: coupon._id });

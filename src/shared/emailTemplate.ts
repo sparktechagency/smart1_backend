@@ -329,5 +329,5 @@ export const emailTemplate = {
   sendReEngagementEmail,
   sendTrialExpiredEmail,
   createAdminAccount,
-  orderInvoice: bookingInvoice
+  bookingInvoice
 };

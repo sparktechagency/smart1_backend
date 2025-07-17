@@ -36,6 +36,12 @@ router.delete(
     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     CouponController.deleteCoupon
 );
+// // use cron library to make automatic coupon isActive false on end date
+// router.patch(
+//     '/deactive/:couponId',
+//     auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+//     CouponController.deActiveCoupon
+// );
 
 router.delete(
     '/hard/:couponId',

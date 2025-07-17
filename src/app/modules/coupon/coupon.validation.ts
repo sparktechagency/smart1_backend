@@ -5,7 +5,7 @@ import { objectIdSchema } from '../user/user.validation';
 export const createCouponSchema = z.object({
     body: z.object({
         code: z.string(),
-        service: objectIdSchema,
+        serviceCategory: objectIdSchema,
         discountType: z.enum([...Object.values(COUPON_DISCOUNT_TYPE)] as [string, ...string[]]),
         discountValue: z.number(),
         maxDiscountAmount: z.number().optional(),
@@ -24,7 +24,7 @@ export const createCouponSchema = z.object({
 export const updateCouponSchema = z.object({
     body: z.object({
         code: z.string().optional(),
-        service: objectIdSchema.optional(),
+        serviceCategory: objectIdSchema,
         discountType: z.enum([...Object.values(COUPON_DISCOUNT_TYPE)] as [string, ...string[]]).optional(),
         discountValue: z.number().optional(),
         maxDiscountAmount: z.number().optional(),

@@ -12,7 +12,8 @@ export interface IService {
      updatedAt: Date;
      isDeleted: boolean;
      deletedAt?: Date;
-     calculateOfferPrice(): Promise<number | null>;
+     servedCount: number;
+     calculateOfferPrice(serviceProviderId: Types.ObjectId): Promise<number | null>;
 }
 
 export type IServiceFilters = {

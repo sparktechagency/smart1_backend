@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, Types, model } from 'mongoose';
 import { Offered } from '../offered/offered.model';
 import { IService } from './Service.interface';
 
@@ -13,6 +13,7 @@ const serviceSchema = new Schema<IService>({
      faqs: [{ type: Schema.Types.ObjectId, ref: 'Faq', default: [] }],
      isDeleted: { type: Boolean, default: false },
      deletedAt: { type: Date },
+     servedCount: { type: Number, default: 0 },
 }, { timestamps: true });
 
 serviceSchema.pre('find', function (next) {
@@ -31,8 +32,8 @@ serviceSchema.pre('aggregate', function (next) {
 });
 
 
-serviceSchema.methods.calculateOfferPrice = async function () {
-     const offer = await Offered.findOne({ service: this._id });
+serviceSchema.methods.calculateOfferPrice = async function (serviceProviderId: Types.ObjectId) {
+     const offer = await Offered.findOne({ service: this._id, createdBy: serviceProviderId });
 
      if (offer) {
           const discount = (offer.discountPercentage / 100) * this.serviceCharge;

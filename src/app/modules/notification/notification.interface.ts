@@ -1,13 +1,14 @@
 import { Types } from 'mongoose';
+import { NOTIFICATION_MODEL_TYPE } from './notification.enum';
 
 export interface INotification {
      message: string;
      receiver: Types.ObjectId;
      postId: Types.ObjectId;
      reference?: string;
-     referenceModel?: 'Payment' | 'Order' | 'Message';
+     referenceModel?: NOTIFICATION_MODEL_TYPE;
      screen?: 'DASHBOARD' | 'PAYMENT_HISTORY' | 'PROFILE';
      read: boolean;
-     type?: 'ADMIN' | 'SYSTEM' | 'PAYMENT' | 'MESSAGE' | 'ALERT' | 'ORDER';
+     type?: NOTIFICATION_MODEL_TYPE;
      title?: string;
 }
