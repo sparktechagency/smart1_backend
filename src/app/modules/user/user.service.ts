@@ -10,6 +10,7 @@ import stripe from '../../config/stripe.config';
 import { USER_ROLES } from './user.enums';
 import { IUser } from './user.interface';
 import { User } from './user.model';
+import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
 // create user
 const createUserToDB = async (payload: IUser): Promise<IUser> => {
      //set role
@@ -17,10 +18,18 @@ const createUserToDB = async (payload: IUser): Promise<IUser> => {
      if (user) {
           throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
      }
-     payload.role = USER_ROLES.USER;
+     if (!payload.role) {
+          payload.role = USER_ROLES.USER;
+     } else if (payload.role == USER_ROLES.SERVICE_PROVIDER) {
+          // handl is exist serviceCategory
+          const serviceCategory = await ServiceCategory.findById(payload.serviceCategory);
+          if (!serviceCategory) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Service category not found');
+          }
+     }
      const createUser = await User.create(payload);
      if (!createUser) {
-          throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create user');
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
      }
 
      //send email

@@ -86,6 +86,52 @@ const refundBooking = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
+const acceptBid = catchAsync(async (req: Request, res: Response) => {
+     const { bidId } = req.body;
+     const result = await BookingService.acceptBid(req.params.bookingId, bidId, req.user as IJwtPayload);
+
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Booking accepted succesfully',
+          data: result,
+     });
+});
+
+const changeAcceptedBid = catchAsync(async (req: Request, res: Response) => {
+     const { bidId } = req.body;
+     const result = await BookingService.changeAcceptedBid(req.params.bookingId, bidId, req.user as IJwtPayload);
+
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Booking accepted succesfully',
+          data: result,
+     });
+});
+
+const getServiceCategoryBasedBookingsForProviderToBid = catchAsync(async (req: Request, res: Response) => {
+     const result = await BookingService.getServiceCategoryBasedBookingsForProviderToBid(req.query, req.user as IJwtPayload);
+
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Bookings retrive succesfully',
+          data: result,
+     });
+});
+
+const getBidsOfBookingByIdToAccept = catchAsync(async (req: Request, res: Response) => {
+     const result = await BookingService.getBidsOfBookingByIdToAccept(req.query, req.params.bookingId, req.user as IJwtPayload);
+
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Bids retrive succesfully',
+          data: result,
+     });
+});
+
 export const BookingController = {
      createBooking,
      getBookingDetails,
@@ -94,4 +140,8 @@ export const BookingController = {
      cancelBooking,
      getAllRefundBookingRequests,
      refundBooking,
+     acceptBid,
+     changeAcceptedBid,
+     getServiceCategoryBasedBookingsForProviderToBid,
+     getBidsOfBookingByIdToAccept,
 };

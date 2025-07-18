@@ -1,13 +1,12 @@
 import { Schema, model } from 'mongoose';
-import { BID_STATUS, DEFAULT_ADMIN_REVENUE } from './Bid.enum';
+import { BID_STATUS } from './Bid.enum';
 import { IBid } from './Bid.interface';
 
 const BidSchema = new Schema<IBid>({
      rate: { type: Number, required: true },
      serviceProvider: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-     revenue: { type: Number, required: true, default: DEFAULT_ADMIN_REVENUE },
      serviceCategory: { type: Schema.Types.ObjectId, ref: 'ServiceCategory', required: true },
-     booking: { type: Schema.Types.ObjectId, ref: 'Booking', required: false },
+     booking: { type: Schema.Types.ObjectId, ref: 'Booking', required: false, default: null },
      status: { type: String, enum: BID_STATUS, default: BID_STATUS.PENDING },
      bidCancelReason: { type: String },
      isAccepted: { type: Boolean, default: false },

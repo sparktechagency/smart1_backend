@@ -63,7 +63,7 @@ export const updatePaymentStatusSchema = z.object({
 
 export const acceptBidForBookingSchema = z.object({
   body: z.object({
-    acceptedBid: objectIdSchema,
+    bidId: objectIdSchemaMendatory('bidId'),
   }),
 });
 

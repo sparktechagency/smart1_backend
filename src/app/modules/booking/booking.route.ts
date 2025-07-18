@@ -95,7 +95,11 @@ router.post('/',
 //  * * * stripeCustomer id create করতে হবে ও তা user এর db তে update হবে,
 //  * * * stripeSession create করতে হবে, সেখানে metadata হিসেবে payment create করতে যা যা দরকার সব দিয়ে দিতে হবে
 
-// router.patch('/bid/:bookingId', validateRequest(BookingValidation.acceptBidForBookingSchema), auth(USER_ROLES.USER), BookingController.acceptBid);
+router.get('/bookings-for-provider', auth(USER_ROLES.SERVICE_PROVIDER), BookingController.getServiceCategoryBasedBookingsForProviderToBid);
+// router.get('/bids/service-category/:serviceCategoryId', validateRequest(BookingValidation.acceptBidForBookingSchema), auth(USER_ROLES.USER), BookingController.getServiceCategoryBasedBidsToAccept);
+router.get('/bids/:bookingId', auth(USER_ROLES.USER), BookingController.getBidsOfBookingByIdToAccept);
+router.patch('/bid/:bookingId', validateRequest(BookingValidation.acceptBidForBookingSchema), auth(USER_ROLES.USER), BookingController.acceptBid);
+router.patch('/change-accepted-bid/:bookingId', validateRequest(BookingValidation.acceptBidForBookingSchema), auth(USER_ROLES.USER), BookingController.changeAcceptedBid); // untill the booking status is <=confirmed and bid status is <=accepted
 
 router.get('/refund-booking-requests/:shopId', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), BookingController.getAllRefundBookingRequests);
 

@@ -9,6 +9,7 @@ import { Service } from '../Service/Service.model';
 import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
 import { BOOKING_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 import { IBooking } from './booking.interface';
+import { IUser } from '../user/user.interface';
 
 const bookingSchema = new Schema<IBooking>(
      {
@@ -169,20 +170,23 @@ bookingSchema.pre('validate', async function (next) {
      let acceptedProviderBidRate = 0;
 
 
-     booking.adminRevenuePercent = DEFAULT_ADMIN_REVENUE;
+     // if booking adminRevenuePercent is not set then set default adminRevenuePercent
+     if (!booking.adminRevenuePercent) {
+          booking.adminRevenuePercent = DEFAULT_ADMIN_REVENUE;
+     }
 
 
      // Step 2: Calculate total amount for services
      if (booking.acceptedBid && booking.acceptedBid !== null) {
           // Step 2: Fetch the accepted bid using the bidId in booking
-          bid = await Bid.findById(booking.acceptedBid); // Fetch the bid object using acceptedBid
+          bid = await Bid.findById(booking.acceptedBid).populate('serviceProvider'); // Fetch the bid object using acceptedBid
           if (!bid) {
                return next(new AppError(StatusCodes.BAD_REQUEST, "Accepted bid not found from BookingModel"));
           }
 
           acceptedProviderBidRate = bid.rate; // Get the flat rate from the accepted bid
-          booking.serviceProvider = bid.serviceProvider;
-          booking.adminRevenuePercent = bid.revenue;
+          booking.serviceProvider = (bid.serviceProvider as any)._id;
+          booking.adminRevenuePercent = (bid.serviceProvider as any).adminRevenuePercent;
           totalAmount = acceptedProviderBidRate;
           console.log("booking.acceptedBid done acceptedProviderBidRate == totalAmount from BookingModel", acceptedProviderBidRate);
           let totalOfferPrice = 0;
@@ -195,7 +199,7 @@ bookingSchema.pre('validate', async function (next) {
                     return next(new AppError(StatusCodes.BAD_REQUEST, `service not found!. from BookingModel`));
                }
                console.log("booking.acceptedBid done from BookingModel", "service name", service.name, "serviceCharge", service.serviceCharge);
-               let offerPrice = (await service.calculateOfferPrice(bid.serviceProvider)) || 0;
+               let offerPrice = (await service.calculateOfferPrice((bid.serviceProvider as any)._id)) || 0;
                console.log("offerPrice for service from BookingModel", "service name", service.name, "offerPrice", offerPrice);
                let serviceCharge: number = offerPrice;
                const price = serviceCharge * item.quantity;

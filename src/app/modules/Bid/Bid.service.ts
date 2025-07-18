@@ -1,19 +1,28 @@
 import { StatusCodes } from 'http-status-codes';
 import AppError from '../../../errors/AppError';
 import QueryBuilder from '../../builder/QueryBuilder';
-import { IBid } from './Bid.interface';
-import { Bid } from './Bid.model';
 import { IJwtPayload } from '../auth/auth.interface';
 import { Booking } from '../booking/booking.model';
+import { User } from '../user/user.model';
+import { IBid } from './Bid.interface';
+import { Bid } from './Bid.model';
 
 const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
-     // is exist booking or not
-     const isExistBooking = await Booking.findById(payload.booking);
-     if (!isExistBooking) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found.');
+     // get serviceProvider
+     const serviceProvider = await User.findById(user.id).select('serviceCategory').lean();
+     console.log({ serviceProvider });
+     if (!serviceProvider) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Service provider not found.');
+     }
+     if (payload.booking) {
+          // is exist booking or not
+          const isExistBooking = await Booking.findOne({ _id: payload.booking, serviceCategory: serviceProvider.serviceCategory });
+          if (!isExistBooking) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found.');
+          }
      }
 
-     const result = await Bid.create({ ...payload, serviceProvider: user.id, serviceCategory: isExistBooking.serviceCategory });
+     const result = await Bid.create({ ...payload, serviceProvider: user.id, serviceCategory: serviceProvider.serviceCategory });
      return result;
 };
 

@@ -28,6 +28,7 @@ router.route('/admin').post(auth(USER_ROLES.SUPER_ADMIN), validateRequest(UserVa
 router.route('/admin/:id').patch(auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), validateRequest(UserValidation.updateUserByIdZodSchema), UserController.updateUserById);
 
 router.route('/').post(validateRequest(UserValidation.createUserZodSchema), UserController.createUser);
+router.route('/service-provider').post(validateRequest(UserValidation.createServiceProviderZodSchema), UserController.createUser);
 router.delete('/delete', auth(USER_ROLES.USER), UserController.deleteProfile);
 router.get('/get-all', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), UserController.getAllRoleBasedUser);
 

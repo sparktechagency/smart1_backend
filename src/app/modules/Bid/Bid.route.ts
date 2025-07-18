@@ -7,7 +7,7 @@ import { BidValidation } from './Bid.validation';
 
 const router = express.Router();
 
-router.post('/', auth(USER_ROLES.SERVICE_PROVIDER, USER_ROLES.USER),
+router.post('/', auth(USER_ROLES.SERVICE_PROVIDER),
     validateRequest(BidValidation.createBidZodSchema), BidController.createBid);
 
 router.get('/', BidController.getAllBids); // need to modify

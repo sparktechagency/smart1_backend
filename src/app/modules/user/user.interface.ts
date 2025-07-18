@@ -13,6 +13,8 @@ export type IUser = {
      facebookId?: string;
      provider?: string;
      full_name: string;
+     businessName?: string; // for provider
+     serviceCategory?: string; // for provider
      role: USER_ROLES;
      email: string;
      password: string;
@@ -44,8 +46,8 @@ export type IUser = {
      };
      balance: number;
      geoLocation?: IGeoLocation;
-     paymentCards:Schema.Types.ObjectId[]
-     revenuePercent:number
+     paymentCards: Schema.Types.ObjectId[]
+     adminRevenuePercent: number
 };
 
 export type UserModel = {

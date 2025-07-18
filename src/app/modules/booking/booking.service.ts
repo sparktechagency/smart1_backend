@@ -10,8 +10,9 @@ import { generateBookingInvoicePDF } from '../../../utils/generateOrderInvoicePD
 import QueryBuilder from '../../builder/QueryBuilder';
 import stripe from '../../config/stripe.config';
 import { IJwtPayload } from '../auth/auth.interface';
-import { DEFAULT_CURRENCY } from '../Bid/Bid.enum';
+import { BID_STATUS, DEFAULT_CURRENCY } from '../Bid/Bid.enum';
 import { Bid } from '../Bid/Bid.model';
+import { NOTIFICATION_MODEL_TYPE } from '../notification/notification.enum';
 import { Payment } from '../Payment/Payment.model';
 import { Service } from '../Service/Service.model';
 import { USER_ROLES } from '../user/user.enums';
@@ -20,7 +21,6 @@ import { BOOKING_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums'
 import { IBooking } from './booking.interface';
 import { Booking } from './booking.model';
 import { generateTransactionId, transferToServiceProvider } from './booking.utils';
-import { NOTIFICATION_MODEL_TYPE } from '../notification/notification.enum';
 
 const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) => {
      try {
@@ -56,33 +56,34 @@ const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) 
                     await sendNotifications({
                          receiver: receiverId,
                          type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                         title: `New order placed by  ${thisCustomer?.full_name}.But pending for accepted bid.`,
+                         title: `New order placed by  ${thisCustomer?.full_name}.But pending for accepted bid. So no invoice generated`,
                          booking: createdBooking,
                     });
                }
-               // Generate PDF invoice
-               const pdfBuffer = await generateBookingInvoicePDF(createdBooking);
 
-               // Prepare email with PDF attachment
-               const values = {
-                    name: thisCustomer?.full_name,
-                    email: thisCustomer?.email!,
-                    booking: createdBooking,
-                    attachments: [
-                         {
-                              filename: `invoice-${createdBooking._id}.pdf`,
-                              content: pdfBuffer,
-                              contentType: 'application/pdf',
-                         },
-                    ],
-               };
+               // // Generate PDF invoice
+               // const pdfBuffer = await generateBookingInvoicePDF(createdBooking);
 
-               // Send email with invoice attachment
-               const emailTemplateData = emailTemplate.bookingInvoice(values);
-               emailHelper.sendEmail({
-                    ...emailTemplateData,
-                    attachments: values.attachments,
-               });
+               // // Prepare email with PDF attachment
+               // const values = {
+               //      name: thisCustomer?.full_name,
+               //      email: thisCustomer?.email!,
+               //      booking: createdBooking,
+               //      attachments: [
+               //           {
+               //                filename: `invoice-${createdBooking._id}.pdf`,
+               //                content: pdfBuffer,
+               //                contentType: 'application/pdf',
+               //           },
+               //      ],
+               // };
+
+               // // Send email with invoice attachment
+               // const emailTemplateData = emailTemplate.bookingInvoice(values);
+               // emailHelper.sendEmail({
+               //      ...emailTemplateData,
+               //      attachments: values.attachments,
+               // });
 
                return createdBooking;
           } else {
@@ -305,7 +306,7 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                          const transfer = await transferToServiceProvider({
                               stripeConnectedAccount: (bid.serviceProvider as any).stripeConnectedAccount,
                               finalAmount: booking.finalAmount,
-                              revenue: bid.revenue,
+                              revenue: (bid.serviceProvider as any).adminRevenuePercent,
                               orderId: (booking._id as string).toString(),
                          });
                          console.log('🚀 ~ changeOrderStatus ~ transfer:', transfer);
@@ -462,6 +463,184 @@ const refundBooking = async (orderId: string, user: IJwtPayload) => {
      }
 };
 
+const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload) => {
+     const thisCustomer = await User.findOne({ _id: user.id });
+     const booking = await Booking.findOne({ _id: bookingId, user: user.id });
+     if (!booking) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found');
+     }
+     if (booking.status !== BOOKING_STATUS.PENDING) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Booking is not in pending status');
+     }
+     // isExistBid
+     const isExistBid = await Bid.findOne({ _id: bidId, serviceCategory: booking.serviceCategory, status: BID_STATUS.PENDING }).populate('serviceProvider');
+     if (!isExistBid) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found');
+     }
+     // if bid ahse booking id check it meets booking id
+     if (isExistBid.booking && isExistBid.booking !== null) {
+          if (isExistBid.booking.toString() !== bookingId) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Bid does not match with booking');
+          }
+     }
+     booking.acceptedBid = isExistBid._id;
+     booking.serviceProvider = isExistBid.serviceProvider;
+     booking.status = BOOKING_STATUS.CONFIRMED;
+     booking.adminRevenuePercent = (isExistBid.serviceProvider as any)?.adminRevenuePercent;
+     await booking.validate();
+
+     const updatedBooking: any = await booking.save();
+     if (!updatedBooking) {
+          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update booking');
+     }
+
+     isExistBid.isAccepted = true;
+     isExistBid.status = BID_STATUS.ACCEPTED;
+     isExistBid.booking = updatedBooking._id;
+     await isExistBid.save();
+     // updateMany all the bids isAccept false except isExistBid    
+     await Bid.updateMany({ _id: { $ne: isExistBid._id }, booking: updatedBooking._id }, { $set: { isAccepted: false } });
+
+     // get all the admin and super admin
+     const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } });
+     const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBid.serviceProvider as any)._id].map((u: any) => u._id.toString());
+     if (updatedBooking.paymentMethod === PAYMENT_METHOD.CASH) {
+          const transactionId = generateTransactionId();
+          const payment = new Payment({
+               user: updatedBooking.user,
+               booking: updatedBooking._id,
+               serviceCategory: updatedBooking.serviceCategory,
+               method: updatedBooking.paymentMethod,
+               transactionId,
+               amount: updatedBooking.finalAmount,
+          });
+          updatedBooking.payment = payment._id;
+          await updatedBooking.save();
+          await payment.save();
+
+          // increase the purchase count of the all the proudcts use operatros
+          const updateServedCount = await Service.updateMany({ _id: { $in: updatedBooking.services.map((item: any) => item.service) } }, { $inc: { servedCount: 1 } });
+
+          // send email to user, notification to bidders and admins socket
+          for (const receiverId of notificationReceivers) {
+               await sendNotifications({
+                    receiver: receiverId,
+                    type: NOTIFICATION_MODEL_TYPE.BOOKING,
+                    title: `New order placed by ${thisCustomer?.full_name} Accepting Bid.`,
+                    booking: updatedBooking,
+               });
+          }
+
+          // Generate PDF invoice
+          const pdfBuffer = await generateBookingInvoicePDF(updatedBooking);
+
+          // Prepare email with PDF attachment
+          const values = {
+               name: thisCustomer?.full_name!,
+               email: thisCustomer?.email!,
+               booking: updatedBooking,
+               attachments: [
+                    {
+                         filename: `invoice-${updatedBooking._id}.pdf`,
+                         content: pdfBuffer,
+                         contentType: 'application/pdf',
+                    },
+               ],
+          };
+
+          // Send email with invoice attachment
+          const emailTemplateData = emailTemplate.bookingInvoice(values);
+          emailHelper.sendEmail({
+               ...emailTemplateData,
+               attachments: values.attachments,
+          });
+
+
+
+          return updatedBooking;
+     }
+     let result;
+
+     if (updatedBooking.paymentMethod == PAYMENT_METHOD.ONLINE) {
+          const stripeCustomer = await stripe.customers.create({
+               name: thisCustomer?.full_name,
+               email: thisCustomer?.email,
+          });
+          // findbyid and update the user
+          await User.findByIdAndUpdate(thisCustomer?.id, { $set: { stripeCustomerId: stripeCustomer.id } });
+          const stripeSessionData: any = {
+               payment_method_types: ['card'],
+               mode: 'payment',
+               customer: stripeCustomer.id,
+               line_items: [
+                    {
+                         price_data: {
+                              currency: DEFAULT_CURRENCY.USD || 'usd',
+                              product_data: {
+                                   name: 'Amount',
+                              },
+                              unit_amount: updatedBooking.finalAmount! * 100, // Convert to cents
+                         },
+                         quantity: 1,
+                    },
+               ],
+               metadata: {
+                    user: updatedBooking.user,
+                    booking: updatedBooking._id,
+                    serviceCategory: updatedBooking.serviceCategory,
+                    method: updatedBooking.paymentMethod,
+                    amount: updatedBooking.finalAmount,
+               },
+               success_url: config.stripe.success_url,
+               cancel_url: config.stripe.cancel_url,
+          };
+          try {
+               const session = await stripe.checkout.sessions.create(stripeSessionData);
+               console.log({
+                    url: session.url,
+               });
+               result = { url: session.url };
+          } catch (error) {
+               console.log({ error });
+          }
+     } else {
+          result = updatedBooking;
+     }
+
+     // No transaction commit needed anymore
+     // Return the result
+     return result;
+};
+
+const getServiceCategoryBasedBookingsForProviderToBid = async (query: any, user: IJwtPayload) => {
+     // get service category from provider 
+     const provider = await User.findOne({ _id: user.id, role: USER_ROLES.SERVICE_PROVIDER }).select('serviceCategory').lean();
+     const queryBuilder = new QueryBuilder(Booking.find({ serviceCategory: provider?.serviceCategory, status: BOOKING_STATUS.PENDING }), query);
+     const result = await queryBuilder.modelQuery;
+     const meta = await queryBuilder.countTotal();
+     return { meta, result };
+};
+
+const getBidsOfBookingByIdToAccept = async (query: Record<string, any>, bookingId: string, user: IJwtPayload) => {
+     const booking = await Booking.findOne({ _id: bookingId, user: user.id, status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } });
+     if (!booking) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found');
+     }
+     const queryBuilder = new QueryBuilder(Bid.find({ booking: bookingId, status: BID_STATUS.PENDING }), query);
+     const result = await queryBuilder.modelQuery;
+     const meta = await queryBuilder.countTotal();
+     return { meta, result };
+};
+
+const getUnpaginatedBidsOfBookingByIdToAccept = async (bookingId: string) => {
+     const booking = await Booking.findOne({ _id: bookingId, status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } });
+     if (!booking) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found');
+     }
+     const result = await Bid.find({ booking: bookingId, status: BID_STATUS.PENDING });
+     return result;
+};
+
 export const BookingService = {
      createBooking,
      getBookingDetails,
@@ -470,4 +649,8 @@ export const BookingService = {
      cancelBooking,
      getAllRefundBookingRequests,
      refundBooking,
+     acceptBid,
+     getServiceCategoryBasedBookingsForProviderToBid,
+     getBidsOfBookingByIdToAccept,
+     getUnpaginatedBidsOfBookingByIdToAccept,
 };

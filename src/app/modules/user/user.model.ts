@@ -31,6 +31,15 @@ const userSchema = new Schema<IUser, UserModel>(
                required: true,
                trim: true,
           },
+          businessName: {
+               type: String,
+               trim: true,
+               unique: true,
+          }, // for provider
+          serviceCategory: {
+               type: String,
+               trim: true,
+          }, // for provider
           role: {
                type: String,
                enum: Object.values(USER_ROLES),
@@ -154,7 +163,7 @@ const userSchema = new Schema<IUser, UserModel>(
                     ref: 'PaymentCard',
                },
           ],
-          revenuePercent: { type: Number, default: 0 },
+          adminRevenuePercent: { type: Number, default: 0 },
      },
      { timestamps: true },
 );
