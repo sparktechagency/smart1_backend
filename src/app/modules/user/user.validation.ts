@@ -18,7 +18,6 @@ export const createServiceProviderZodSchema = z.object({
           businessName: z.string().min(2, 'Business Name must be at least 2 characters long'),
           serviceCategory: z.string(),
           phone: string().default(''),
-          role: z.nativeEnum(USER_ROLES),
      }),
 });
 

@@ -7,10 +7,11 @@ import { emailTemplate } from '../../../shared/emailTemplate';
 import unlinkFile from '../../../shared/unlinkFile';
 import generateOTP from '../../../utils/generateOTP';
 import stripe from '../../config/stripe.config';
+import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
+import { stripeAccountService } from '../stripeAccount/stripeAccount.service';
 import { USER_ROLES } from './user.enums';
 import { IUser } from './user.interface';
 import { User } from './user.model';
-import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
 // create user
 const createUserToDB = async (payload: IUser): Promise<IUser> => {
      //set role
@@ -18,15 +19,7 @@ const createUserToDB = async (payload: IUser): Promise<IUser> => {
      if (user) {
           throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
      }
-     if (!payload.role) {
-          payload.role = USER_ROLES.USER;
-     } else if (payload.role == USER_ROLES.SERVICE_PROVIDER) {
-          // handl is exist serviceCategory
-          const serviceCategory = await ServiceCategory.findById(payload.serviceCategory);
-          if (!serviceCategory) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'Service category not found');
-          }
-     }
+     payload.role = USER_ROLES.USER;
      const createUser = await User.create(payload);
      if (!createUser) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
@@ -63,6 +56,59 @@ const createUserToDB = async (payload: IUser): Promise<IUser> => {
      createUser.stripeCustomerId = stripeCustomer.id;
      await User.findOneAndUpdate({ _id: createUser._id }, { $set: { authentication, stripeCustomerId: stripeCustomer.id } });
      return createUser;
+};
+const createServiceProviderToDB = async (payload: IUser, host: string, protocol: string): Promise<IUser | any> => {
+     //set role
+     const user = await User.isExistUserByEmail(payload.email);
+     if (user) {
+          throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
+     }
+     payload.role = USER_ROLES.SERVICE_PROVIDER;
+     // handl is exist serviceCategory
+     const serviceCategory = await ServiceCategory.findById(payload.serviceCategory);
+     if (!serviceCategory) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Service category not found');
+     }
+     const createServiceProvider = await User.create(payload);
+     if (!createServiceProvider) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
+     }
+
+     //send email
+     const otp = generateOTP(4);
+     const values = {
+          name: createServiceProvider.full_name,
+          otp: otp,
+          email: createServiceProvider.email!,
+     };
+     const createAccountTemplate = emailTemplate.createAccount(values);
+     emailHelper.sendEmail(createAccountTemplate);
+
+     //save to DB
+     const authentication = {
+          oneTimeCode: otp,
+          expireAt: new Date(Date.now() + Number(config.otp.otpExpiryTimeInMin) * 60000),
+     };
+     await User.findOneAndUpdate({ _id: createServiceProvider._id }, { $set: { authentication } });
+
+     let stripeCustomer;
+     try {
+          stripeCustomer = await stripe.customers.create({
+               email: createServiceProvider.email,
+               name: createServiceProvider.full_name,
+          });
+     } catch (error) {
+          console.log('🚀 ~ createUserToDB ~ error:', error);
+          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create Stripe customer');
+     }
+
+     createServiceProvider.stripeCustomerId = stripeCustomer.id;
+     await User.findOneAndUpdate({ _id: createServiceProvider._id }, { $set: { authentication, stripeCustomerId: stripeCustomer.id } });
+     // return createServiceProvider;    
+
+     const stripe_account_onboarding_url = await stripeAccountService.createConnectedStripeAccount(createServiceProvider, host, protocol);
+
+     return { user: createServiceProvider, stripe_account_onboarding_url };
 };
 
 // create Admin
@@ -184,12 +230,12 @@ const updateUserByIdToDB = async (id: string, payload: Partial<IUser>) => {
 
 export const UserService = {
      createUserToDB,
+     createServiceProviderToDB,
      getUserProfileFromDB,
      updateProfileToDB,
      createAdminToDB,
      deleteUser,
      verifyUserPassword,
      getAllRoleBasedUser,
-
      updateUserByIdToDB,
 };

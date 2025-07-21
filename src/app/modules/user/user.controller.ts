@@ -16,6 +16,18 @@ const createUser = catchAsync(async (req, res) => {
      });
 });
 
+const createServiceProviderToDB = catchAsync(async (req, res) => {
+     const { ...userData } = req.body;
+     const result = await UserService.createServiceProviderToDB(userData, req.get('host') || '', req.protocol);
+
+     sendResponse(res, {
+          success: true,
+          statusCode: StatusCodes.OK,
+          message: 'Service Provider created successfully',
+          data: result,
+     });
+});
+
 const getUserProfile = catchAsync(async (req, res) => {
      const user: any = req.user;
      const result = await UserService.getUserProfileFromDB(user);
@@ -109,6 +121,7 @@ const createAdminToDB = catchAsync(async (req, res) => {
 
 export const UserController = {
      createUser,
+     createServiceProviderToDB,
      getUserProfile,
      updateProfile,
      deleteProfile,

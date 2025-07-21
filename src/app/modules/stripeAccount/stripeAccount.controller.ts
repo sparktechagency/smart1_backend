@@ -2,13 +2,13 @@ import { Request, Response } from "express";
 import catchAsync from "../../../shared/catchAsync";
 import sendResponse from "../../../shared/sendResponse";
 import stripe from "../../config/stripe.config";
-import { stripeAccountService } from "./stripeAccount.service";
-import { StripeAccount } from "./stripeAccount.model";
 import { IJwtPayload } from "../auth/auth.interface";
+import { StripeAccount } from "./stripeAccount.model";
+import { stripeAccountService } from "./stripeAccount.service";
 
 
 const createStripeAccount = catchAsync(async (req: Request, res: Response) => {
-  const result = await stripeAccountService.createStripeAccount(
+  const result = await stripeAccountService.createConnectedStripeAccount(
     req.user as IJwtPayload,
     req.get('host') || '',
     req.protocol,

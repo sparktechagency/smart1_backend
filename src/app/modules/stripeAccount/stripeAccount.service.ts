@@ -6,7 +6,7 @@ import { User } from '../user/user.model';
 import { StripeAccount } from './stripeAccount.model';
 import { successHTMLstripeConnection } from './stripeAccount.utils';
 
-const createConnectedStripeAccount = async (user: IJwtPayload, host: string, protocol: string): Promise<any> => {
+const createConnectedStripeAccount = async (user: IJwtPayload | any, host: string, protocol: string): Promise<any> => {
      const existingAccount = await StripeAccount.findOne({
           user: user.id,
      }).select('user accountId isCompleted');
@@ -115,7 +115,7 @@ const onConnectedStripeAccountSuccess = async (accountId: string) => {
 };
 
 export const stripeAccountService = {
-     createStripeAccount: createConnectedStripeAccount,
+     createConnectedStripeAccount,
      refreshAccountConnect,
      onConnectedStripeAccountSuccess,
 };
