@@ -263,7 +263,7 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
 
           let bid;
           if (booking.acceptedBid !== null) {
-               bid = await Bid.findOne({ _id: booking.acceptedBid, isActive: true }).populate('serviceProvider').session(session);
+               bid = await Bid.findOne({ _id: booking.acceptedBid }).populate('serviceProvider').session(session);
                if (!bid) {
                     throw new AppError(StatusCodes.NOT_FOUND, 'Bid not Found');
                }
