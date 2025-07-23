@@ -305,7 +305,7 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                                    }
                               }
                          } else if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
-                              throw new AppError(StatusCodes.BAD_REQUEST, 'Payment is not done yet. Do the payment first');
+                              throw new AppError(StatusCodes.BAD_REQUEST, `Payment is not done yet. Do the payment first. payment id : ${booking.payment}`);
                          }
                          break;
                     }
