@@ -95,10 +95,10 @@ router.get('/bids/:bookingId', auth(USER_ROLES.USER), BookingController.getBidsO
 router.patch('/bid/:bookingId', validateRequest(BookingValidation.acceptBidForBookingSchema), auth(USER_ROLES.USER), BookingController.acceptBid);
 router.patch('/change-accepted-bid/:bookingId', validateRequest(BookingValidation.acceptBidForBookingSchema), auth(USER_ROLES.USER), BookingController.changeAcceptedBid); // untill the booking status is <=confirmed and bid status is <=accepted
 
-router.patch('/status/:bookingId', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), validateRequest(BookingValidation.updateBookingStatusSchema), BookingController.changeBookingStatus);
+router.patch('/status/:bookingId', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER), validateRequest(BookingValidation.updateBookingStatusSchema), BookingController.changeBookingStatus);
 
 // Cancel booking
-router.delete('/cancel/:id', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(BookingValidation.cancelBookingSchema), BookingController.cancelBooking);
+router.delete('/cancel/:id', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER), validateRequest(BookingValidation.cancelBookingSchema), BookingController.cancelBooking);
 
 router.get('/:bookingId', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), BookingController.getBookingDetails);
 

@@ -171,147 +171,183 @@ const getMyBookings = async (query: Record<string, unknown>, user: IJwtPayload) 
      };
 };
 
+// const changeBookingStatus = async (bookingId: string, status: string, user: IJwtPayload) => {
+
+//      // if status to be canclled thne thrwos error metinoong the cancle route
+//      if (status === BOOKING_STATUS.CANCELLED) {
+//           throw new AppError(StatusCodes.BAD_REQUEST, 'Use method: Delete and route: /api/v1/booking/cancel/:id to cancel a booking');
+//      }
+
+//      // find order
+//      const booking = await Booking.findById(bookingId);
+//      if (!booking) {
+//           throw new AppError(StatusCodes.NOT_FOUND, 'Order not Found');
+//      }
+//      let bid;
+//      if (booking.acceptedBid !== null) {
+//           bid = await Bid.findOne({ _id: booking.acceptedBid, isActive: true }).populate('serviceProvider');
+//           if (!bid) {
+//                throw new AppError(StatusCodes.NOT_FOUND, 'bid not Found');
+//           }
+//      }
+
+//      switch (booking.status) {
+//           case BOOKING_STATUS.PENDING:
+//                if (status === BOOKING_STATUS.CONFIRMED) {
+//                     throw new AppError(StatusCodes.BAD_REQUEST, 'Need to accept a bid before for confirming the booking first');
+//                }
+//                break;
+//           case BOOKING_STATUS.CONFIRMED:
+//                if (status === BOOKING_STATUS.ON_THE_WAY) {
+//                     break;
+//                }
+//                throw new AppError(StatusCodes.BAD_REQUEST, `Confirmed Booking can't be updated to ${status} can only be updated to "on The Way"`);
+//           case BOOKING_STATUS.ON_THE_WAY:
+//                if (status === BOOKING_STATUS.WORK_STARTED) {
+//                     break;
+//                }
+//                throw new AppError(StatusCodes.BAD_REQUEST, `"On The Way" Booking can't be updated to ${status} can only be updated to "work started"`);
+//           case BOOKING_STATUS.WORK_STARTED:
+//                if (status === BOOKING_STATUS.COMPLETED) {
+//                     if (booking.paymentStatus === PAYMENT_STATUS.PAID) {
+//                          if (booking.paymentMethod === PAYMENT_METHOD.ONLINE) {
+//                               if (booking.isPaymentTransferd === false) {
+//                                    if ((bid!.serviceProvider as any).stripeConnectedAccount) {
+//                                         const transfer = await transferToServiceProvider({
+//                                              stripeConnectedAccount: (bid!.serviceProvider as any).stripeConnectedAccount,
+//                                              finalAmount: booking.finalAmount,
+//                                              revenue: (bid!.serviceProvider as any).adminRevenuePercent,
+//                                              bookingId: booking._id.toString(),
+//                                         });
+//                                         console.log('🚀 ~ changeBookingStatus ~ transfer:', transfer);
+//                                    } else {
+//                                         throw new AppError(StatusCodes.BAD_REQUEST, 'Stripe account not found');
+//                                    }
+//                               }
+//                          }
+//                     } else if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
+//                          throw new AppError(StatusCodes.BAD_REQUEST, 'Payment is not done yet. Do the payment first');
+//                     }
+//                     break;
+//                }
+//                throw new AppError(StatusCodes.BAD_REQUEST, `"Work Started" Booking can't be updated to ${status} can only be updated to "completed"`);
+//           case BOOKING_STATUS.COMPLETED:
+//                throw new AppError(StatusCodes.BAD_REQUEST, "COMPLETED Booking can't be updated");
+//           case BOOKING_STATUS.CANCELLED:
+//                throw new AppError(StatusCodes.BAD_REQUEST, "CANCELLED Booking can't be updated");
+//           default:
+//                throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid booking status');
+//      }
+
+//      const updatedBooking = await Booking.findOneAndUpdate({ _id: new Types.ObjectId(bookingId), acceptedBid: bid!._id }, { status }, { new: true });
+//      const updatedBid = await Bid.findOneAndUpdate({ _id: bid!._id }, { status }, { new: true });
+//      return { updatedBooking, updatedBid };
+// };
+
+
 const changeBookingStatus = async (bookingId: string, status: string, user: IJwtPayload) => {
+     const session = await mongoose.startSession();
+     session.startTransaction(); // Start the transaction
 
-     // if status to be canclled thne thrwos error metinoong the cancle route
-     if (status === BOOKING_STATUS.CANCELLED) {
-          throw new AppError(StatusCodes.BAD_REQUEST, 'Use method: Delete and route: /api/v1/booking/cancel/:id to cancel a booking');
-     }
-
-     // find order
-     const booking = await Booking.findById(bookingId);
-     if (!booking) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Order not Found');
-     }
-     let bid;
-     if (booking.acceptedBid !== null) {
-          bid = await Bid.findOne({ _id: booking.acceptedBid, isActive: true }).populate('serviceProvider');
-          if (!bid) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'bid not Found');
+     try {
+          // if status to be cancelled then throws error mentioning the cancel route
+          if (status === BOOKING_STATUS.CANCELLED) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Use method: Delete and route: /api/v1/booking/cancel/:id to cancel a booking');
           }
-     }
 
-     switch (booking.status) {
-          case BOOKING_STATUS.PENDING:
-               if (status === BOOKING_STATUS.CONFIRMED) {
-                    throw new AppError(StatusCodes.BAD_REQUEST, 'Need to accept a bid before for confirming the booking first');
+          // Find order
+          const booking = await Booking.findById(bookingId).session(session); // Attach the session to the query
+          if (!booking) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Order not Found');
+          }
+
+          let bid;
+          if (booking.acceptedBid !== null) {
+               bid = await Bid.findOne({ _id: booking.acceptedBid, isActive: true }).populate('serviceProvider').session(session);
+               if (!bid) {
+                    throw new AppError(StatusCodes.NOT_FOUND, 'Bid not Found');
                }
-               break;
-          case BOOKING_STATUS.CONFIRMED:
-               if (status === BOOKING_STATUS.ON_THE_WAY) {
-                    break;
-               }
-               throw new AppError(StatusCodes.BAD_REQUEST, `Confirmed Booking can't be updated to ${status} can only be updated to "on The Way"`);
-          case BOOKING_STATUS.ON_THE_WAY:
-               if (status === BOOKING_STATUS.WORK_STARTED) {
-                    break;
-               }
-               throw new AppError(StatusCodes.BAD_REQUEST, `"On The Way" Booking can't be updated to ${status} can only be updated to "work started"`);
-          case BOOKING_STATUS.WORK_STARTED:
-               if (status === BOOKING_STATUS.COMPLETED) {
-                    if (booking.paymentStatus === PAYMENT_STATUS.PAID) {
-                         if (booking.paymentMethod === PAYMENT_METHOD.ONLINE) {
-                              if (booking.isPaymentTransferd === false) {
-                                   if ((bid!.serviceProvider as any).stripeConnectedAccount) {
-                                        const transfer = await transferToServiceProvider({
-                                             stripeConnectedAccount: (bid!.serviceProvider as any).stripeConnectedAccount,
-                                             finalAmount: booking.finalAmount,
-                                             revenue: (bid!.serviceProvider as any).adminRevenuePercent,
-                                             bookingId: booking._id.toString(),
-                                        });
-                                        console.log('🚀 ~ changeBookingStatus ~ transfer:', transfer);
-                                   } else {
-                                        throw new AppError(StatusCodes.BAD_REQUEST, 'Stripe account not found');
-                                   }
-                              }
-                         }
-                    } else if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
-                         throw new AppError(StatusCodes.BAD_REQUEST, 'Payment is not done yet. Do the payment first');
+          }
+
+          // Status validation for booking
+          switch (booking.status) {
+               case BOOKING_STATUS.PENDING:
+                    if (status === BOOKING_STATUS.CONFIRMED) {
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'Need to accept a bid before confirming the booking first');
                     }
                     break;
-               }
-               throw new AppError(StatusCodes.BAD_REQUEST, `"Work Started" Booking can't be updated to ${status} can only be updated to "completed"`);
-          case BOOKING_STATUS.COMPLETED:
-               throw new AppError(StatusCodes.BAD_REQUEST, "COMPLETED Booking can't be updated");
-          case BOOKING_STATUS.CANCELLED:
-               throw new AppError(StatusCodes.BAD_REQUEST, "CANCELLED Booking can't be updated");
-          default:
-               throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid booking status');
-     }
+               case BOOKING_STATUS.CONFIRMED:
+                    if (status === BOOKING_STATUS.ON_THE_WAY) {
+                         break;
+                    }
+                    throw new AppError(StatusCodes.BAD_REQUEST, `Confirmed Booking can't be updated to ${status} can only be updated to "on The Way"`);
+               case BOOKING_STATUS.ON_THE_WAY:
+                    if (status === BOOKING_STATUS.WORK_STARTED) {
+                         break;
+                    }
+                    throw new AppError(StatusCodes.BAD_REQUEST, `"On The Way" Booking can't be updated to ${status} can only be updated to "work started"`);
+               case BOOKING_STATUS.WORK_STARTED:
+                    if (status === BOOKING_STATUS.COMPLETED) {
+                         if (booking.paymentStatus === PAYMENT_STATUS.PAID) {
+                              if (booking.paymentMethod === PAYMENT_METHOD.ONLINE) {
+                                   if (booking.isPaymentTransferd === false) {
+                                        if ((bid!.serviceProvider as any).stripeConnectedAccount) {
+                                             const transfer = await transferToServiceProvider({
+                                                  stripeConnectedAccount: (bid!.serviceProvider as any).stripeConnectedAccount,
+                                                  finalAmount: booking.finalAmount,
+                                                  revenue: (bid!.serviceProvider as any).adminRevenuePercent,
+                                                  bookingId: booking._id.toString(),
+                                             });
+                                             console.log('🚀 ~ changeBookingStatus ~ transfer:', transfer);
+                                        } else {
+                                             throw new AppError(StatusCodes.BAD_REQUEST, 'Stripe account not found');
+                                        }
+                                   }
+                              }
+                         } else if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
+                              throw new AppError(StatusCodes.BAD_REQUEST, 'Payment is not done yet. Do the payment first');
+                         }
+                         break;
+                    }
+                    throw new AppError(StatusCodes.BAD_REQUEST, `"Work Started" Booking can't be updated to ${status} can only be updated to "completed"`);
+               case BOOKING_STATUS.COMPLETED:
+                    throw new AppError(StatusCodes.BAD_REQUEST, "COMPLETED Booking can't be updated");
+               case BOOKING_STATUS.CANCELLED:
+                    throw new AppError(StatusCodes.BAD_REQUEST, "CANCELLED Booking can't be updated");
+               default:
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid booking status');
+          }
 
-     const updatedBooking = await Booking.findOneAndUpdate({ _id: new Types.ObjectId(bookingId), acceptedBid: bid!._id }, { status }, { new: true });
-     const updatedBid = await Bid.findOneAndUpdate({ _id: bid!._id }, { status }, { new: true });
-     return { updatedBooking, updatedBid };
+          // Update booking status
+          const updatedBooking = await Booking.findOneAndUpdate(
+               { _id: new Types.ObjectId(bookingId), acceptedBid: bid!._id },
+               { status },
+               { new: true, session }
+          );
+
+          // Update bid status
+          const updatedBid = await Bid.findOneAndUpdate(
+               { _id: bid!._id },
+               { status },
+               { new: true, session }
+          );
+
+          // Commit the transaction
+          await session.commitTransaction();
+
+          return { updatedBooking, updatedBid };
+
+     } catch (error) {
+          // Rollback the transaction in case of an error
+          await session.abortTransaction();
+          throw error; // Re-throw the error to be handled by the caller
+     } finally {
+          // End the session
+          session.endSession();
+     }
 };
 
 
-// Function cancelBooking(orderId, bookingCancelReason, user):
-//     Session শুরু করো (startTransaction)
-
-//     TRY:
-//  # Step 1: বুকিং আছে কি না চেক করো
-//         booking = ডাটাবেসে বুকিং খুঁজে দেখো, যেখানে orderId ও user মেলে এবং status "pending" অথবা "confirmed"
-//         যদি বুকিং না পাওয়া যায়:
-//             Error পাঠাও ("Booking not found. Booking status must be pending or confirmed to cancel")
-
-//  # Step 2: Bid আছে কি না চেক করো
-//         bid = ডাটাবেসে Bid খুঁজে দেখো, যেখানে bid মেলে এবং status "pending", "accepted", বা "rejected"
-//         যদি Bid না পাওয়া যায়:
-//             Error পাঠাও ("Bid not found")
-
-//  # Step 3: Payment আছে কি না চেক করো
-//         payment = ডাটাবেসে Payment খুঁজে দেখো, যেখানে booking মেলে এবং status "cancelled" না
-//         যদি Payment না পাওয়া যায়:
-//             Error পাঠাও ("Payment not found")
-
-//  # Step 4: Booking এর payment status পেইড কিনা চেক করো
-//         যদি payment status "PAID" হয়:
-//             # Substep 1: Online payment handling
-//             যদি payment method "ONLINE" হয়:
-//                 যদি payment ইতিমধ্যেই provider কে ট্রান্সফার করা হয়ে থাকে:
-//                     Error পাঠাও ("Payment is already transferred to provider")
-//                 Else:
-//                     যদি payment refund না হয়:
-//                         refundPayment service কল করো এবং payment refund করো
-//                         যদি refund ব্যর্থ হয়:
-//                             Error পাঠাও ("Payment refund failed")
-
-//             # Substep 2: Cash payment handling
-//             Else if payment method "CASH" হয়:
-//                 যদি payment refund না হয়:
-//                     payment কে refund করার জন্য চিহ্নিত করো
-//                     session এর সাথে payment save করো
-//                     Error পাঠাও ("Payment is not online, do refund manually first")
-
-//  # Step 5: Booking, Bid, Payment Cancel করো
-//         booking এর status "CANCELLED" এ আপডেট করো এবং cancel reason সেট করো
-//         session এর সাথে booking save করো
-
-//         bid এর status "CANCELLED" এ আপডেট করো এবং cancel reason সেট করো
-//         session এর সাথে bid save করো
-
-//         payment এর status "CANCELLED" এ আপডেট করো এবং refund reason সেট করো
-//         session এর সাথে payment save করো
-
-//  # Step 6: Notification পাঠাও
-//         admin দের ডাটাবেস থেকে খুঁজে বের করো
-//         সব notification receivers সংগ্রহ করো (admins, booking user, service provider)
-//         প্রতিটি receiver কে notification পাঠাও ("Booking cancelled by user. Reason: bookingCancelReason")
-
-//  # Step 7: Session commit করো
-//         Session commit করো
-
-//         Success message ফেরত দাও ("Booking cancelled successfully")
-
-//     CATCH (error):
-//  # Step 8: যদি কোনো error ঘটে, transaction rollback করো
-//         Session abort করো
-
-//         Error re-throw করো (caller কে handle করার জন্য)
-
-//     FINALLY:
-//         # Session শেষ করো
-//         Session end করো
 
 const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_REFUND_REASON, user: IJwtPayload) => {
      const session = await mongoose.startSession();
@@ -384,7 +420,7 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
 
           // Commit the session if no issues found
           await session.commitTransaction();
-          return { message: 'Booking cancellation failed. Check payment status.', booking: isExistBooking };
+          return { booking: isExistBooking };
      } catch (error) {
           // Rollback the transaction in case of an error
           await session.abortTransaction();
