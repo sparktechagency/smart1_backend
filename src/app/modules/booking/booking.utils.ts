@@ -1,16 +1,17 @@
 import { StatusCodes } from 'http-status-codes';
 import AppError from '../../../errors/AppError';
 import stripe from '../../config/stripe.config';
+import { DEFAULT_CURRENCY } from '../Bid/Bid.enum';
 export async function transferToServiceProvider({
      stripeConnectedAccount,
      finalAmount,
      revenue,
-     orderId,
+     bookingId,
 }: {
      stripeConnectedAccount: string;
      finalAmount: number; // in dollars
      revenue: number; // in percentage
-     orderId: string;
+     bookingId: string;
 }) {
      const adminParcentage = revenue;
 
@@ -20,28 +21,28 @@ export async function transferToServiceProvider({
 
      const adminRevenue = Math.ceil((finalAmount * adminParcentage) / 100);
 
-     const shopOwnerRevenue = finalAmount - adminRevenue;
+     const serviceProviderRevenue = finalAmount - adminRevenue;
 
      const balance = await stripe.balance.retrieve();
 
-     if (balance?.available?.[0].amount < shopOwnerRevenue * 100) {
+     if (balance?.available?.[0].amount < serviceProviderRevenue * 100) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'Insufficient funds in admin account for transfer');
      }
 
-     const shopAccountFromStripe = await stripe.accounts.retrieve(stripeConnectedAccount);
+     const serviceProviderAccountFromStripe = await stripe.accounts.retrieve(stripeConnectedAccount);
 
-     if (shopAccountFromStripe?.requirements?.disabled_reason) {
-          throw new AppError(StatusCodes.BAD_REQUEST, `Business's stripe account is not enabled: ${shopAccountFromStripe.requirements.disabled_reason}`);
+     if (serviceProviderAccountFromStripe?.requirements?.disabled_reason) {
+          throw new AppError(StatusCodes.BAD_REQUEST, `Business's stripe account is not enabled: ${serviceProviderAccountFromStripe.requirements.disabled_reason}`);
      }
 
      const transfer = await stripe.transfers.create({
-          amount: Math.round(shopOwnerRevenue * 100), // in cents
-          currency: 'usd',
+          amount: Math.round(serviceProviderRevenue * 100), // in cents
+          currency: DEFAULT_CURRENCY.USD || 'usd',
           destination: stripeConnectedAccount,
           metadata: {
-               orderId,
+               bookingId,
           },
-          transfer_group: `order_${orderId}`,
+          transfer_group: `booking_${bookingId}`,
      });
      return transfer;
 }
@@ -58,7 +59,7 @@ export async function createPayout({
      try {
           const payout = await stripe.payouts.create({
                amount: Math.round(amount * 100), // in cents
-               currency: 'usd',
+               currency: DEFAULT_CURRENCY.USD || 'usd',
                destination: stripeConnectedAccount,
                metadata: {
                     orderId,

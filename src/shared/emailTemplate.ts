@@ -1,3 +1,4 @@
+import { DEFAULT_CURRENCY } from '../app/modules/Bid/Bid.enum';
 import { IContact, ICreateAccount, IHelpContact, IResetPassword, IResetPasswordByEmail } from '../types/emailTamplate';
 
 const createAccount = (values: ICreateAccount) => {
@@ -240,7 +241,7 @@ const bookingInvoice = (values: { name: string; email: string; booking: any }) =
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: DEFAULT_CURRENCY.USD_CAPITAL || 'USD',
     }).format(price);
   };
 

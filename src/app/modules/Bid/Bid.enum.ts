@@ -2,6 +2,7 @@ export const DEFAULT_ADMIN_REVENUE: number = 20;
 export enum DEFAULT_CURRENCY {
     BDT = 'bdt',
     USD = 'usd',
+    USD_CAPITAL = 'USD',
 }
 // 
 //  * যখন কোণ booking create হবে তখন তার default booking.status হবে pending 

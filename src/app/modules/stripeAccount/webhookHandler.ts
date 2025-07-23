@@ -3,18 +3,20 @@ import { StatusCodes } from 'http-status-codes';
 import Stripe from 'stripe';
 import config from '../../../config';
 import AppError from '../../../errors/AppError';
+import { emailHelper } from '../../../helpers/emailHelper';
+import { sendNotifications } from '../../../helpers/notificationsHelper';
+import { emailTemplate } from '../../../shared/emailTemplate';
+import { generateBookingInvoicePDF } from '../../../utils/generateOrderInvoicePDF';
 import stripe from '../../config/stripe.config';
-import { PaymentService } from '../Payment/Payment.service';
-import { Payment } from '../Payment/Payment.model';
 import { BOOKING_STATUS, PAYMENT_STATUS } from '../booking/booking.enums';
 import { Booking } from '../booking/booking.model';
-import { Service } from '../Service/Service.model';
-import { sendNotifications } from '../../../helpers/notificationsHelper';
 import { NOTIFICATION_MODEL_TYPE } from '../notification/notification.enum';
-import { generateBookingInvoicePDF } from '../../../utils/generateOrderInvoicePDF';
-import { emailTemplate } from '../../../shared/emailTemplate';
-import { emailHelper } from '../../../helpers/emailHelper';
+import { Payment } from '../Payment/Payment.model';
+import { PaymentService } from '../Payment/Payment.service';
+import { Service } from '../Service/Service.model';
 import { User } from '../user/user.model';
+import { Bid } from '../Bid/Bid.model';
+import { BID_STATUS } from '../Bid/Bid.enum';
 
 const webhookHandler = async (req: Request, res: Response): Promise<void> => {
      console.log('Webhook received');
@@ -64,16 +66,7 @@ export default webhookHandler;
 // Function for handling a successful payment
 const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
      try {
-          const {
-               user,
-               booking,
-               serviceCategory,
-               method,
-               amount,
-               notificationReceivers,
-               isAcceptedBidChanged,
-               previouslyAcceptedBidProvider
-          }: any = session.metadata;
+          const { acceptedBid, user, booking, serviceCategory, method, amount, notificationReceivers, isAcceptedBidChanged, previouslyAcceptedBidProvider }: any = session.metadata;
 
           const thisCustomer = await User.findOne({ _id: user });
           // Parsing the 'notificationReceivers' metadata, as it was previously stringified before sending to Stripe
@@ -88,25 +81,46 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
           if (!isBookingExists) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'Booking not found');
           }
+          const thisAcceptedBid = await Bid.findOne({ _id: acceptedBid });
+          if (!thisAcceptedBid) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Accepted bid not found');
+          }
           console.log('isPaymentExist : 3');
-          const newPayment = await PaymentService.createPayment(
-               {
-                    user: thisCustomer!._id,
-                    booking: booking,
-                    serviceCategory: serviceCategory,
-                    method: method,
-                    status: PAYMENT_STATUS.PAID,
-                    transactionId: session.id,
-                    paymentIntent: paymentIntent,
-                    amount: amount,
-                    gatewayResponse: session,
-               }
-          );
+          const newPayment = await PaymentService.createPayment({
+               user: thisCustomer!._id,
+               booking: booking,
+               serviceCategory: serviceCategory,
+               method: method,
+               status: PAYMENT_STATUS.PAID,
+               transactionId: session.id,
+               paymentIntent: paymentIntent,
+               amount: amount,
+               gatewayResponse: session,
+          });
           isBookingExists.payment = newPayment._id;
+          isBookingExists.acceptedBid = thisAcceptedBid._id;
+          isBookingExists.adminRevenuePercent = (thisAcceptedBid.serviceProvider as any)?.adminRevenuePercent;
+          isBookingExists.serviceProvider = (thisAcceptedBid.serviceProvider as any)._id;
+          isBookingExists.status = BOOKING_STATUS.CONFIRMED;
+          await isBookingExists.validate();
+          isBookingExists.finalAmount = amount;
+          isBookingExists.paymentStatus = PAYMENT_STATUS.PAID;
           await isBookingExists.save();
+
+
+
+          // Update the bid status to accepted
+          thisAcceptedBid.isAccepted = true;
+          thisAcceptedBid.status = BID_STATUS.ACCEPTED;
+          thisAcceptedBid.booking = isBookingExists._id;
+          await thisAcceptedBid.save();
+
+          // Update all other bids to rejected
+          await Bid.updateMany({ _id: { $ne: thisAcceptedBid._id }, booking: isBookingExists._id }, { $set: { isAccepted: false, status: BID_STATUS.REJECTED } });
+
           console.log('newPayment : 11');
 
-          let notificationTitle = "";
+          let notificationTitle = '';
           if (!isAcceptedBidChanged) {
                // increase the purchase count of the all the proudcts use operatros
                const updateServedCount = await Service.updateMany({ _id: { $in: isBookingExists.services.map((item: any) => item.service) } }, { $inc: { servedCount: 1 } });

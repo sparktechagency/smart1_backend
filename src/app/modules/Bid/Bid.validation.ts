@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { DEFAULT_ADMIN_REVENUE } from './Bid.enum';
+import { BID_STATUS } from './Bid.enum';
+import { CANCELL_OR_REFUND_REASON } from '../booking/booking.enums';
 
 const createBidZodSchema = z.object({
      body: z.object({
@@ -15,7 +16,21 @@ const updateBidZodSchema = z.object({
      }),
 });
 
+const changeBidStatusZodSchema = z.object({
+     body: z.object({
+          status: z.nativeEnum(BID_STATUS, { required_error: 'Status is required' }),
+     }),
+});
+
+const cancelBidZodSchema = z.object({
+     body: z.object({
+          reason: z.nativeEnum(CANCELL_OR_REFUND_REASON, { required_error: 'Reason is required' }),
+     }),
+});
+
 export const BidValidation = {
      createBidZodSchema,
-     updateBidZodSchema
+     updateBidZodSchema,
+     changeBidStatusZodSchema,
+     cancelBidZodSchema
 };

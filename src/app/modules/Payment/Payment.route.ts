@@ -21,6 +21,10 @@ router.get('/unpaginated', PaymentController.getAllUnpaginatedPayments);
 
 router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), PaymentController.hardDeletePayment);
 
+
+router.get('/success', PaymentController.successPage)
+router.get('/cancel', PaymentController.cancelPage);
+
 router.patch('/:id', fileUploadHandler(),
     parseFileData(FOLDER_NAMES.IMAGE), auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     validateRequest(PaymentValidation.updatePaymentZodSchema), PaymentController.updatePayment);
@@ -28,5 +32,6 @@ router.patch('/:id', fileUploadHandler(),
 router.delete('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), PaymentController.deletePayment);
 
 router.get('/:id', PaymentController.getPaymentById);
+
 
 export const PaymentRoutes = router;

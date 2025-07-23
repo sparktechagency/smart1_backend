@@ -98,6 +98,30 @@ const getAllBidsByServiceCategoryId = catchAsync(async (req: Request, res: Respo
      });
 });
 
+const changeBidStatus = catchAsync(async (req: Request, res: Response) => {
+     const { id } = req.params;
+     const result = await BidService.changeBidStatus(id, req.body.status, req.user as IJwtPayload);
+
+     sendResponse<IBid>(res, {
+          statusCode: 200,
+          success: true,
+          message: 'Bid status changed successfully',
+          data: result || undefined,
+     });
+});
+
+const cancelBid = catchAsync(async (req: Request, res: Response) => {
+     const { id } = req.params;
+     const result = await BidService.cancelBid(id, req.body.reason, req.user as IJwtPayload);
+
+     sendResponse<IBid>(res, {
+          statusCode: 200,
+          success: true,
+          message: 'Bid cancelled successfully',
+          data: result || undefined,
+     });
+});
+
 export const BidController = {
      createBid,
      getAllBids,
@@ -106,5 +130,7 @@ export const BidController = {
      deleteBid,
      hardDeleteBid,
      getBidById,
-     getAllBidsByServiceCategoryId
+     getAllBidsByServiceCategoryId,
+     changeBidStatus,
+     cancelBid
 };

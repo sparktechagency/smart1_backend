@@ -7,9 +7,8 @@ import { COUPON_DISCOUNT_TYPE } from '../coupon/coupon.enums';
 import { Coupon } from '../coupon/coupon.model';
 import { Service } from '../Service/Service.model';
 import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
-import { BOOKING_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
+import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 import { IBooking } from './booking.interface';
-import { IUser } from '../user/user.interface';
 
 const bookingSchema = new Schema<IBooking>(
      {
@@ -34,7 +33,7 @@ const bookingSchema = new Schema<IBooking>(
                          type: Number,
                          required: true,
                          min: 1,
-                    }
+                    },
                },
           ],
           coupon: {
@@ -101,6 +100,7 @@ const bookingSchema = new Schema<IBooking>(
           },
           bookingCancelReason: {
                type: String,
+               enum: Object.values(CANCELL_OR_REFUND_REASON),
                required: false,
           },
           servicingDestination: {
@@ -131,7 +131,7 @@ const bookingSchema = new Schema<IBooking>(
           paymentMethod: {
                type: String,
                enum: PAYMENT_METHOD,
-               default: PAYMENT_METHOD.UNSPECIFIED,
+               default: PAYMENT_METHOD.ONLINE,
           },
           paymentStatus: {
                type: String,
@@ -142,10 +142,6 @@ const bookingSchema = new Schema<IBooking>(
                type: Schema.Types.ObjectId,
                ref: 'Payment',
                default: null,
-          },
-          isNeedRefund: {
-               type: Boolean,
-               default: false,
           },
      },
      {
@@ -161,7 +157,7 @@ bookingSchema.pre('validate', async function (next) {
      // booking service category
      const serviceCategory = await ServiceCategory.findById(booking.serviceCategory);
      if (!serviceCategory) {
-          return next(new AppError(StatusCodes.BAD_REQUEST, "Service category not found. from BookingModel"));
+          return next(new AppError(StatusCodes.BAD_REQUEST, 'Service category not found. from BookingModel'));
      }
 
      // Step 1: Initialize total amount
@@ -169,82 +165,81 @@ bookingSchema.pre('validate', async function (next) {
      let finalDiscountAmountFlat = 0;
      let acceptedProviderBidRate = 0;
 
-
      // if booking adminRevenuePercent is not set then set default adminRevenuePercent
      if (!booking.adminRevenuePercent) {
           booking.adminRevenuePercent = DEFAULT_ADMIN_REVENUE;
      }
-
 
      // Step 2: Calculate total amount for services
      if (booking.acceptedBid && booking.acceptedBid !== null) {
           // Step 2: Fetch the accepted bid using the bidId in booking
           bid = await Bid.findById(booking.acceptedBid).populate('serviceProvider'); // Fetch the bid object using acceptedBid
           if (!bid) {
-               return next(new AppError(StatusCodes.BAD_REQUEST, "Accepted bid not found from BookingModel"));
+               return next(new AppError(StatusCodes.BAD_REQUEST, 'Accepted bid not found from BookingModel'));
           }
 
           acceptedProviderBidRate = bid.rate; // Get the flat rate from the accepted bid
           booking.serviceProvider = (bid.serviceProvider as any)._id;
           booking.adminRevenuePercent = (bid.serviceProvider as any).adminRevenuePercent;
           totalAmount = acceptedProviderBidRate;
-          console.log("booking.acceptedBid done acceptedProviderBidRate == totalAmount from BookingModel", acceptedProviderBidRate);
+          console.log('1. booking model', { totalAmount }, { acceptedProviderBidRate });
           let totalOfferPrice = 0;
 
           // if provider offers any offer
-          for (let item of booking.services) {
+          for (const item of booking.services) {
                const service = await Service.findOne({ _id: item.service, serviceCategory: serviceCategory._id });
 
                if (!service) {
                     return next(new AppError(StatusCodes.BAD_REQUEST, `service not found!. from BookingModel`));
                }
-               console.log("booking.acceptedBid done from BookingModel", "service name", service.name, "serviceCharge", service.serviceCharge);
-               let offerPrice = (await service.calculateOfferPrice((bid.serviceProvider as any)._id)) || 0;
-               console.log("offerPrice for service from BookingModel", "service name", service.name, "offerPrice", offerPrice);
-               let serviceCharge: number = offerPrice;
+               console.log('2.', 'service name', service.name, 'serviceCharge', service.serviceCharge);
+               const offerPrice = (await service.calculateOfferPrice((bid.serviceProvider as any)._id)) || 0;
+               console.log('3.', 'service name', service.name, 'offerPrice', offerPrice);
+               const serviceCharge: number = offerPrice;
                const price = serviceCharge * item.quantity;
                totalOfferPrice += price;
           }
-          totalAmount = Math.min(totalAmount, totalOfferPrice);
-          console.log("totalAmount for offerdservices from BookingModel", totalAmount);
+          if (totalOfferPrice > 0) {
+               totalAmount = Math.min(totalAmount, totalOfferPrice);
+          }
+          console.log('4. totalAmount ', totalAmount);
      } else {
-          for (let item of booking.services) {
+          for (const item of booking.services) {
                const service = await Service.findOne({ _id: item.service, serviceCategory: serviceCategory._id });
 
                if (!service) {
                     return next(new AppError(StatusCodes.BAD_REQUEST, `service not found!. from BookingModel`));
                }
-               console.log("service for no offer and no acceptedbid from BookingModel", service.name, service.serviceCharge);
+               console.log('5. service name', service.name, 'serviceCharge', service.serviceCharge);
 
-               let serviceCharge: number = service.serviceCharge;
+               const serviceCharge: number = service.serviceCharge;
                const price = serviceCharge * item.quantity;
                totalAmount += price;
           }
-          console.log("totalAmount for no offer and no acceptedbid from BookingModel", totalAmount);
+          console.log('6. totalAmount', totalAmount);
      }
-
 
      if (booking.coupon) {
           const coupon = await Coupon.findById(booking.coupon);
           if (coupon && coupon.isActive) {
                if (coupon?.minOrderAmount && totalAmount >= coupon?.minOrderAmount) {
                     if (coupon.discountType === COUPON_DISCOUNT_TYPE.PERCENTAGE) {
-                         console.log("coupon discount in percentage and adminRevenuePercent from BookingModel", coupon.discountValue, booking.adminRevenuePercent);
+                         console.log('7. coupon discount ', coupon.discountValue, 'booking admin revenue', booking.adminRevenuePercent);
                          // handle admin revenue percentage > coupon discount value
                          if (booking.adminRevenuePercent > coupon.discountValue) {
-                              booking.adminRevenuePercent = booking.adminRevenuePercent - coupon.discountValue
+                              booking.adminRevenuePercent = booking.adminRevenuePercent - coupon.discountValue;
                          } else {
                               throw new AppError(StatusCodes.BAD_REQUEST, 'Coupon discount value is greater than admin default revenue percentage. from BookingModel');
                          }
                          finalDiscountAmountFlat = Math.min((coupon.discountValue / 100) * totalAmount, coupon.maxDiscountAmount ? coupon.maxDiscountAmount : Infinity);
                     } else if (coupon.discountType === COUPON_DISCOUNT_TYPE.FLAT) {
-                         let finalDiscountAmountPercent = (coupon.discountValue * 100) / totalAmount;
-                         console.log("coupon discount in flat and adminRevenuePercent from BookingModel", coupon.discountValue, booking.adminRevenuePercent);
+                         const finalDiscountAmountPercent = (coupon.discountValue * 100) / totalAmount;
+                         console.log('8. coupon discount ', coupon.discountValue, 'adminRevenuePercent', booking.adminRevenuePercent);
                          if (finalDiscountAmountPercent > booking.adminRevenuePercent) {
                               throw new AppError(StatusCodes.BAD_REQUEST, 'Coupon discount value is greater than admin default revenue percentage. from BookingModel');
                          }
                          booking.adminRevenuePercent = booking.adminRevenuePercent - finalDiscountAmountPercent;
-                         console.log("coupon discount in flat and adminRevenuePercent after from BookingModel", coupon.discountValue, booking.adminRevenuePercent);
+                         console.log('9. coupon discount', coupon.discountValue, 'adminRevenuePercent', booking.adminRevenuePercent);
                          finalDiscountAmountFlat = Math.min(coupon.discountValue, totalAmount);
                     }
                }
@@ -254,10 +249,10 @@ bookingSchema.pre('validate', async function (next) {
                if (coupon.usageLimit && coupon.usageLimit <= coupon.usedCount) {
                     throw new AppError(StatusCodes.BAD_REQUEST, 'Coupon usage limit exceeded. from BookingModel');
                }
-               //  * second check user have already used coupon or not 
+               //  * second check user have already used coupon or not
                //  * if not set count vaule 1 for the user
                //  * if yes check userUsageLimitPerUser exists or not
-               //  * * if userUsageLimitPerUser exists then check if he used less than userUsageLimitPerUser or not 
+               //  * * if userUsageLimitPerUser exists then check if he used less than userUsageLimitPerUser or not
                //  * * * if yes then increase the count by 1 and finally increase the usedCount by 1
                //  * * * if no then throw error
                //  * * if userUsageLimitPerUser not exists then increase the count by 1 and finally increase the usedCount by 1
@@ -266,28 +261,31 @@ bookingSchema.pre('validate', async function (next) {
                if (isAlreadyCouponUsedCountByThisUser) {
                     if (coupon.userUsageLimitPerUser) {
                          if (isAlreadyCouponUsedCountByThisUser.count < coupon.userUsageLimitPerUser) {
-                              await Coupon.updateOne({ _id: coupon._id }, { couponUsedCountByUser: { user: booking.user.toString(), count: isAlreadyCouponUsedCountByThisUser.count + 1 }, usedCount: coupon.usedCount + 1 });
+                              await Coupon.updateOne(
+                                   { _id: coupon._id },
+                                   { couponUsedCountByUser: { user: booking.user.toString(), count: isAlreadyCouponUsedCountByThisUser.count + 1 }, usedCount: coupon.usedCount + 1 },
+                              );
                          } else {
                               throw new AppError(StatusCodes.BAD_REQUEST, 'You have already used this coupon. from BookingModel');
                          }
                     } else {
-                         await Coupon.updateOne({ _id: coupon._id }, { couponUsedCountByUser: { user: booking.user.toString(), count: isAlreadyCouponUsedCountByThisUser.count + 1 }, usedCount: coupon.usedCount + 1 });
+                         await Coupon.updateOne(
+                              { _id: coupon._id },
+                              { couponUsedCountByUser: { user: booking.user.toString(), count: isAlreadyCouponUsedCountByThisUser.count + 1 }, usedCount: coupon.usedCount + 1 },
+                         );
                     }
                } else {
                     await Coupon.updateOne({ _id: coupon._id }, { couponUsedCountByUser: { user: booking.user.toString(), count: 1 }, usedCount: coupon.usedCount + 1 });
                }
-
           }
      }
-
 
      booking.totalAmount = totalAmount;
      booking.discount = finalDiscountAmountFlat;
      booking.finalAmount = totalAmount - finalDiscountAmountFlat;
-     console.log("booking totalAmount, discount, finalAmount from BookingModel", booking.totalAmount, booking.discount, booking.finalAmount);
+     console.log('10. booking totalAmount, discount, finalAmount from BookingModel', booking.totalAmount, booking.discount, booking.finalAmount);
      next();
 });
-
 
 // bookingSchema.methods.calculateAllKindOfAmounts = async function (acceptedBid: Types.ObjectId) {
 

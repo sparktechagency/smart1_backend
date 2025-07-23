@@ -167,6 +167,10 @@ const userSchema = new Schema<IUser, UserModel>(
      },
      { timestamps: true },
 );
+
+// Create a 2dsphere index for geoLocation
+userSchema.index({ geoLocation: '2dsphere' });
+
 // Exist User Check
 userSchema.statics.isExistUserById = async (id: string) => {
      return await User.findById(id);

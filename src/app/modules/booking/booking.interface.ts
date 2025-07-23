@@ -1,6 +1,6 @@
 import { Document, Types } from 'mongoose';
 import { IGeoLocation } from '../user/user.interface';
-import { BOOKING_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
+import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 
 export interface IBookingService {
      service: Types.ObjectId;
@@ -8,6 +8,7 @@ export interface IBookingService {
 }
 
 export interface IBooking extends Document {
+     _id: Types.ObjectId;
      user: Types.ObjectId;
      serviceCategory: Types.ObjectId;
      services: IBookingService[];
@@ -24,16 +25,15 @@ export interface IBooking extends Document {
      serviceProvider?: Types.ObjectId | null; // এটা শুরু তে null থাকবে আর যখন user কারো bid accept করবে তখন সেই bidder এর id এখানে save হবে
      serviceTaskDetails: string;
      serviceTaskAdditionalInfo: string;
-     bookingCancelReason: string | null
+     bookingCancelReason?: CANCELL_OR_REFUND_REASON | null;
      servicingDestination: string;
      acceptedBid: Types.ObjectId | null;
-     isDeleted: boolean
+     isDeleted: boolean;
      paymentMethod: PAYMENT_METHOD;
      paymentStatus: PAYMENT_STATUS;
      createdAt?: Date;
      updatedAt?: Date;
      deletedAt?: Date;
      payment?: Types.ObjectId;
-     isNeedRefund: boolean;
      adminRevenuePercent: number;
 }

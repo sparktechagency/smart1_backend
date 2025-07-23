@@ -52,7 +52,8 @@ const changeBookingStatus = catchAsync(async (req: Request, res: Response) => {
 });
 
 const cancelBooking = catchAsync(async (req: Request, res: Response) => {
-     const result = await BookingService.cancelBooking(req.params.id, req.user as IJwtPayload);
+     const { bookingCancelReason } = req.body;
+     const result = await BookingService.cancelBooking(req.params.id, bookingCancelReason, req.user as IJwtPayload);
 
      sendResponse(res, {
           statusCode: StatusCodes.OK,
@@ -63,28 +64,6 @@ const cancelBooking = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-const getAllRefundBookingRequests = catchAsync(async (req: Request, res: Response) => {
-     const shopId = req.params.shopId;
-     const result = await BookingService.getAllRefundBookingRequests(req.query, req.user as IJwtPayload, shopId);
-
-     sendResponse(res, {
-          statusCode: StatusCodes.OK,
-          success: true,
-          message: 'isNeedRefund Bookings retrive succesfully',
-          data: result,
-     });
-});
-
-const refundBooking = catchAsync(async (req: Request, res: Response) => {
-     const result = await BookingService.refundBooking(req.params.bookingId, req.user as IJwtPayload);
-
-     sendResponse(res, {
-          statusCode: StatusCodes.OK,
-          success: true,
-          message: 'Booking refunded succesfully',
-          data: result,
-     });
-});
 
 const acceptBid = catchAsync(async (req: Request, res: Response) => {
      const { bidId } = req.body;
@@ -132,16 +111,26 @@ const getBidsOfBookingByIdToAccept = catchAsync(async (req: Request, res: Respon
      });
 });
 
+const getServiceCategoryBasedBidsToAccept = catchAsync(async (req: Request, res: Response) => {
+     const result = await BookingService.getServiceCategoryBasedBidsToAccept(req.query, req.params.serviceCategoryId);
+
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Bids retrive succesfully',
+          data: result,
+     });
+});
+
 export const BookingController = {
      createBooking,
      getBookingDetails,
      getMyBooking,
      changeBookingStatus,
      cancelBooking,
-     getAllRefundBookingRequests,
-     refundBooking,
      acceptBid,
      changeAcceptedBid,
      getServiceCategoryBasedBookingsForProviderToBid,
      getBidsOfBookingByIdToAccept,
+     getServiceCategoryBasedBidsToAccept,
 };

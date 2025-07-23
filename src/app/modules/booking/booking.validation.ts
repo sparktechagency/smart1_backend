@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { z } from 'zod';
-import { objectIdSchema, objectIdSchemaMendatory } from '../user/user.validation';
-import { BOOKING_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
+import { objectIdSchemaMendatory } from '../user/user.validation';
+import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 
 // Validation schema for order product
 const bookingServiceSchema = z.object({
@@ -37,7 +37,7 @@ export const createBookingSchema = z.object({
     paymentMethod: z.nativeEnum(PAYMENT_METHOD, {
       required_error: 'Payment method is required',
       invalid_type_error: 'Invalid payment method',
-    }).optional(),
+    }),
   }),
 });
 
@@ -67,9 +67,19 @@ export const acceptBidForBookingSchema = z.object({
   }),
 });
 
+export const cancelBookingSchema = z.object({
+  body: z.object({
+    bookingCancelReason: z.nativeEnum(CANCELL_OR_REFUND_REASON, {
+      required_error: 'Booking cancel reason is required',
+      invalid_type_error: 'Invalid booking cancel reason',
+    }),
+  }),
+});
+
 export const BookingValidation = {
   createBookingSchema,
   updateBookingStatusSchema,
   updatePaymentStatusSchema,
-  acceptBidForBookingSchema
+  acceptBidForBookingSchema,
+  cancelBookingSchema
 }

@@ -83,7 +83,18 @@ const getPaymentById = catchAsync(async (req: Request, res: Response) => {
           message: 'Payment retrieved successfully',
           data: result || undefined,
      });
-});  
+});
+
+
+const successPage = catchAsync(async (req: Request, res: Response) => {
+     // console.log('hit hoise');
+     res.render('success.ejs');
+});
+
+
+const cancelPage = catchAsync(async (req: Request, res: Response) => {
+     res.render('cancel.ejs');
+});
 
 export const PaymentController = {
      createPayment,
@@ -92,5 +103,7 @@ export const PaymentController = {
      updatePayment,
      deletePayment,
      hardDeletePayment,
-     getPaymentById
+     getPaymentById,
+     successPage,
+     cancelPage
 };

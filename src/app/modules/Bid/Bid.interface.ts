@@ -1,12 +1,13 @@
 import { Types } from "mongoose";
 import { BID_STATUS } from "./Bid.enum";
+import { CANCELL_OR_REFUND_REASON } from "../booking/booking.enums";
 
 export interface IBid {
      serviceProvider: Types.ObjectId | null;
      rate: number;
      booking?: Types.ObjectId | null;
      status: BID_STATUS;
-     bidCancelReason?: string;
+     bidCancelReason?: CANCELL_OR_REFUND_REASON;
      isAccepted: boolean;
      serviceCategory: Types.ObjectId | null;
      review: Types.ObjectId[];
