@@ -98,7 +98,7 @@ router.patch('/change-accepted-bid/:bookingId', validateRequest(BookingValidatio
 router.patch('/status/:bookingId', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER), validateRequest(BookingValidation.updateBookingStatusSchema), BookingController.changeBookingStatus);
 
 // Cancel booking
-router.delete('/cancel/:id', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER), validateRequest(BookingValidation.cancelBookingSchema), BookingController.cancelBooking);
+router.delete('/cancel/:id', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(BookingValidation.cancelBookingSchema), BookingController.cancelBooking);
 
 router.get('/:bookingId', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), BookingController.getBookingDetails);
 

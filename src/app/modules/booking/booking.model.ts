@@ -7,6 +7,7 @@ import { COUPON_DISCOUNT_TYPE } from '../coupon/coupon.enums';
 import { Coupon } from '../coupon/coupon.model';
 import { Service } from '../Service/Service.model';
 import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
+import { USER_ROLES } from '../user/user.enums';
 import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 import { IBooking } from './booking.interface';
 
@@ -127,6 +128,19 @@ const bookingSchema = new Schema<IBooking>(
           isPaymentTransferd: {
                type: Boolean,
                default: false,
+          },
+          cancelledBy: {
+               type: {
+                    role: {
+                         type: String,
+                         enum: USER_ROLES,
+                    },
+                    id: {
+                         type: Schema.Types.ObjectId,
+                         ref: 'User',
+                    },
+               },
+               default: null,
           },
           paymentMethod: {
                type: String,

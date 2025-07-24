@@ -171,79 +171,6 @@ const getMyBookings = async (query: Record<string, unknown>, user: IJwtPayload) 
      };
 };
 
-// const changeBookingStatus = async (bookingId: string, status: string, user: IJwtPayload) => {
-
-//      // if status to be canclled thne thrwos error metinoong the cancle route
-//      if (status === BOOKING_STATUS.CANCELLED) {
-//           throw new AppError(StatusCodes.BAD_REQUEST, 'Use method: Delete and route: /api/v1/booking/cancel/:id to cancel a booking');
-//      }
-
-//      // find order
-//      const booking = await Booking.findById(bookingId);
-//      if (!booking) {
-//           throw new AppError(StatusCodes.NOT_FOUND, 'Order not Found');
-//      }
-//      let bid;
-//      if (booking.acceptedBid !== null) {
-//           bid = await Bid.findOne({ _id: booking.acceptedBid, isActive: true }).populate('serviceProvider');
-//           if (!bid) {
-//                throw new AppError(StatusCodes.NOT_FOUND, 'bid not Found');
-//           }
-//      }
-
-//      switch (booking.status) {
-//           case BOOKING_STATUS.PENDING:
-//                if (status === BOOKING_STATUS.CONFIRMED) {
-//                     throw new AppError(StatusCodes.BAD_REQUEST, 'Need to accept a bid before for confirming the booking first');
-//                }
-//                break;
-//           case BOOKING_STATUS.CONFIRMED:
-//                if (status === BOOKING_STATUS.ON_THE_WAY) {
-//                     break;
-//                }
-//                throw new AppError(StatusCodes.BAD_REQUEST, `Confirmed Booking can't be updated to ${status} can only be updated to "on The Way"`);
-//           case BOOKING_STATUS.ON_THE_WAY:
-//                if (status === BOOKING_STATUS.WORK_STARTED) {
-//                     break;
-//                }
-//                throw new AppError(StatusCodes.BAD_REQUEST, `"On The Way" Booking can't be updated to ${status} can only be updated to "work started"`);
-//           case BOOKING_STATUS.WORK_STARTED:
-//                if (status === BOOKING_STATUS.COMPLETED) {
-//                     if (booking.paymentStatus === PAYMENT_STATUS.PAID) {
-//                          if (booking.paymentMethod === PAYMENT_METHOD.ONLINE) {
-//                               if (booking.isPaymentTransferd === false) {
-//                                    if ((bid!.serviceProvider as any).stripeConnectedAccount) {
-//                                         const transfer = await transferToServiceProvider({
-//                                              stripeConnectedAccount: (bid!.serviceProvider as any).stripeConnectedAccount,
-//                                              finalAmount: booking.finalAmount,
-//                                              revenue: (bid!.serviceProvider as any).adminRevenuePercent,
-//                                              bookingId: booking._id.toString(),
-//                                         });
-//                                         console.log('🚀 ~ changeBookingStatus ~ transfer:', transfer);
-//                                    } else {
-//                                         throw new AppError(StatusCodes.BAD_REQUEST, 'Stripe account not found');
-//                                    }
-//                               }
-//                          }
-//                     } else if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
-//                          throw new AppError(StatusCodes.BAD_REQUEST, 'Payment is not done yet. Do the payment first');
-//                     }
-//                     break;
-//                }
-//                throw new AppError(StatusCodes.BAD_REQUEST, `"Work Started" Booking can't be updated to ${status} can only be updated to "completed"`);
-//           case BOOKING_STATUS.COMPLETED:
-//                throw new AppError(StatusCodes.BAD_REQUEST, "COMPLETED Booking can't be updated");
-//           case BOOKING_STATUS.CANCELLED:
-//                throw new AppError(StatusCodes.BAD_REQUEST, "CANCELLED Booking can't be updated");
-//           default:
-//                throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid booking status');
-//      }
-
-//      const updatedBooking = await Booking.findOneAndUpdate({ _id: new Types.ObjectId(bookingId), acceptedBid: bid!._id }, { status }, { new: true });
-//      const updatedBid = await Bid.findOneAndUpdate({ _id: bid!._id }, { status }, { new: true });
-//      return { updatedBooking, updatedBid };
-// };
-
 
 const changeBookingStatus = async (bookingId: string, status: string, user: IJwtPayload) => {
      const session = await mongoose.startSession();
@@ -355,9 +282,38 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
 
      try {
           // isExistBooking by this user
-          const isExistBooking = await Booking.findOne({ _id: new Types.ObjectId(orderId), user: user.id, status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } }).session(session);
+          const isExistBooking = await Booking.findOne({ _id: new Types.ObjectId(orderId), status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } }).session(session);
           if (!isExistBooking) {
                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found. Booking status must be pending or confirmed to cancel');
+          }
+          if (user.role === USER_ROLES.SERVICE_PROVIDER && isExistBooking.serviceProvider?.toString() !== user.id) {
+               throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as service provider to cancel this booking');
+          } else if (user.role === USER_ROLES.USER && isExistBooking.user?.toString() !== user.id) {
+               throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as user to cancel this booking');
+          }
+          if (isExistBooking.acceptedBid === null && isExistBooking.payment == null && isExistBooking.paymentStatus !== PAYMENT_STATUS.PAID) {
+               isExistBooking.status = BOOKING_STATUS.CANCELLED;
+               isExistBooking.bookingCancelReason = bookingCancelReason;
+               isExistBooking.cancelledBy = {
+                    role: user.role as USER_ROLES,
+                    id: new Types.ObjectId(user.id),
+               };
+               await isExistBooking.save({ session });
+
+               // Send mail notification for the manager and client
+               const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
+               for (const receiverId of admins) {
+                    await sendNotifications({
+                         receiver: receiverId,
+                         type: NOTIFICATION_MODEL_TYPE.BOOKING,
+                         title: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
+                         booking: isExistBooking,
+                    });
+               }
+
+               // Commit the session if no issues found
+               await session.commitTransaction();
+               return { booking: isExistBooking };
           }
 
           // isExistBid
@@ -396,6 +352,10 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
           }
           isExistBooking.status = BOOKING_STATUS.CANCELLED;
           isExistBooking.bookingCancelReason = bookingCancelReason;
+          isExistBooking.cancelledBy = {
+               role: user.role as USER_ROLES,
+               id: new Types.ObjectId(user.id),
+          };
           await isExistBooking.save({ session });
 
           isExistBid.status = BID_STATUS.CANCELLED;
@@ -836,8 +796,8 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
                          method: thisBooking.paymentMethod,
                          amount: thisBooking.finalAmount,
                          notificationReceivers: JSON.stringify(notificationReceivers),
-                         previouslyAcceptedBidProvider: '',
-                         isAcceptedBidChanged: false,
+                         previouslyAcceptedBidProvider: previouslyAcceptedBidToBeChanged.serviceProvider?.toString(),
+                         isAcceptedBidChanged: true,
                     },
                     success_url: config.stripe.success_url,
                     cancel_url: config.stripe.cancel_url,

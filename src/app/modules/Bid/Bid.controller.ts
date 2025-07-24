@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
+import { IJwtPayload } from '../auth/auth.interface';
 import { IBid } from './Bid.interface';
 import { BidService } from './Bid.service';
-import { IJwtPayload } from '../auth/auth.interface';
 
 const createBid = catchAsync(async (req: Request, res: Response) => {
      const result = await BidService.createBid(req.body, req.user as IJwtPayload);
@@ -38,9 +39,9 @@ const getAllUnpaginatedBids = catchAsync(async (req: Request, res: Response) => 
      });
 });
 
-const updateBid = catchAsync(async (req: Request, res: Response) => {
+const updateBidRate = catchAsync(async (req: Request, res: Response) => {
      const { id } = req.params;
-     const result = await BidService.updateBid(id, req.body);
+     const result = await BidService.updateBidRate(id, req.body);
 
      sendResponse<IBid>(res, {
           statusCode: 200,
@@ -86,17 +87,7 @@ const getBidById = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-const getAllBidsByServiceCategoryId = catchAsync(async (req: Request, res: Response) => {
-     const { serviceCategoryId } = req.params;
-     const result = await BidService.getAllBidsByServiceCategoryId(serviceCategoryId, req.query);
 
-     sendResponse<{ meta: { total: number; page: number; limit: number; }; result: IBid[]; }>(res, {
-          statusCode: 200,
-          success: true,
-          message: 'Bids retrieved successfully',
-          data: result || undefined,
-     });
-});
 
 const changeBidStatus = catchAsync(async (req: Request, res: Response) => {
      const { id } = req.params;
@@ -110,27 +101,29 @@ const changeBidStatus = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-const cancelBid = catchAsync(async (req: Request, res: Response) => {
-     const { id } = req.params;
-     const result = await BidService.cancelBid(id, req.body.reason, req.user as IJwtPayload);
 
-     sendResponse<IBid>(res, {
-          statusCode: 200,
+
+
+const getAllBidsByBookingId = catchAsync(async (req: Request, res: Response) => {
+     const result = await BidService.getAllBidsByBookingId(req.query, req.params.bookingId, req.user as IJwtPayload);
+
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
           success: true,
-          message: 'Bid cancelled successfully',
-          data: result || undefined,
+          message: 'Bids retrive succesfully',
+          data: result,
      });
 });
+
 
 export const BidController = {
      createBid,
      getAllBids,
      getAllUnpaginatedBids,
-     updateBid,
+     updateBidRate,
      deleteBid,
      hardDeleteBid,
      getBidById,
-     getAllBidsByServiceCategoryId,
      changeBidStatus,
-     cancelBid
+     getAllBidsByBookingId
 };

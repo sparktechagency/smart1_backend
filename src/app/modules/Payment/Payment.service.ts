@@ -1,9 +1,14 @@
 import { StatusCodes } from 'http-status-codes';
+import mongoose from 'mongoose';
+import config from '../../../config';
 import AppError from '../../../errors/AppError';
 import QueryBuilder from '../../builder/QueryBuilder';
 import stripe from '../../config/stripe.config';
 import { IJwtPayload } from '../auth/auth.interface';
 import { CANCELL_OR_REFUND_REASON, PAYMENT_METHOD, PAYMENT_STATUS } from '../booking/booking.enums';
+import { Booking } from '../booking/booking.model';
+import { USER_ROLES } from '../user/user.enums';
+import { User } from '../user/user.model';
 import { IPayment } from './Payment.interface';
 import { Payment } from './Payment.model';
 
@@ -97,6 +102,91 @@ const refundPayment = async (paymentId: string, user: IJwtPayload, refundReason:
      }
 };
 
+
+const stripeDuePaymentIntentById = async (paymentId: string, user: IJwtPayload) => {
+     const session = await mongoose.startSession();
+     session.startTransaction();
+     try {
+          const thisUser = await User.findOne({ email: user.email }).session(session);
+          if (!thisUser) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'User not found!');
+          }
+          const payment = await Payment.findOne({ _id: paymentId as string, paymentMethod: PAYMENT_METHOD.ONLINE, status: PAYMENT_STATUS.UNPAID, user: thisUser._id }).session(session);
+          if (!payment) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Payment not found! Payment is not UNPAID or not Online Payment or invalid id!');
+          }
+          console.log({ payment });
+          // handle is exist booking
+          const booking = await Booking.findOne({ _id: payment.booking }).session(session);
+          if (!booking) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found!');
+          }
+
+          // stripe customer create
+          const stripeCustomer = await stripe.customers.create({
+               email: thisUser!.email,
+               name: `${thisUser?.full_name}`,
+          });
+          if (!stripeCustomer) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create Stripe customer.');
+          }
+
+          thisUser.stripeCustomerId = stripeCustomer?.id;
+          console.log(
+               '🚀 ~ createBookingToDB ~ New customer created:',
+               stripeCustomer
+          );
+          await thisUser.save({ session });
+
+          const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
+          const notificationReceivers = [...admins.map((u: any) => u._id.toString()), thisUser._id.toString(), booking.serviceProvider?.toString()];
+
+          const stripeSessionData: any = {
+               mode: 'payment',
+               customer: stripeCustomer?.id,
+               line_items: [
+                    {
+                         price_data: {
+                              currency: 'ngn',
+                              product_data: {
+                                   name: 'Amount',
+                              },
+                              unit_amount: Math.round(payment.amount * 100),
+                         },
+                         quantity: 1,
+                    },
+               ],
+               metadata: {
+                    acceptedBid: booking.acceptedBid,
+                    user: thisUser._id,
+                    booking: booking._id,
+                    serviceCategory: booking.serviceCategory,
+                    method: payment.method,
+                    amount: payment.amount,
+                    notificationReceivers: JSON.stringify(notificationReceivers),
+                    previouslyAcceptedBidProvider: '',
+                    isAcceptedBidChanged: false,
+               },
+               success_url: config.stripe.success_url,
+               cancel_url: config.stripe.cancel_url,
+          }
+          const stripeSession: any = await stripe.checkout.sessions.create(stripeSessionData);
+          console.log('🚀 ~ createBookingToDB ~:', {
+               url: stripeSession.url,
+          });
+
+          await session.commitTransaction();
+          session.endSession();
+          return {
+               url: stripeSession.url,
+          };
+     } catch (error) {
+          await session.abortTransaction();
+          session.endSession();
+          throw error;
+     }
+};
+
 export const PaymentService = {
      createPayment,
      getAllPayments,
@@ -106,5 +196,6 @@ export const PaymentService = {
      hardDeletePayment,
      getPaymentById,
      isPaymentExist,
-     refundPayment
+     refundPayment,
+     stripeDuePaymentIntentById
 };

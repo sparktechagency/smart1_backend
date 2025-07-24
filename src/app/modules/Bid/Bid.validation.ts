@@ -1,18 +1,17 @@
 import { z } from 'zod';
-import { BID_STATUS } from './Bid.enum';
 import { CANCELL_OR_REFUND_REASON } from '../booking/booking.enums';
+import { BID_STATUS } from './Bid.enum';
 
 const createBidZodSchema = z.object({
      body: z.object({
           rate: z.number({ required_error: 'Rate is required' }),
-          booking: z.string({ required_error: 'Booking is required' }).optional()
+          booking: z.string({ required_error: 'Booking is required' })
      }),
 });
 
-const updateBidZodSchema = z.object({
+const updateRateBidZodSchema = z.object({
      body: z.object({
-          rate: z.number().optional(),
-          booking: z.string().optional()
+          rate: z.number().optional()
      }),
 });
 
@@ -30,7 +29,7 @@ const cancelBidZodSchema = z.object({
 
 export const BidValidation = {
      createBidZodSchema,
-     updateBidZodSchema,
+     updateRateBidZodSchema,
      changeBidStatusZodSchema,
      cancelBidZodSchema
 };

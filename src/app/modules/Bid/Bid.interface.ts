@@ -5,7 +5,7 @@ import { CANCELL_OR_REFUND_REASON } from "../booking/booking.enums";
 export interface IBid {
      serviceProvider: Types.ObjectId | null;
      rate: number;
-     booking?: Types.ObjectId | null;
+     booking: Types.ObjectId;
      status: BID_STATUS;
      bidCancelReason?: CANCELL_OR_REFUND_REASON;
      isAccepted: boolean;

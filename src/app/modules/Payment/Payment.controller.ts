@@ -3,6 +3,8 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { IPayment } from './Payment.interface';
 import { PaymentService } from './Payment.service';
+import { StatusCodes } from 'http-status-codes';
+import { IJwtPayload } from '../auth/auth.interface';
 
 const createPayment = catchAsync(async (req: Request, res: Response) => {
      const result = await PaymentService.createPayment(req.body);
@@ -96,6 +98,20 @@ const cancelPage = catchAsync(async (req: Request, res: Response) => {
      res.render('cancel.ejs');
 });
 
+
+const stripeDuePaymentIntentById = catchAsync(async (req: Request, res: Response) => {
+     const { paymentId } = req.params;
+
+     const result = await PaymentService.stripeDuePaymentIntentById(paymentId, req.user as IJwtPayload);
+
+     sendResponse(res, {
+          success: true,
+          statusCode: StatusCodes.OK,
+          data: result,
+          message: 'PaymentIntent updated successfully!',
+     });
+});
+
 export const PaymentController = {
      createPayment,
      getAllPayments,
@@ -105,5 +121,6 @@ export const PaymentController = {
      hardDeletePayment,
      getPaymentById,
      successPage,
-     cancelPage
+     cancelPage,
+     stripeDuePaymentIntentById
 };

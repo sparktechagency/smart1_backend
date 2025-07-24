@@ -8,6 +8,8 @@ import { sendNotifications } from '../../../helpers/notificationsHelper';
 import { emailTemplate } from '../../../shared/emailTemplate';
 import { generateBookingInvoicePDF } from '../../../utils/generateOrderInvoicePDF';
 import stripe from '../../config/stripe.config';
+import { BID_STATUS } from '../Bid/Bid.enum';
+import { Bid } from '../Bid/Bid.model';
 import { BOOKING_STATUS, PAYMENT_STATUS } from '../booking/booking.enums';
 import { Booking } from '../booking/booking.model';
 import { NOTIFICATION_MODEL_TYPE } from '../notification/notification.enum';
@@ -15,8 +17,6 @@ import { Payment } from '../Payment/Payment.model';
 import { PaymentService } from '../Payment/Payment.service';
 import { Service } from '../Service/Service.model';
 import { User } from '../user/user.model';
-import { Bid } from '../Bid/Bid.model';
-import { BID_STATUS } from '../Bid/Bid.enum';
 
 const webhookHandler = async (req: Request, res: Response): Promise<void> => {
      console.log('Webhook received');

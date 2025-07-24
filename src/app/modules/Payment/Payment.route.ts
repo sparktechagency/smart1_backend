@@ -21,7 +21,7 @@ router.get('/unpaginated', PaymentController.getAllUnpaginatedPayments);
 
 router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), PaymentController.hardDeletePayment);
 
-
+router.post('/stripe/:paymentId', auth(USER_ROLES.USER), PaymentController.stripeDuePaymentIntentById)
 router.get('/success', PaymentController.successPage)
 router.get('/cancel', PaymentController.cancelPage);
 

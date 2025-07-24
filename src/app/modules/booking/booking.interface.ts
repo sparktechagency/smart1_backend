@@ -1,6 +1,7 @@
 import { Document, Types } from 'mongoose';
 import { IGeoLocation } from '../user/user.interface';
 import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
+import { USER_ROLES } from '../user/user.enums';
 
 export interface IBookingService {
      service: Types.ObjectId;
@@ -31,6 +32,10 @@ export interface IBooking extends Document {
      isDeleted: boolean;
      paymentMethod: PAYMENT_METHOD;
      paymentStatus: PAYMENT_STATUS;
+     cancelledBy: {
+          role: USER_ROLES;
+          id: Types.ObjectId;
+     }
      createdAt?: Date;
      updatedAt?: Date;
      deletedAt?: Date;
