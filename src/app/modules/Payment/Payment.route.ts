@@ -1,11 +1,11 @@
 import express from 'express';
-import { PaymentController } from './Payment.controller';
+import { FOLDER_NAMES } from '../../../enums/files';
 import auth from '../../middleware/auth';
-import { USER_ROLES } from '../user/user.enums';
 import fileUploadHandler from '../../middleware/fileUploadHandler';
 import parseFileData from '../../middleware/parseFileData';
-import { FOLDER_NAMES } from '../../../enums/files';
 import validateRequest from '../../middleware/validateRequest';
+import { USER_ROLES } from '../user/user.enums';
+import { PaymentController } from './Payment.controller';
 import { PaymentValidation } from './Payment.validation';
 
 const router = express.Router();
@@ -21,7 +21,7 @@ router.get('/unpaginated', PaymentController.getAllUnpaginatedPayments);
 
 router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), PaymentController.hardDeletePayment);
 
-router.post('/stripe/:paymentId', auth(USER_ROLES.USER), PaymentController.stripeDuePaymentIntentById)
+router.post('/stripe/booking/:bookingId', auth(USER_ROLES.USER), PaymentController.stripeDuePaymentByBookingId)
 router.get('/success', PaymentController.successPage)
 router.get('/cancel', PaymentController.cancelPage);
 

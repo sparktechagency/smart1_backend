@@ -93,11 +93,11 @@ const changeBidStatus = catchAsync(async (req: Request, res: Response) => {
      const { id } = req.params;
      const result = await BidService.changeBidStatus(id, req.body.status, req.user as IJwtPayload);
 
-     sendResponse<IBid>(res, {
+     sendResponse(res, {
           statusCode: 200,
           success: true,
           message: 'Bid status changed successfully',
-          data: result || undefined,
+          data: result,
      });
 });
 

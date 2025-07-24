@@ -1,16 +1,15 @@
 import { StatusCodes } from 'http-status-codes';
+import mongoose, { Types } from 'mongoose';
 import AppError from '../../../errors/AppError';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { IJwtPayload } from '../auth/auth.interface';
 import { BOOKING_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } from '../booking/booking.enums';
 import { Booking } from '../booking/booking.model';
 import { transferToServiceProvider } from '../booking/booking.utils';
-import { USER_ROLES } from '../user/user.enums';
 import { User } from '../user/user.model';
 import { BID_STATUS } from './Bid.enum';
 import { IBid } from './Bid.interface';
 import { Bid } from './Bid.model';
-import mongoose, { Types } from 'mongoose';
 
 const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
      // is already user has a bid for this booking
@@ -51,17 +50,17 @@ const getAllUnpaginatedBids = async (): Promise<IBid[]> => {
 };
 
 const updateBidRate = async (id: string, payload: { rate: number }): Promise<IBid | null> => {
-     const isExist = await Bid.findById(id);
+     const isExist = await Bid.findOne({ _id: id, status: BID_STATUS.PENDING });
      if (!isExist) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found.');
+          throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found or not in pending status. Only pending bids can be updated.');
      }
      return await Bid.findByIdAndUpdate(id, { rate: payload.rate }, { new: true });
 };
 
 const deleteBid = async (id: string): Promise<IBid | null> => {
-     const bid = await Bid.findById(id);
+     const bid = await Bid.findOne({ _id: id, status: BID_STATUS.PENDING });
      if (!bid) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found.');
+          throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found or not in pending status. Only pending bids can be deleted.');
      }
      if (bid.status !== BID_STATUS.PENDING) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'Bid status is not pending. Bid can only be deleted if it is pending.');
@@ -73,9 +72,9 @@ const deleteBid = async (id: string): Promise<IBid | null> => {
 };
 
 const hardDeleteBid = async (id: string): Promise<IBid | null> => {
-     const bid = await Bid.findByIdAndDelete(id);
+     const bid = await Bid.findOneAndDelete({ _id: id, status: BID_STATUS.PENDING });
      if (!bid) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found.');
+          throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found or not in pending status. Only pending bids can be deleted.');
      }
      if (bid.status !== BID_STATUS.PENDING) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'Bid status is not pending. Bid can only be deleted if it is pending.');
@@ -92,86 +91,6 @@ const getBidById = async (id: string): Promise<IBid | null> => {
 };
 
 
-
-// const changeBidStatus = async (id: string, status: BID_STATUS, user: IJwtPayload): Promise<IBid | null> => {
-//      const isExistBid = await Bid.findById(id);
-//      if (!isExistBid) {
-//           throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found.');
-//      }
-//      // is exist booking
-//      const isExistBooking = await Booking.findById(isExistBid.booking).populate('serviceProvider');
-//      if (!isExistBooking) {
-//           throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found.');
-//      }
-//      if (user.role === USER_ROLES.SERVICE_PROVIDER) {
-//           if (isExistBid.serviceProvider?.toString() !== user.id) {
-//                throw new AppError(StatusCodes.UNAUTHORIZED, 'You are not authorized to change the status of this bid.');
-//           }
-//      }
-//      // isExistBid status completed or cancelled or rejected
-//      if (isExistBid.status === BID_STATUS.COMPLETED || isExistBid.status === BID_STATUS.CANCELLED || isExistBid.status === BID_STATUS.REJECTED) {
-//           throw new AppError(StatusCodes.BAD_REQUEST, 'Bid already completed or cancelled or rejected.');
-//      }
-
-//      switch (isExistBid.status) {
-//           case BID_STATUS.PENDING:
-//                if (status === BID_STATUS.ACCEPTED) {
-//                     isExistBid.isAccepted = true;
-//                     isExistBid.status = BID_STATUS.ACCEPTED;
-
-//                     isExistBooking.status = BOOKING_STATUS.CONFIRMED;
-//                     isExistBooking.acceptedBid = isExistBid._id;
-//                     isExistBooking.serviceProvider = isExistBid.serviceProvider;
-//                     isExistBooking.adminRevenuePercent = (isExistBid.serviceProvider as any)?.adminRevenuePercent;
-//                     break;
-//                }
-//                throw new AppError(StatusCodes.BAD_REQUEST, 'Pending Bid needs to be accepted first.');
-//           case BID_STATUS.ACCEPTED:
-//                if (status === BID_STATUS.ON_THE_WAY) {
-//                     isExistBid.status = BID_STATUS.ON_THE_WAY;
-//                     isExistBooking.status = BOOKING_STATUS.ON_THE_WAY;
-//                     break;
-//                }
-//                throw new AppError(StatusCodes.BAD_REQUEST, 'Accepted Bid needs to be on the way first.');
-//           case BID_STATUS.ON_THE_WAY:
-//                if (status === BID_STATUS.WORK_STARTED) {
-//                     isExistBid.status = BID_STATUS.WORK_STARTED;
-//                     isExistBooking.status = BOOKING_STATUS.WORK_STARTED;
-//                     break;
-//                }
-//                throw new AppError(StatusCodes.BAD_REQUEST, 'Bid needs to be work started first.');
-//           case BID_STATUS.WORK_STARTED:
-//                if (status === BID_STATUS.COMPLETED) {
-//                     // transfer amount to serviceProvider
-//                     if (isExistBooking.paymentStatus === PAYMENT_STATUS.PAID) {
-//                          if (isExistBooking.paymentMethod === PAYMENT_METHOD.ONLINE && isExistBooking.isPaymentTransferd === false) {
-//                               if ((isExistBid.serviceProvider as any).stripeConnectedAccount) {
-//                                    const transfer = await transferToServiceProvider({
-//                                         stripeConnectedAccount: (isExistBid.serviceProvider as any).stripeConnectedAccount,
-//                                         finalAmount: isExistBooking.finalAmount,
-//                                         revenue: (isExistBid.serviceProvider as any).adminRevenuePercent,
-//                                         bookingId: isExistBooking._id as unknown as string,
-//                                    });
-//                                    console.log('🚀 ~ changeBookingStatus ~ transfer:', transfer);
-//                               } else {
-//                                    throw new AppError(StatusCodes.BAD_REQUEST, 'Stripe account not found');
-//                               }
-//                          } else if (isExistBooking.paymentMethod === PAYMENT_METHOD.CASH) {
-//                               throw new AppError(StatusCodes.BAD_REQUEST, 'Payment method is cash. So you have to pay first');
-//                          }
-//                     }
-//                     isExistBid.status = BID_STATUS.COMPLETED;
-//                     // * payment and booking stutus will be completed too in webhook
-//                     break;
-//                }
-//                throw new AppError(StatusCodes.BAD_REQUEST, 'Bid needs to be completed first.');
-//           default:
-//                throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid bid status');
-//      }
-//      await isExistBid.save();
-//      await isExistBooking.save();
-//      return isExistBid;
-// }; // ***
 
 const changeBidStatus = async (bidId: string, status: string, user: IJwtPayload) => {
      const session = await mongoose.startSession();

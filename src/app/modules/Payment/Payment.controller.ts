@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
+import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
+import { IJwtPayload } from '../auth/auth.interface';
 import { IPayment } from './Payment.interface';
 import { PaymentService } from './Payment.service';
-import { StatusCodes } from 'http-status-codes';
-import { IJwtPayload } from '../auth/auth.interface';
 
 const createPayment = catchAsync(async (req: Request, res: Response) => {
      const result = await PaymentService.createPayment(req.body);
@@ -99,10 +99,10 @@ const cancelPage = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-const stripeDuePaymentIntentById = catchAsync(async (req: Request, res: Response) => {
-     const { paymentId } = req.params;
+const stripeDuePaymentByBookingId = catchAsync(async (req: Request, res: Response) => {
+     const { bookingId } = req.params;
 
-     const result = await PaymentService.stripeDuePaymentIntentById(paymentId, req.user as IJwtPayload);
+     const result = await PaymentService.stripeDuePaymentByBookingId(bookingId, req.user as IJwtPayload);
 
      sendResponse(res, {
           success: true,
@@ -122,5 +122,5 @@ export const PaymentController = {
      getPaymentById,
      successPage,
      cancelPage,
-     stripeDuePaymentIntentById
+     stripeDuePaymentByBookingId
 };

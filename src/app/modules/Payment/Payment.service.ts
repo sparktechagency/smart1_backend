@@ -103,7 +103,7 @@ const refundPayment = async (paymentId: string, user: IJwtPayload, refundReason:
 };
 
 
-const stripeDuePaymentIntentById = async (paymentId: string, user: IJwtPayload) => {
+const stripeDuePaymentByBookingId = async (bookingId: string, user: IJwtPayload) => {
      const session = await mongoose.startSession();
      session.startTransaction();
      try {
@@ -111,15 +111,9 @@ const stripeDuePaymentIntentById = async (paymentId: string, user: IJwtPayload) 
           if (!thisUser) {
                throw new AppError(StatusCodes.NOT_FOUND, 'User not found!');
           }
-          const payment = await Payment.findOne({ _id: paymentId as string, paymentMethod: PAYMENT_METHOD.ONLINE, status: PAYMENT_STATUS.UNPAID, user: thisUser._id }).session(session);
-          if (!payment) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'Payment not found! Payment is not UNPAID or not Online Payment or invalid id!');
-          }
-          console.log({ payment });
-          // handle is exist booking
-          const booking = await Booking.findOne({ _id: payment.booking }).session(session);
-          if (!booking) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found!');
+          const thisBooking = await Booking.findOne({ _id: bookingId as string, paymentMethod: PAYMENT_METHOD.ONLINE, paymentStatus: PAYMENT_STATUS.UNPAID, user: thisUser._id }).session(session);
+          if (!thisBooking || !thisBooking.acceptedBid) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Payment not found! Payment is not UNPAID or not Online Payment or invalid id or acceptedBid is not found!');
           }
 
           // stripe customer create
@@ -136,10 +130,10 @@ const stripeDuePaymentIntentById = async (paymentId: string, user: IJwtPayload) 
                '🚀 ~ createBookingToDB ~ New customer created:',
                stripeCustomer
           );
-          await thisUser.save({ session });
+          await User.findByIdAndUpdate(thisUser._id, { stripeCustomerId: stripeCustomer?.id }, { session });
 
           const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
-          const notificationReceivers = [...admins.map((u: any) => u._id.toString()), thisUser._id.toString(), booking.serviceProvider?.toString()];
+          const notificationReceivers = [...admins.map((u: any) => u._id.toString()), thisUser._id.toString(), thisBooking.serviceProvider?.toString()];
 
           const stripeSessionData: any = {
                mode: 'payment',
@@ -151,18 +145,18 @@ const stripeDuePaymentIntentById = async (paymentId: string, user: IJwtPayload) 
                               product_data: {
                                    name: 'Amount',
                               },
-                              unit_amount: Math.round(payment.amount * 100),
+                              unit_amount: Math.round(thisBooking.finalAmount * 100),
                          },
                          quantity: 1,
                     },
                ],
                metadata: {
-                    acceptedBid: booking.acceptedBid,
-                    user: thisUser._id,
-                    booking: booking._id,
-                    serviceCategory: booking.serviceCategory,
-                    method: payment.method,
-                    amount: payment.amount,
+                    acceptedBid: thisBooking.acceptedBid.toString(),
+                    user: thisUser._id.toString(),
+                    booking: thisBooking._id.toString(),
+                    serviceCategory: thisBooking.serviceCategory.toString(),
+                    method: thisBooking.paymentMethod,
+                    amount: thisBooking.finalAmount,
                     notificationReceivers: JSON.stringify(notificationReceivers),
                     previouslyAcceptedBidProvider: '',
                     isAcceptedBidChanged: false,
@@ -197,5 +191,5 @@ export const PaymentService = {
      getPaymentById,
      isPaymentExist,
      refundPayment,
-     stripeDuePaymentIntentById
+     stripeDuePaymentByBookingId
 };
