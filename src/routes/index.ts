@@ -11,6 +11,7 @@ import { OfferedRoutes } from '../app/modules/offered/offered.route';
 import { BookingRoutes } from '../app/modules/booking/booking.route';
 import { BidRoutes } from '../app/modules/Bid/Bid.route';
 import { PaymentRoutes } from '../app/modules/Payment/Payment.route';
+import { NotificationRoutes } from '../app/modules/notification/notification.routes';
 const router = express.Router();
 const routes = [
      {
@@ -60,6 +61,10 @@ const routes = [
      {
           path: '/payment',
           route: PaymentRoutes,
+     },
+     {
+          path: '/notification',
+          route: NotificationRoutes,
      },
 ];
 

@@ -1,6 +1,6 @@
 import { string, z } from 'zod';
 import { USER_ROLES } from './user.enums';
-export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, { message: 'Invalid ObjectId' }).optional();
+export const objectIdSchemaOptional = z.string().regex(/^[a-f\d]{24}$/i, { message: 'Invalid ObjectId' }).optional();
 export const objectIdSchemaMendatory = (fieldName: string) => z.string().regex(/^[a-f\d]{24}$/i, { message: `Invalid ${fieldName} Id` });
 export const createUserZodSchema = z.object({
      body: z.object({

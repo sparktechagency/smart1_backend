@@ -1,6 +1,7 @@
+import { StatusCodes } from 'http-status-codes';
+import { JwtPayload } from 'jsonwebtoken';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
-import { StatusCodes } from 'http-status-codes';
 import { NotificationService } from './notification.service';
 
 const getNotificationFromDB = catchAsync(async (req, res) => {
@@ -11,11 +12,7 @@ const getNotificationFromDB = catchAsync(async (req, res) => {
           statusCode: StatusCodes.OK,
           success: true,
           message: 'Notifications Retrieved Successfully',
-          data: {
-               meta: result?.meta,
-               unreadCount: result?.unreadCount,
-               result,
-          },
+          data: result,
      });
 });
 
@@ -31,9 +28,9 @@ const adminNotificationFromDB = catchAsync(async (req, res) => {
      });
 });
 
-const readNotification = catchAsync(async (req, res) => {
+const readAllNotificationAsUser = catchAsync(async (req, res) => {
      const user: any = req.user;
-     const result = await NotificationService.readNotificationToDB(user);
+     const result = await NotificationService.readAllNotificationAsUserToDB(user);
 
      sendResponse(res, {
           statusCode: StatusCodes.OK,
@@ -44,7 +41,7 @@ const readNotification = catchAsync(async (req, res) => {
 });
 const readNotificationSingle = catchAsync(async (req, res) => {
      const { id } = req.params;
-     const result = await NotificationService.readNotificationSingleToDB(id);
+     const result = await NotificationService.readNotificationSingleToDB(id, req.user as JwtPayload);
 
      sendResponse(res, {
           statusCode: StatusCodes.OK,
@@ -54,8 +51,8 @@ const readNotificationSingle = catchAsync(async (req, res) => {
      });
 });
 
-const adminReadNotification = catchAsync(async (req, res) => {
-     const result = await NotificationService.adminReadNotificationToDB();
+const readAlladminReadNotifications = catchAsync(async (req, res) => {
+     const result = await NotificationService.readAlladminReadNotificationsToDB(req.user as JwtPayload);
 
      sendResponse(res, {
           statusCode: StatusCodes.OK,
@@ -65,8 +62,8 @@ const adminReadNotification = catchAsync(async (req, res) => {
      });
 });
 // send admin notifications to the users accaunts
-const sendAdminNotification = catchAsync(async (req, res) => {
-     const result = await NotificationService.adminSendNotificationFromDB(req.body);
+const sendNotificationAdminByAdmin = catchAsync(async (req, res) => {
+     const result = await NotificationService.sendNotificationAdminByAdminToDB(req.body);
      sendResponse(res, {
           statusCode: StatusCodes.OK,
           success: true,
@@ -78,8 +75,8 @@ const sendAdminNotification = catchAsync(async (req, res) => {
 export const NotificationController = {
      adminNotificationFromDB,
      getNotificationFromDB,
-     readNotification,
-     adminReadNotification,
-     sendAdminNotification,
+     readAllNotificationAsUser,
+     readAlladminReadNotifications,
+     sendNotificationAdminByAdmin,
      readNotificationSingle,
 };

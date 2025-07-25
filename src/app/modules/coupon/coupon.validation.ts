@@ -1,11 +1,11 @@
 import { z } from 'zod';
+import { objectIdSchemaOptional } from '../user/user.validation';
 import { COUPON_DISCOUNT_TYPE } from './coupon.enums';
-import { objectIdSchema } from '../user/user.validation';
 
 export const createCouponSchema = z.object({
     body: z.object({
         code: z.string(),
-        serviceCategory: objectIdSchema,
+        serviceCategory: objectIdSchemaOptional,
         discountType: z.enum([...Object.values(COUPON_DISCOUNT_TYPE)] as [string, ...string[]]),
         discountValue: z.number(),
         maxDiscountAmount: z.number().optional(),
@@ -16,15 +16,15 @@ export const createCouponSchema = z.object({
         description: z.string().optional(),
         usageLimit: z.number().optional(),
         userUsageLimitPerUser: z.number().optional(),
-        applicableServices: z.array(objectIdSchema).optional(),
-        applicableServiceCategories: z.array(objectIdSchema).optional(),
+        applicableServices: z.array(objectIdSchemaOptional).optional(),
+        applicableServiceCategories: z.array(objectIdSchemaOptional).optional(),
     })
 });
 
 export const updateCouponSchema = z.object({
     body: z.object({
         code: z.string().optional(),
-        serviceCategory: objectIdSchema,
+        serviceCategory: objectIdSchemaOptional,
         discountType: z.enum([...Object.values(COUPON_DISCOUNT_TYPE)] as [string, ...string[]]).optional(),
         discountValue: z.number().optional(),
         maxDiscountAmount: z.number().optional(),
@@ -35,14 +35,14 @@ export const updateCouponSchema = z.object({
         description: z.string().optional(),
         usageLimit: z.number().optional(),
         userUsageLimitPerUser: z.number().optional(),
-        applicableServices: z.array(objectIdSchema).optional(),
-        applicableServiceCategories: z.array(objectIdSchema).optional(),
+        applicableServices: z.array(objectIdSchemaOptional).optional(),
+        applicableServiceCategories: z.array(objectIdSchemaOptional).optional(),
     })
 });
 const getCouponByCodeValidationSchema = z.object({
     body: z.object({
         orderAmount: z.number(),
-        service: objectIdSchema,
+        service: objectIdSchemaOptional,
     })
 })
 

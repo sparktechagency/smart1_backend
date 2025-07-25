@@ -3,4 +3,5 @@ export enum NOTIFICATION_MODEL_TYPE {
     PAYMENT = 'Payment',
     MESSAGE = 'Message',
     BOOKING = 'Booking',
+    NOTIFICATION = 'Notification',
 }
