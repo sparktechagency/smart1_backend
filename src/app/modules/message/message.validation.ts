@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MessageReaction } from './message.enum';
 
 const createMessageSchema = z.object({
     body: z.object({
@@ -8,6 +9,23 @@ const createMessageSchema = z.object({
     })
 })
 
+const reactionSchema = z.object({
+    body: z.object({
+        messageId: z.string(),
+        emoji: z.nativeEnum(MessageReaction),
+    })
+})
+
+const replyMessageSchema = z.object({
+    body: z.object({
+        messageId: z.string(),
+        text: z.string().optional(),
+        image: z.string().optional(),
+    })
+})
+
 export const messageValidation = {
-    createMessageSchema
+    createMessageSchema,
+    reactionSchema,
+    replyMessageSchema
 }

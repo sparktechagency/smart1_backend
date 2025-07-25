@@ -39,4 +39,136 @@ const getMessage = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-export const MessageController = { sendMessage, getMessage };
+// Reaction controllers
+const addRemoveEditReaction = catchAsync(async (req: Request, res: Response) => {
+     const user = req?.user as IJwtPayload;
+     const { messageId } = req.params;
+     const { emoji } = req.body;
+
+     const message = await MessageService.addRemoveEditReactionToDB(messageId, user.id, emoji);
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Reaction added successfully',
+          data: message,
+     });
+});
+
+const removeReaction = catchAsync(async (req: Request, res: Response) => {
+     const user = req?.user as IJwtPayload;
+     const { messageId } = req.params;
+     const { emoji } = req.body;
+
+     const message = await MessageService.removeReactionFromDB(messageId, user.id, emoji);
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Reaction removed successfully',
+          data: message,
+     });
+});
+
+// Pin controllers
+const pinMessage = catchAsync(async (req: Request, res: Response) => {
+     const user = req?.user as IJwtPayload;
+     const { messageId } = req.params;
+
+     const message = await MessageService.pinMessageToDB(messageId, user.id);
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Message pinned successfully',
+          data: message,
+     });
+});
+
+const unpinMessage = catchAsync(async (req: Request, res: Response) => {
+     const { messageId } = req.params;
+
+     const message = await MessageService.unpinMessageFromDB(messageId);
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Message unpinned successfully',
+          data: message,
+     });
+});
+
+const getPinnedMessages = catchAsync(async (req: Request, res: Response) => {
+     const { chatId } = req.params;
+
+     const messages = await MessageService.getPinnedMessagesFromDB(chatId);
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Pinned messages retrieved successfully',
+          data: messages,
+     });
+});
+
+// Delete controllers
+const deleteMessageForMe = catchAsync(async (req: Request, res: Response) => {
+     const user = req?.user as IJwtPayload;
+     const { messageId } = req.params;
+
+     await MessageService.deleteMessageForMeByMessageId(messageId, user.id);
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Message deleted for you successfully',
+          data: null,
+     });
+});
+
+const deleteMessageForEveryone = catchAsync(async (req: Request, res: Response) => {
+     const user = req?.user as IJwtPayload;
+     const { messageId } = req.params;
+
+     await MessageService.deleteMessageForEveryoneByMessageId(messageId, user.id);
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Message deleted for everyone successfully',
+          data: null,
+     });
+});
+
+const deleteChatForMe = catchAsync(async (req: Request, res: Response) => {
+     const user = req?.user as IJwtPayload;
+     const { chatId } = req.params;
+
+     await MessageService.deleteChatForMeByChatId(chatId, user.id);
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Chat deleted for you successfully',
+          data: null,
+     });
+});
+
+const replyMessage = catchAsync(async (req: Request, res: Response) => {
+     const user = req?.user as IJwtPayload;
+     const { messageId } = req.params;
+     const { text, image } = req.body;
+
+     const message = await MessageService.replyMessageToDB(messageId, user.id, text, image);
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Reply message sent successfully',
+          data: message,
+     });
+});
+
+export const MessageController = {
+     sendMessage,
+     getMessage,
+     addRemoveEditReaction,
+     pinMessage,
+     unpinMessage,
+     getPinnedMessages,
+     deleteMessageForMe,
+     deleteMessageForEveryone,
+     deleteChatForMe,
+     replyMessage
+};
