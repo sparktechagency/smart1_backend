@@ -12,6 +12,8 @@ import { BookingRoutes } from '../app/modules/booking/booking.route';
 import { BidRoutes } from '../app/modules/Bid/Bid.route';
 import { PaymentRoutes } from '../app/modules/Payment/Payment.route';
 import { NotificationRoutes } from '../app/modules/notification/notification.routes';
+import { ChatRoutes } from '../app/modules/chat/chat.routes';
+import { MessageRoutes } from '../app/modules/message/message.routes';
 const router = express.Router();
 const routes = [
      {
@@ -65,6 +67,14 @@ const routes = [
      {
           path: '/notification',
           route: NotificationRoutes,
+     },
+     {
+          path: '/chat',
+          route: ChatRoutes,
+     },
+     {
+          path: '/message',
+          route: MessageRoutes,
      },
 ];
 
