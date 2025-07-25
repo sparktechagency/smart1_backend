@@ -25,7 +25,7 @@ router.delete('/delete-for-everyone/:messageId', auth(USER_ROLES.USER, USER_ROLE
 router.delete('/chat/delete-for-me/:chatId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.deleteChatForMe);
 
 // replyMessageRoute
-router.post('/reply/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(messageValidation.replyMessageSchema), MessageController.replyMessage);
+router.post('/reply/:messageId', fileUploadHandler(), auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(messageValidation.replyMessageSchema), MessageController.replyMessage);
 
 router.get('/:id', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.getMessage);
 

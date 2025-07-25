@@ -9,6 +9,8 @@ export interface IReaction {
 
 export interface IMessage {
      chatId: Types.ObjectId;
+     replyTo?: Types.ObjectId | null;
+     replies?: Types.ObjectId[];
      sender: Types.ObjectId;
      text?: string;
      image?: string;

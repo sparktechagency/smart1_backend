@@ -18,9 +18,11 @@ const reactionSchema = z.object({
 
 const replyMessageSchema = z.object({
     body: z.object({
-        messageId: z.string(),
         text: z.string().optional(),
         image: z.string().optional(),
+    }),
+    params: z.object({
+        messageId: z.string(),
     })
 })
 

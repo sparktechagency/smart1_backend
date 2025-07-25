@@ -148,10 +148,21 @@ const deleteChatForMe = catchAsync(async (req: Request, res: Response) => {
 
 const replyMessage = catchAsync(async (req: Request, res: Response) => {
      const user = req?.user as IJwtPayload;
-     const { messageId } = req.params;
-     const { text, image } = req.body;
 
-     const message = await MessageService.replyMessageToDB(messageId, user.id, text, image);
+     let image;
+     if (req.files && 'image' in req.files && req.files.image[0]) {
+          image = `/image/${req.files.image[0].filename}`;
+     }
+
+     const payload = {
+          ...req.body,
+          replyTo: req.params.messageId,
+          image: image,
+          sender: user.id,
+     };
+
+     const message = await MessageService.replyMessageToDB(payload);
+
      sendResponse(res, {
           statusCode: StatusCodes.OK,
           success: true,

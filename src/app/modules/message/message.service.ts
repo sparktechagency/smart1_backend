@@ -2,11 +2,11 @@ import { StatusCodes } from 'http-status-codes';
 import { Types } from 'mongoose';
 import AppError from '../../../errors/AppError';
 import unlinkFile from '../../../shared/unlinkFile';
+import { IJwtPayload } from '../auth/auth.interface';
 import { Chat } from '../chat/chat.model';
 import { MessageReaction } from './message.enum';
 import { IMessage, IReaction } from './message.interface';
 import { Message } from './message.model';
-import { IJwtPayload } from '../auth/auth.interface';
 
 const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> => {
      // handle chatId exists
@@ -59,7 +59,7 @@ const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> =>
 
 
 const getMessageFromDB = async (id: any, user: IJwtPayload): Promise<IMessage[]> => {
-     const messages = await Message.find({ chatId: id }).sort({ createdAt: -1 });
+     const messages = await Message.find({ chatId: id }).sort({ createdAt: -1 }).populate('replies', 'text image');
      // if no message
      if (!messages || messages.length === 0) {
           throw new AppError(StatusCodes.NOT_FOUND, 'No message found');
@@ -82,6 +82,7 @@ const getMessageFromDB = async (id: any, user: IJwtPayload): Promise<IMessage[]>
      if (filteredMessages.length === 0) {
           throw new AppError(StatusCodes.NOT_FOUND, 'No message found');
      }
+
 
      return filteredMessages;
 };
@@ -366,26 +367,32 @@ const getPinnedMessagesFromDB = async (chatId: string): Promise<IMessage[]> => {
      return pinnedMessages;
 };
 
-const replyMessageToDB = async (messageId: string, userId: string, text: string, image: string): Promise<IMessage> => {
-     const message = await Message.findById(messageId);
-     if (!message) {
+const replyMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> => {
+     const parentMessage = await Message.findById(payload.replyTo);
+     if (!parentMessage) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Message not found');
      }
 
      const replyMessage: Partial<IMessage> = {
-          chatId: message.chatId,
-          sender: new Types.ObjectId(userId),
-          text,
-          image,
+          chatId: parentMessage.chatId,
+          replyTo: parentMessage._id,
+          sender: new Types.ObjectId(payload.sender),
+          text: payload.text,
+          image: payload.image,
      };
 
      const newMessage = await Message.create(replyMessage);
+
+     // add reply to parent message
+     parentMessage.replies?.push(newMessage._id);
+
+     await parentMessage.save();
 
      // Emit socket event
      //@ts-ignore
      const io = global.io;
      if (io) {
-          io.emit(`getMessage::${message.chatId}`, newMessage);
+          io.emit(`getMessage::${parentMessage.chatId}`, newMessage);
      }
 
      return newMessage;

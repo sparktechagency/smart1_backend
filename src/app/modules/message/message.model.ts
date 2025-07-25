@@ -26,6 +26,18 @@ const messageSchema = new Schema<IMessage, MessageModel>(
                required: true,
                ref: 'Chat',
           },
+          replyTo: {
+               type: Schema.Types.ObjectId,
+               ref: 'Message',
+               required: false,
+               default: null,
+          },
+          replies: {
+               type: [Schema.Types.ObjectId],
+               ref: 'Message',
+               required: false,
+               default: [],
+          },
           sender: {
                type: Schema.Types.ObjectId,
                required: true,
