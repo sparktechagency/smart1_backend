@@ -25,9 +25,6 @@ router.post('/stripe/booking/:bookingId', auth(USER_ROLES.USER), PaymentControll
 router.get('/success', PaymentController.successPage)
 router.get('/cancel', PaymentController.cancelPage);
 
-router.patch('/:id', fileUploadHandler(),
-    parseFileData(FOLDER_NAMES.IMAGE), auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
-    validateRequest(PaymentValidation.updatePaymentZodSchema), PaymentController.updatePayment);
 
 router.delete('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), PaymentController.deletePayment);
 

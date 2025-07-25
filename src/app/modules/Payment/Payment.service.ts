@@ -29,14 +29,7 @@ const getAllUnpaginatedPayments = async (): Promise<IPayment[]> => {
      return result;
 };
 
-const updatePayment = async (id: string, payload: Partial<IPayment>): Promise<IPayment | null> => {
-     const isExist = await Payment.findById(id);
-     if (!isExist) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Payment not found.');
-     }
 
-     return await Payment.findByIdAndUpdate(id, payload, { new: true });
-};
 
 const deletePayment = async (id: string): Promise<IPayment | null> => {
      const result = await Payment.findById(id);
@@ -185,7 +178,6 @@ export const PaymentService = {
      createPayment,
      getAllPayments,
      getAllUnpaginatedPayments,
-     updatePayment,
      deletePayment,
      hardDeletePayment,
      getPaymentById,

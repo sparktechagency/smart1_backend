@@ -39,17 +39,7 @@ const getAllUnpaginatedPayments = catchAsync(async (req: Request, res: Response)
      });
 });
 
-const updatePayment = catchAsync(async (req: Request, res: Response) => {
-     const { id } = req.params;
-     const result = await PaymentService.updatePayment(id, req.body);
 
-     sendResponse<IPayment>(res, {
-          statusCode: 200,
-          success: true,
-          message: 'Payment updated successfully',
-          data: result || undefined,
-     });
-});
 
 const deletePayment = catchAsync(async (req: Request, res: Response) => {
      const { id } = req.params;
@@ -116,7 +106,6 @@ export const PaymentController = {
      createPayment,
      getAllPayments,
      getAllUnpaginatedPayments,
-     updatePayment,
      deletePayment,
      hardDeletePayment,
      getPaymentById,
