@@ -69,11 +69,11 @@ const removeReaction = catchAsync(async (req: Request, res: Response) => {
 });
 
 // Pin controllers
-const pinMessage = catchAsync(async (req: Request, res: Response) => {
+const pinUpinMessageToggler = catchAsync(async (req: Request, res: Response) => {
      const user = req?.user as IJwtPayload;
      const { messageId } = req.params;
 
-     const message = await MessageService.pinMessageToDB(messageId, user.id);
+     const message = await MessageService.pinUpinMessageTogglerToDB(messageId, user.id);
      sendResponse(res, {
           statusCode: StatusCodes.OK,
           success: true,
@@ -82,17 +82,7 @@ const pinMessage = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-const unpinMessage = catchAsync(async (req: Request, res: Response) => {
-     const { messageId } = req.params;
 
-     const message = await MessageService.unpinMessageFromDB(messageId);
-     sendResponse(res, {
-          statusCode: StatusCodes.OK,
-          success: true,
-          message: 'Message unpinned successfully',
-          data: message,
-     });
-});
 
 const getPinnedMessages = catchAsync(async (req: Request, res: Response) => {
      const { chatId } = req.params;
@@ -175,8 +165,7 @@ export const MessageController = {
      sendMessage,
      getMessage,
      addRemoveEditReaction,
-     pinMessage,
-     unpinMessage,
+     pinUpinMessageToggler,
      getPinnedMessages,
      deleteMessageForMe,
      deleteMessageForEveryone,

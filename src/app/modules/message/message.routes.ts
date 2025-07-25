@@ -15,8 +15,7 @@ router.post('/', fileUploadHandler(), auth(USER_ROLES.USER, USER_ROLES.SERVICE_P
 router.patch('/reaction/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(messageValidation.reactionSchema), MessageController.addRemoveEditReaction);
 
 // Pin routes
-router.patch('/pin/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.pinMessage);
-router.patch('/unpin/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.unpinMessage);
+router.patch('/pin/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.pinUpinMessageToggler);
 router.get('/pinned/:chatId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.getPinnedMessages);
 
 // Delete routes

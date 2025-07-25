@@ -210,14 +210,36 @@ const removeReactionFromDB = async (messageId: string, userId: string, emoji: Me
 };
 
 // Pin methods
-const pinMessageToDB = async (messageId: string, userId: string): Promise<IMessage> => {
+const pinUpinMessageTogglerToDB = async (messageId: string, userId: string): Promise<IMessage> => {
      const message = await Message.findById(messageId);
      if (!message) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Message not found');
      }
 
      if (message.isPinned) {
-          throw new AppError(StatusCodes.BAD_REQUEST, 'Message is already pinned');
+          const updatedMessage = await Message.findByIdAndUpdate(
+               messageId,
+               {
+                    isPinned: false,
+                    $unset: { pinnedBy: 1, pinnedAt: 1 },
+               },
+               { new: true }
+          );
+
+          if (!updatedMessage) {
+               throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to unpin message');
+          }
+
+          // Emit socket event
+          //@ts-ignore
+          const io = global.io;
+          if (io) {
+               io.emit(`messageUnpinned::${message.chatId}`, {
+                    messageId,
+               });
+          }
+
+          return updatedMessage;
      }
 
      const updatedMessage = await Message.findByIdAndUpdate(
@@ -248,40 +270,7 @@ const pinMessageToDB = async (messageId: string, userId: string): Promise<IMessa
      return updatedMessage;
 };
 
-const unpinMessageFromDB = async (messageId: string): Promise<IMessage> => {
-     const message = await Message.findById(messageId);
-     if (!message) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Message not found');
-     }
 
-     if (!message.isPinned) {
-          throw new AppError(StatusCodes.BAD_REQUEST, 'Message is not pinned');
-     }
-
-     const updatedMessage = await Message.findByIdAndUpdate(
-          messageId,
-          {
-               isPinned: false,
-               $unset: { pinnedBy: 1, pinnedAt: 1 },
-          },
-          { new: true }
-     );
-
-     if (!updatedMessage) {
-          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to unpin message');
-     }
-
-     // Emit socket event
-     //@ts-ignore
-     const io = global.io;
-     if (io) {
-          io.emit(`messageUnpinned::${message.chatId}`, {
-               messageId,
-          });
-     }
-
-     return updatedMessage;
-};
 
 // Delete methods
 const deleteMessageForMeByMessageId = async (messageId: string, userId: string): Promise<void> => {
@@ -388,6 +377,9 @@ const getPinnedMessagesFromDB = async (chatId: string): Promise<IMessage[]> => {
           .populate('pinnedBy', 'name email')
           .sort({ pinnedAt: -1 });
 
+     if (!pinnedMessages || pinnedMessages.length === 0) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'No pinned messages found');
+     }
      return pinnedMessages;
 };
 
@@ -406,6 +398,13 @@ const replyMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> =
      };
 
      const newMessage = await Message.create(replyMessage);
+
+     if (!newMessage) {
+          if (payload.image) {
+               unlinkFile(payload.image);
+          }
+          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to send reply message');
+     }
 
      // add reply to parent message
      parentMessage.replies?.push(newMessage._id);
@@ -427,8 +426,7 @@ export const MessageService = {
      getMessageFromDB,
      addRemoveEditReactionToDB,
      removeReactionFromDB,
-     pinMessageToDB,
-     unpinMessageFromDB,
+     pinUpinMessageTogglerToDB,
      deleteMessageForMeByMessageId,
      deleteMessageForEveryoneByMessageId,
      deleteChatForMeByChatId,
