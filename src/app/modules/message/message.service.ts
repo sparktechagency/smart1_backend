@@ -96,11 +96,39 @@ const addRemoveEditReactionToDB = async (messageId: string, userId: string, emoj
 
      // Check if user already reacted with this emoji
      const existingReaction = message.reactions?.find(
-          (reaction) => reaction.userId.toString() === userId && reaction.emoji === emoji
+          (reaction) => reaction.userId.toString() == userId
      );
 
-     if (existingReaction) {
-          // throw new AppError(StatusCodes.BAD_REQUEST, 'You have already reacted with this emoji');
+     if (!existingReaction) {
+          // Add new reaction
+          const newReaction: IReaction = {
+               userId: new Types.ObjectId(userId),
+               emoji,
+               createdAt: new Date(),
+          };
+
+          const updatedMessage = await Message.findByIdAndUpdate(
+               messageId,
+               { $push: { reactions: newReaction } },
+               { new: true }
+          ).populate('reactions.userId', 'name email');
+
+          if (!updatedMessage) {
+               throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to add reaction');
+          }
+
+          // Emit socket event
+          //@ts-ignore
+          const io = global.io;
+          if (io) {
+               io.emit(`reactionAdded::${message.chatId}`, {
+                    messageId,
+                    reaction: newReaction,
+               });
+          }
+
+          return updatedMessage;
+     } else if (existingReaction && existingReaction.emoji == emoji) {
           const updatedMessage = await Message.findByIdAndUpdate(
                messageId,
                { $pull: { reactions: { userId: new Types.ObjectId(userId), emoji } } },
@@ -123,36 +151,32 @@ const addRemoveEditReactionToDB = async (messageId: string, userId: string, emoj
           }
 
           return updatedMessage;
+     } else {
+          const updatedMessage = await Message.findOneAndUpdate(
+               { _id: messageId, 'reactions.userId': userId },
+               { $set: { 'reactions.$.emoji': emoji } },
+               { new: true }
+          ).populate('reactions.userId', 'name email');
+
+          if (!updatedMessage) {
+               throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update reaction');
+          }
+
+          // Emit socket event
+          //@ts-ignore
+          const io = global.io;
+          if (io) {
+               io.emit(`reactionUpdated::${message.chatId}`, {
+                    messageId,
+                    userId,
+                    emoji,
+               });
+          }
+
+          return updatedMessage;
      }
 
-     // Add new reaction
-     const newReaction: IReaction = {
-          userId: new Types.ObjectId(userId),
-          emoji,
-          createdAt: new Date(),
-     };
 
-     const updatedMessage = await Message.findByIdAndUpdate(
-          messageId,
-          { $push: { reactions: newReaction } },
-          { new: true }
-     ).populate('reactions.userId', 'name email');
-
-     if (!updatedMessage) {
-          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to add reaction');
-     }
-
-     // Emit socket event
-     //@ts-ignore
-     const io = global.io;
-     if (io) {
-          io.emit(`reactionAdded::${message.chatId}`, {
-               messageId,
-               reaction: newReaction,
-          });
-     }
-
-     return updatedMessage;
 };
 
 const removeReactionFromDB = async (messageId: string, userId: string, emoji: MessageReaction): Promise<IMessage> => {

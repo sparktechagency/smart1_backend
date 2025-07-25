@@ -12,7 +12,7 @@ const router = express.Router();
 router.post('/', fileUploadHandler(), auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(messageValidation.createMessageSchema), MessageController.sendMessage);
 
 // Reaction routes
-router.post('/reaction/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(messageValidation.reactionSchema), MessageController.addRemoveEditReaction);
+router.patch('/reaction/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(messageValidation.reactionSchema), MessageController.addRemoveEditReaction);
 
 // Pin routes
 router.patch('/pin/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.pinMessage);

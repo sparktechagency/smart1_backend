@@ -11,8 +11,10 @@ const createMessageSchema = z.object({
 
 const reactionSchema = z.object({
     body: z.object({
-        messageId: z.string(),
         emoji: z.nativeEnum(MessageReaction),
+    }),
+    params: z.object({
+        messageId: z.string(),
     })
 })
 
