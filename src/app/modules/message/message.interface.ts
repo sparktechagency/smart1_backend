@@ -1,13 +1,13 @@
 import { Model, Types } from 'mongoose';
 import { MessageReaction } from './message.enum';
 
-export type IReaction = {
+export interface IReaction {
      userId: Types.ObjectId;
      emoji: MessageReaction;
      createdAt?: Date;
 };
 
-export type IMessage = {
+export interface IMessage {
      chatId: Types.ObjectId;
      sender: Types.ObjectId;
      text?: string;

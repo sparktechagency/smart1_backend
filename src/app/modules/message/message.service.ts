@@ -6,6 +6,7 @@ import { Chat } from '../chat/chat.model';
 import { MessageReaction } from './message.enum';
 import { IMessage, IReaction } from './message.interface';
 import { Message } from './message.model';
+import { IJwtPayload } from '../auth/auth.interface';
 
 const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> => {
      // handle chatId exists
@@ -38,9 +39,51 @@ const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> =>
      return response;
 };
 
-const getMessageFromDB = async (id: any): Promise<IMessage[]> => {
+// const getMessageFromDB = async (id: any, user: IJwtPayload): Promise<IMessage[]> => {
+//      const messages = await Message.find({ chatId: id }).sort({ createdAt: -1 });
+//      // if no message
+//      if (!messages || messages.length === 0) {
+//           throw new AppError(StatusCodes.NOT_FOUND, 'No message found');
+//      }
+//      // if message deleted for everyone
+//      if (messages.deletedForEveryone) {
+//           throw new AppError(StatusCodes.NOT_FOUND, 'No message found');
+//      }
+//      // if message deleted for me
+//      if (messages.deletedForUsers.includes(new Types.ObjectId(user.id))) {
+//           throw new AppError(StatusCodes.NOT_FOUND, 'No message found');
+//      }
+//      return messages;
+// };
+
+
+
+const getMessageFromDB = async (id: any, user: IJwtPayload): Promise<IMessage[]> => {
      const messages = await Message.find({ chatId: id }).sort({ createdAt: -1 });
-     return messages;
+     // if no message
+     if (!messages || messages.length === 0) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'No message found');
+     }
+
+     // Filter out messages that are deleted for everyone or for the current user
+     const filteredMessages = messages.filter(message => {
+          // Skip messages deleted for everyone
+          if (message.deletedForEveryone) {
+               return false;
+          }
+          // Skip messages deleted for the current user
+          if (message.deletedForUsers && message.deletedForUsers.includes(new Types.ObjectId(user.id))) {
+               return false;
+          }
+          return true;
+     });
+
+     // If no messages remain after filtering
+     if (filteredMessages.length === 0) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'No message found');
+     }
+
+     return filteredMessages;
 };
 
 // Reaction methods
