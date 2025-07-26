@@ -19,6 +19,8 @@ router.get('/', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController
 
 router.get('/unpaginated', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.getAllUnpaginatedReports);
 
+router.get('/booking/:bookingId', ReportController.getAllReportsByBookingId);
+
 router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.hardDeleteReport);
 
 router.patch('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), fileUploadHandler(),

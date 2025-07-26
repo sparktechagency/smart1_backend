@@ -185,6 +185,13 @@ const getReportById = async (id: string): Promise<IReport | null> => {
      return result;
 };
 
+const getAllReportsByBookingId = async (bookingId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IReport[]; }> => {
+     const queryBuilder = new QueryBuilder(Report.find(), query);
+     const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
+     const meta = await queryBuilder.countTotal();
+     return { meta, result };
+};
+
 export const ReportService = {
      createReport,
      getAllReports,
@@ -192,5 +199,6 @@ export const ReportService = {
      updateReport,
      deleteReport,
      hardDeleteReport,
-     getReportById
+     getReportById,
+     getAllReportsByBookingId
 };

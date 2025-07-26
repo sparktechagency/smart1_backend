@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
+import { IJwtPayload } from '../auth/auth.interface';
 import { IReport } from './Report.interface';
 import { ReportService } from './Report.service';
-import { IJwtPayload } from '../auth/auth.interface';
 
 const createReport = catchAsync(async (req: Request, res: Response) => {
      const result = await ReportService.createReport(req.body, req.user as IJwtPayload);
@@ -86,6 +86,18 @@ const getReportById = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
+const getAllReportsByBookingId = catchAsync(async (req: Request, res: Response) => {
+     const { bookingId } = req.params;
+     const result = await ReportService.getAllReportsByBookingId(bookingId, req.query);
+
+     sendResponse(res, {
+          statusCode: 200,
+          success: true,
+          message: 'Reports retrieved successfully',
+          data: result,
+     });
+});
+
 export const ReportController = {
      createReport,
      getAllReports,
@@ -93,5 +105,6 @@ export const ReportController = {
      updateReport,
      deleteReport,
      hardDeleteReport,
-     getReportById
+     getReportById,
+     getAllReportsByBookingId,
 };
