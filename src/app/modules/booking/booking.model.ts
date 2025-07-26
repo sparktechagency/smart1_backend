@@ -157,6 +157,7 @@ const bookingSchema = new Schema<IBooking>(
                ref: 'Payment',
                default: null,
           },
+          reports: [{ type: Schema.Types.ObjectId, ref: 'Report', default: [] }],
      },
      {
           timestamps: true,

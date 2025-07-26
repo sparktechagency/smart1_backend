@@ -1,18 +1,19 @@
-import { FAQType } from "./Faq.enum";
 import { Types } from "mongoose";
-export interface IFaq {
+import { ReportType } from "./Report.enum";
+
+export interface IReport {
      id: Types.ObjectId;
      createdBy: Types.ObjectId;
-     question: string;
-     answer: string;
-     type: FAQType;
+     description: string;
+     type: ReportType;
      refferenceId: Types.ObjectId;
+     images: string[];
      createdAt: Date;
      updatedAt: Date;
      isDeleted: boolean;
      deletedAt?: Date;
 }
 
-export type IFaqFilters = {
+export type IReportFilters = {
      searchTerm?: string;
 };

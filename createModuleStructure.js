@@ -329,4 +329,4 @@ function capitalize(str) {
 }
 
 // Example usage: Create a new module called 'sliderImage'
-createModuleStructure('Contact');
+createModuleStructure('Report');

@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { z } from 'zod';
-import { objectIdSchemaMendatory } from '../user/user.validation';
+import { objectIdSchemaMendatory, objectIdSchemaOptional } from '../user/user.validation';
 import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 
 // Validation schema for order product
@@ -38,6 +38,7 @@ export const createBookingSchema = z.object({
       required_error: 'Payment method is required',
       invalid_type_error: 'Invalid payment method',
     }),
+    reports: z.array(objectIdSchemaOptional).optional(),
   }),
 });
 

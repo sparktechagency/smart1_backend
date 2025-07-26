@@ -1,23 +1,15 @@
 import { StatusCodes } from 'http-status-codes';
+import mongoose from 'mongoose';
 import AppError from '../../../errors/AppError';
+import QueryBuilder from '../../builder/QueryBuilder';
+import { Service } from '../Service/Service.model';
+import { IJwtPayload } from '../auth/auth.interface';
 import { IFaq } from './Faq.interface';
 import { Faq } from './Faq.model';
-import QueryBuilder from '../../builder/QueryBuilder';
-import mongoose from 'mongoose';
-import { Service } from '../Service/Service.model';
 
-// const createFaq = async (payload: IFaq): Promise<IFaq> => {
-//      const isExistRefference = await mongoose.model(payload.type).findById(payload.refferenceId);
-//      if (!isExistRefference) {
-//           throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid refferenceId.');
-//      }
-//      const result = await Faq.create(payload);
-//      isExistRefference.faqs.push(result._id);
-//      await isExistRefference.save();
-//      return result;
-// };
 
-const createFaq = async (payload: IFaq): Promise<IFaq> => {
+
+const createFaq = async (payload: IFaq, user: IJwtPayload): Promise<IFaq> => {
      // Start a session for the transaction
      const session = await mongoose.startSession();
 
@@ -33,6 +25,7 @@ const createFaq = async (payload: IFaq): Promise<IFaq> => {
           }
 
           // Step 2: Create the FAQ document
+          payload.createdBy = new mongoose.Types.ObjectId(user.id);
           const result = await Faq.create([payload], { session });
 
           // Step 3: Update the referenced document (add the newly created FAQ to `faqs` array)
@@ -56,7 +49,7 @@ const createFaq = async (payload: IFaq): Promise<IFaq> => {
 };
 
 const getAllFaqs = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }> => {
-     const queryBuilder = new QueryBuilder(Faq.find().populate('refferenceId','name'), query);
+     const queryBuilder = new QueryBuilder(Faq.find().populate('refferenceId', 'name'), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      const meta = await queryBuilder.countTotal();
      return { meta, result };
@@ -76,24 +69,74 @@ const updateFaq = async (id: string, payload: Partial<IFaq>): Promise<IFaq | nul
      return await Faq.findByIdAndUpdate(id, payload, { new: true });
 };
 
+
 const deleteFaq = async (id: string): Promise<IFaq | null> => {
-     const result = await Faq.findById(id);
-     if (!result) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Faq not found.');
+     const session = await mongoose.startSession();
+     session.startTransaction();
+
+     try {
+          const result = await Faq.findById(id).session(session);
+          if (!result) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Faq not found.');
+          }
+
+          result.isDeleted = true;
+          result.deletedAt = new Date();
+          await result.save({ session });
+
+          if (result.refferenceId) {
+               const refModel = mongoose.model(result.type);
+               const isExistRefference = await refModel.findById(result.refferenceId).session(session);
+
+               if (isExistRefference) {
+                    isExistRefference.faqs.pull(id);
+                    await isExistRefference.save({ session });
+               }
+          }
+
+          await session.commitTransaction();
+          session.endSession();
+
+          return result;
+     } catch (err) {
+          await session.abortTransaction();
+          session.endSession();
+          throw err;
      }
-     result.isDeleted = true;
-     result.deletedAt = new Date();
-     await result.save();
-     return result;
 };
 
+
 const hardDeleteFaq = async (id: string): Promise<IFaq | null> => {
-     const result = await Faq.findByIdAndDelete(id);
-     if (!result) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Faq not found.');
+     const session = await mongoose.startSession();
+     session.startTransaction();
+
+     try {
+          const result = await Faq.findByIdAndDelete(id).session(session);
+          if (!result) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Faq not found.');
+          }
+
+          if (result.refferenceId) {
+               const refModel = mongoose.model(result.type);
+               const isExistRefference = await refModel.findById(result.refferenceId).session(session);
+
+               if (isExistRefference) {
+                    isExistRefference.faqs.pull(id);
+                    await isExistRefference.save({ session });
+               }
+          }
+
+          await session.commitTransaction();
+          session.endSession();
+
+          return result;
+     } catch (err) {
+          await session.abortTransaction();
+          session.endSession();
+          throw err;
      }
-     return result;
 };
+
 
 const getFaqById = async (id: string): Promise<IFaq | null> => {
      const result = await Faq.findById(id);

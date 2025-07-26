@@ -1,30 +1,31 @@
 import { Schema, model } from 'mongoose';
-import { IFaq } from './Faq.interface';
-import { FAQType } from './Faq.enum';
+import { ReportType } from './Report.enum';
+import { IReport } from './Report.interface';
 
-const FaqSchema = new Schema<IFaq>({
+
+const ReportSchema = new Schema<IReport>({
      createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-     question: { type: String, required: true },
-     answer: { type: String, required: true },
-     type: { type: String, enum: Object.values(FAQType), required: true },
+     description: { type: String, required: true },
+     type: { type: String, enum: Object.values(ReportType), required: true },
      refferenceId: { type: Schema.Types.ObjectId, refPath: 'type', required: true },
+     images: [{ type: String, required: true }],
      isDeleted: { type: Boolean, default: false },
      deletedAt: { type: Date },
 }, { timestamps: true });
 
-FaqSchema.pre('find', function (next) {
+ReportSchema.pre('find', function (next) {
      this.find({ isDeleted: false });
      next();
 });
 
-FaqSchema.pre('findOne', function (next) {
+ReportSchema.pre('findOne', function (next) {
      this.findOne({ isDeleted: false });
      next();
 });
 
-FaqSchema.pre('aggregate', function (next) {
+ReportSchema.pre('aggregate', function (next) {
      this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
      next();
 });
 
-export const Faq = model<IFaq>('Faq', FaqSchema);
+export const Report = model<IReport>('Report', ReportSchema);

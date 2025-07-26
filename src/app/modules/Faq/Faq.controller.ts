@@ -3,9 +3,10 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { IFaq } from './Faq.interface';
 import { FaqService } from './Faq.service';
+import { IJwtPayload } from '../auth/auth.interface';
 
 const createFaq = catchAsync(async (req: Request, res: Response) => {
-     const result = await FaqService.createFaq(req.body);
+     const result = await FaqService.createFaq(req.body, req.user as IJwtPayload);
 
      sendResponse<IFaq>(res, {
           statusCode: 200,
@@ -87,7 +88,7 @@ const getFaqById = catchAsync(async (req: Request, res: Response) => {
 
 const getAllFaqsByServiceId = catchAsync(async (req: Request, res: Response) => {
      const { serviceId } = req.params;
-     const result = await FaqService.getAllFaqsByServiceId(serviceId,req.query);
+     const result = await FaqService.getAllFaqsByServiceId(serviceId, req.query);
 
      sendResponse<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }>(res, {
           statusCode: 200,
@@ -95,8 +96,8 @@ const getAllFaqsByServiceId = catchAsync(async (req: Request, res: Response) => 
           message: 'Faqs retrieved successfully',
           data: result || undefined,
      });
-});  
-     
+});
+
 export const FaqController = {
      createFaq,
      getAllFaqs,

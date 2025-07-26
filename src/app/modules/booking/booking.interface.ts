@@ -41,4 +41,5 @@ export interface IBooking extends Document {
      deletedAt?: Date;
      payment?: Types.ObjectId;
      adminRevenuePercent: number;
+     reports: Types.ObjectId[];
 }

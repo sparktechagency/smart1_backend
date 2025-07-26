@@ -7,4 +7,6 @@ export interface ISettings extends Document {
      support: string;
      termsAndConditions: string;
      appVersion: string;
+     faqs: Types.ObjectId[];
+     reports: Types.ObjectId[];
 }
