@@ -1,8 +1,0 @@
-node_modules
-dist
-coverage
-.vercel
-winston
-uploads
-.env
-.git000
