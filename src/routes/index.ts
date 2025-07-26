@@ -2,7 +2,7 @@ import express from 'express';
 import { AuthRouter } from '../app/modules/auth/auth.route';
 import stripeAccountRoutes from '../app/modules/stripeAccount/stripeAccount.route';
 import { UserRouter } from '../app/modules/user/user.route';
-import { sliderImageRoutes } from '../app/modules/sliderImage/sliderImage.route';
+import { imageRoutes } from '../app/modules/image/image.route';
 import { ServiceCategoryRoutes } from '../app/modules/ServiceCategory/ServiceCategory.route';
 import { FaqRoutes } from '../app/modules/Faq/Faq.route';
 import { ServiceRoutes } from '../app/modules/Service/Service.route';
@@ -29,8 +29,8 @@ const routes = [
           route: stripeAccountRoutes,
      },
      {
-          path: '/slider-image',
-          route: sliderImageRoutes,
+          path: '/image',
+          route: imageRoutes,
      },
      {
           path: '/service-category',

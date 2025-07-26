@@ -1,3 +1,4 @@
 export enum FAQType {
-     SERVICE = 'Service',     
+     SERVICE = 'Service',
+     CMS = 'Cms',
 }
