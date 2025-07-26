@@ -344,7 +344,11 @@ const deleteMessageForEveryoneByMessageId = async (messageId: string, userId: st
 };
 
 const deleteChatForMeByChatId = async (chatId: string, userId: string): Promise<void> => {
-     const chat = await Chat.findById(chatId);
+     const chat = await Chat.findOne({
+          _id: new Types.ObjectId(chatId),
+          participants: { $in: [new Types.ObjectId(userId)] }
+     });
+
      if (!chat) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Chat not found');
      }
