@@ -1,0 +1,34 @@
+import express from 'express';
+import { FOLDER_NAMES } from '../../../enums/files';
+import auth from '../../middleware/auth';
+import fileUploadHandler from '../../middleware/fileUploadHandler';
+import parseFileData from '../../middleware/parseFileData';
+import validateRequest from '../../middleware/validateRequest';
+import { USER_ROLES } from '../user/user.enums';
+import { PaymentController } from './Payment.controller';
+import { PaymentValidation } from './Payment.validation';
+
+const router = express.Router();
+
+router.post('/', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+    fileUploadHandler(),
+    parseFileData(FOLDER_NAMES.IMAGE),
+    validateRequest(PaymentValidation.createPaymentZodSchema), PaymentController.createPayment);
+
+router.get('/', PaymentController.getAllPayments);
+
+router.get('/unpaginated', PaymentController.getAllUnpaginatedPayments);
+
+router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), PaymentController.hardDeletePayment);
+
+router.post('/stripe/booking/:bookingId', auth(USER_ROLES.USER), PaymentController.stripeDuePaymentByBookingId)
+router.get('/success', PaymentController.successPage)
+router.get('/cancel', PaymentController.cancelPage);
+
+
+router.delete('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), PaymentController.deletePayment);
+
+router.get('/:id', PaymentController.getPaymentById);
+
+
+export const PaymentRoutes = router;
