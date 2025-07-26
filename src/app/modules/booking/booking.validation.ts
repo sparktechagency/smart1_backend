@@ -39,6 +39,7 @@ export const createBookingSchema = z.object({
       invalid_type_error: 'Invalid payment method',
     }),
     reports: z.array(objectIdSchemaOptional).optional(),
+    reviews: z.array(objectIdSchemaOptional).optional(),
   }),
 });
 

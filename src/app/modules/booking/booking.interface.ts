@@ -42,4 +42,5 @@ export interface IBooking extends Document {
      payment?: Types.ObjectId;
      adminRevenuePercent: number;
      reports: Types.ObjectId[];
+     reviews: Types.ObjectId[];
 }
