@@ -14,6 +14,7 @@ import { PaymentRoutes } from '../app/modules/Payment/Payment.route';
 import { NotificationRoutes } from '../app/modules/notification/notification.routes';
 import { ChatRoutes } from '../app/modules/chat/chat.routes';
 import { MessageRoutes } from '../app/modules/message/message.routes';
+import SettingsRouter from '../app/modules/settings/settings.route';
 const router = express.Router();
 const routes = [
      {
@@ -75,6 +76,10 @@ const routes = [
      {
           path: '/message',
           route: MessageRoutes,
+     },
+     {
+          path: '/settings',
+          route: SettingsRouter,
      },
 ];
 

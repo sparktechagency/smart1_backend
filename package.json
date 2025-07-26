@@ -9,6 +9,7 @@
           "lint:fix": "eslint src/**/*.ts --fix",
           "format": "prettier . --write",
           "seed:admin": "ts-node src/seed/seedAdmin.ts",
+          "seed:setting": "ts-node src/seed/seedSetting.ts",
           "build": "tsc"
      },
      "keywords": [],
