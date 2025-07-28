@@ -1,20 +1,22 @@
 import express from 'express';
+import { BidRoutes } from '../app/modules/Bid/Bid.route';
+import { ContactRoutes } from '../app/modules/Contact/Contact.route';
+import { FaqRoutes } from '../app/modules/Faq/Faq.route';
+import { PaymentRoutes } from '../app/modules/Payment/Payment.route';
+import { ServiceRoutes } from '../app/modules/Service/Service.route';
+import { ServiceCategoryRoutes } from '../app/modules/ServiceCategory/ServiceCategory.route';
 import { AuthRouter } from '../app/modules/auth/auth.route';
+import { BookingRoutes } from '../app/modules/booking/booking.route';
+import { ChatRoutes } from '../app/modules/chat/chat.routes';
+import { CouponRoutes } from '../app/modules/coupon/coupon.route';
+import { imageRoutes } from '../app/modules/image/image.route';
+import { MessageRoutes } from '../app/modules/message/message.routes';
+import { NotificationRoutes } from '../app/modules/notification/notification.routes';
+import { OfferedRoutes } from '../app/modules/offered/offered.route';
+import { paymentCardRoutes } from '../app/modules/paymentCard/paymentCard.route';
+import SettingsRoutes from '../app/modules/settings/settings.route';
 import stripeAccountRoutes from '../app/modules/stripeAccount/stripeAccount.route';
 import { UserRouter } from '../app/modules/user/user.route';
-import { imageRoutes } from '../app/modules/image/image.route';
-import { ServiceCategoryRoutes } from '../app/modules/ServiceCategory/ServiceCategory.route';
-import { FaqRoutes } from '../app/modules/Faq/Faq.route';
-import { ServiceRoutes } from '../app/modules/Service/Service.route';
-import { CouponRoutes } from '../app/modules/coupon/coupon.route';
-import { OfferedRoutes } from '../app/modules/offered/offered.route';
-import { BookingRoutes } from '../app/modules/booking/booking.route';
-import { BidRoutes } from '../app/modules/Bid/Bid.route';
-import { PaymentRoutes } from '../app/modules/Payment/Payment.route';
-import { NotificationRoutes } from '../app/modules/notification/notification.routes';
-import { ChatRoutes } from '../app/modules/chat/chat.routes';
-import { MessageRoutes } from '../app/modules/message/message.routes';
-import SettingsRouter from '../app/modules/settings/settings.route';
 const router = express.Router();
 const routes = [
      {
@@ -79,7 +81,15 @@ const routes = [
      },
      {
           path: '/settings',
-          route: SettingsRouter,
+          route: SettingsRoutes,
+     },
+     {
+          path: '/contact',
+          route: ContactRoutes,
+     },
+     {
+          path: '/payment-card',
+          route: paymentCardRoutes,
      },
 ];
 

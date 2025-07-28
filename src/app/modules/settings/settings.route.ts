@@ -1,11 +1,11 @@
 import express from 'express';
 import auth from '../../middleware/auth';
-import { settingsController } from './settings.controller';
 import { USER_ROLES } from '../user/user.enums';
+import { settingsController } from './settings.controller';
 
-const SettingsRouter = express.Router();
+const SettingsRoutes = express.Router();
 
-SettingsRouter.put('/', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), settingsController.addSetting)
+SettingsRoutes.put('/', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), settingsController.addSetting)
      .get('/', settingsController.getSettings)
      .get('/privacy-policy', settingsController.getPrivacyPolicy)
      .get('/aboutus', settingsController.getAboutUs)
@@ -13,4 +13,4 @@ SettingsRouter.put('/', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), settings
      .get('/terms-and-conditions', settingsController.getTermsAndConditions)
      .get('/app-version', settingsController.getAppVersion);
 
-export default SettingsRouter;
+export default SettingsRoutes;

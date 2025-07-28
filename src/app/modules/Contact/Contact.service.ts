@@ -1,9 +1,8 @@
 import { StatusCodes } from 'http-status-codes';
 import AppError from '../../../errors/AppError';
+import QueryBuilder from '../../builder/QueryBuilder';
 import { IContact } from './Contact.interface';
 import { Contact } from './Contact.model';
-import QueryBuilder from '../../builder/QueryBuilder';
-import unlinkFile from '../../../shared/unlinkFile';
 
 const createContact = async (payload: IContact): Promise<IContact> => {
      const result = await Contact.create(payload);
@@ -25,11 +24,9 @@ const getAllUnpaginatedContacts = async (): Promise<IContact[]> => {
 const updateContact = async (id: string, payload: Partial<IContact>): Promise<IContact | null> => {
      const isExist = await Contact.findById(id);
      if (!isExist) {
-          unlinkFile(payload.image!);
           throw new AppError(StatusCodes.NOT_FOUND, 'Contact not found.');
      }
 
-     unlinkFile(isExist.image!); // Unlink the old image
      return await Contact.findByIdAndUpdate(id, payload, { new: true });
 };
 
@@ -49,7 +46,6 @@ const hardDeleteContact = async (id: string): Promise<IContact | null> => {
      if (!result) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Contact not found.');
      }
-     unlinkFile(result.image!);
      return result;
 };
 
@@ -59,7 +55,7 @@ const getContactById = async (id: string): Promise<IContact | null> => {
           throw new AppError(StatusCodes.NOT_FOUND, 'Contact not found.');
      }
      return result;
-};   
+};
 
 export const ContactService = {
      createContact,
