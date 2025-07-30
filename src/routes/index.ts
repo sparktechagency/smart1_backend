@@ -1,4 +1,5 @@
 import express from 'express';
+import { AppDownloadRoutes } from '../app/modules/AppDownload/AppDownload.route';
 import { BidRoutes } from '../app/modules/Bid/Bid.route';
 import { ContactRoutes } from '../app/modules/Contact/Contact.route';
 import { FaqRoutes } from '../app/modules/Faq/Faq.route';
@@ -9,6 +10,7 @@ import { AuthRouter } from '../app/modules/auth/auth.route';
 import { BookingRoutes } from '../app/modules/booking/booking.route';
 import { ChatRoutes } from '../app/modules/chat/chat.routes';
 import { CouponRoutes } from '../app/modules/coupon/coupon.route';
+import { DashboardRoutes } from '../app/modules/dashboard/dashboard.route';
 import { imageRoutes } from '../app/modules/image/image.route';
 import { MessageRoutes } from '../app/modules/message/message.routes';
 import { NotificationRoutes } from '../app/modules/notification/notification.routes';
@@ -90,6 +92,14 @@ const routes = [
      {
           path: '/payment-card',
           route: paymentCardRoutes,
+     },
+     {
+          path: '/app-download',
+          route: AppDownloadRoutes,
+     },
+     {
+          path: '/dashboard',
+          route: DashboardRoutes,
      },
 ];
 

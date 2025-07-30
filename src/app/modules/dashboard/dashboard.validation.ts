@@ -36,8 +36,18 @@ const getRevenueAnalyticsValidation = z.object({
   }),
 });
 
+const getDateWiseBookingSummaryValidation = z.object({
+  query: z.object({
+    date: z.string().optional(),
+  }),
+  body: z.object({
+    servicingDestination: z.string().optional(),
+    userName: z.string().optional(),
+  }),
+});
 
 export const DashboardValidation = {
   getMonthlyUserStatsValidation,
   getRevenueAnalyticsValidation,
+  getDateWiseBookingSummaryValidation,
 };

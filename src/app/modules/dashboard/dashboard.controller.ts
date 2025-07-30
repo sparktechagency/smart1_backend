@@ -54,9 +54,61 @@ const getRevenueAnalytics = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getDateWiseBookingCountSummary = catchAsync(async (req: Request, res: Response) => {
+  const { date } = req.query;
+  const result = await dashboardService.getDateWiseBookingCountSummary(
+    date ? new Date(date as string) : undefined
+  );
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Datewise booking summary retrieved successfully',
+    data: result,
+  });
+});
+
+const getDateWiseAndStatusWiseBookingSummary = catchAsync(async (req: Request, res: Response) => {
+
+  const result = await dashboardService.getDateWiseAndStatusWiseBookingSummary(req.query);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Datewise and statuswise booking summary retrieved successfully',
+    data: result,
+  });
+});
+
+const getCustomers = catchAsync(async (req: Request, res: Response) => {
+  const result = await dashboardService.getCustomers(req.query);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Customers retrieved successfully',
+    data: result,
+  });
+});
+
+const getServiceProviders = catchAsync(async (req: Request, res: Response) => {
+  const result = await dashboardService.getServiceProviders(req.query);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Service providers retrieved successfully',
+    data: result,
+  });
+});
+
 export const DashboardController = {
   getDashboardSummary,
   getMonthlyUserStats,
-  getDownloadStats,
+  // getDownloadStats,
   getRevenueAnalytics,
+  getDateWiseBookingCountSummary,
+  getDateWiseAndStatusWiseBookingSummary,
+  getCustomers,
+  getServiceProviders,
 };

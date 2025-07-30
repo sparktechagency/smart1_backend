@@ -11,10 +11,10 @@ export interface IDashboardSummary {
     amount: number;
     percentageChange: number;
   };
-  totalDownloads: {
-    count: number;
-    percentageChange: number;
-  };
+  // totalDownloads: {
+  //   count: number;
+  //   percentageChange: number;
+  // };
 }
 
 export interface IMonthlyUserStats {

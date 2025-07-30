@@ -155,15 +155,15 @@ const getMyBookings = async (query: Record<string, unknown>, user: IJwtPayload) 
      } else if (user.role === USER_ROLES.SERVICE_PROVIDER) {
           queryOperation = Booking.find({ serviceProvider: user.id });
      }
-     const orderQuery = new QueryBuilder(queryOperation.populate(populateOptions), query).search(['user.name', 'user.email', 'services.service.name']).filter().sort().paginate().fields();
+     const bookingQuery = new QueryBuilder(queryOperation.populate(populateOptions), query).search(['user.name', 'user.email', 'services.service.name']).filter().sort().paginate().fields();
 
-     const result = await orderQuery.modelQuery;
+     const result = await bookingQuery.modelQuery;
 
      if (!result) {
           throw new AppError(StatusCodes.NOT_FOUND, 'No bookings found');
      }
 
-     const meta = await orderQuery.countTotal();
+     const meta = await bookingQuery.countTotal();
 
      return {
           meta,
