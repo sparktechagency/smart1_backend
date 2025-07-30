@@ -20,11 +20,13 @@ const createImage = catchAsync(async (req: Request, res: Response) => {
 
 const getAllImages = catchAsync(async (req: Request, res: Response) => {
      // handlw req.query.imageType must enum ImageType
-     if (!Object.values(ImageType).includes(req.query.imageType as ImageType)) {
+     if (!Object.values(ImageType).includes(req.params.imageType as ImageType)) {
+          console.log(req.params.imageType);
+          console.log(Object.values(ImageType));
           throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid image type.Must be enum ImageType');
      }
 
-     const result = await imageService.getAllImages(req.query, req.query.imageType as ImageType);
+     const result = await imageService.getAllImages(req.query, req.params.imageType as ImageType);
 
      sendResponse<{ meta: { total: number; page: number; limit: number; }; result: IImage[]; }>(res, {
           statusCode: 200,
