@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes';
-import mongoose, { Types } from 'mongoose';
+import mongoose from 'mongoose';
 import AppError from '../../../errors/AppError';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { IJwtPayload } from '../auth/auth.interface';
@@ -92,7 +92,7 @@ const getBidById = async (id: string): Promise<IBid | null> => {
 
 
 
-const changeBidStatus = async (bidId: string, status: string, user: IJwtPayload) => {
+const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJwtPayload) => {
      const session = await mongoose.startSession();
      session.startTransaction(); // Start the transaction
 
@@ -108,7 +108,7 @@ const changeBidStatus = async (bidId: string, status: string, user: IJwtPayload)
                throw new AppError(StatusCodes.NOT_FOUND, 'bid not Found');
           }
 
-          const booking = await Booking.findOne({ _id: thisBid.booking }).populate('serviceProvider').session(session);
+          const booking = await Booking.findOne({ _id: thisBid.booking }).populate('serviceProvider', 'adminRevenuePercent stripeConnectedAccount').session(session);
           if (!booking) {
                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not Found');
           }
@@ -162,19 +162,28 @@ const changeBidStatus = async (bidId: string, status: string, user: IJwtPayload)
                     throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid booking status');
           }
 
-          // Update booking status
-          const updatedBooking = await Booking.findOneAndUpdate(
-               { _id: new Types.ObjectId(bidId), acceptedBid: booking!._id },
-               { status },
-               { new: true, session }
-          );
+          // // Update booking status
+          // const updatedBooking = await Booking.findOneAndUpdate(
+          //      { _id: new Types.ObjectId(bidId), acceptedBid: booking!._id },
+          //      { status },
+          //      { new: true, session }
+          // );
+          thisBid.status = status;
+          const updatedBid = await thisBid.save();
 
-          // Update bid status
-          const updatedBid = await Bid.findOneAndUpdate(
-               { _id: booking!._id },
-               { status },
-               { new: true, session }
-          );
+          // // Update bid status
+          // const updatedBid = await Bid.findOneAndUpdate(
+          //      { _id: booking!._id },
+          //      { status },
+          //      { new: true, session }
+          // );
+          booking.status = status as BOOKING_STATUS;
+          const updatedBooking = await booking.save();
+
+          if (!updatedBooking || !updatedBid) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to update booking or bid');
+          }
+
 
           // Commit the transaction
           await session.commitTransaction();

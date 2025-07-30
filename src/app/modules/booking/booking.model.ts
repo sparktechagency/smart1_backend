@@ -197,6 +197,8 @@ bookingSchema.pre('validate', async function (next) {
           acceptedProviderBidRate = bid.rate; // Get the flat rate from the accepted bid
           booking.serviceProvider = (bid.serviceProvider as any)._id;
           booking.adminRevenuePercent = (bid.serviceProvider as any).adminRevenuePercent;
+          console.log('=============================');
+          console.log('0. booking model', { adminRevenuePercent: booking.adminRevenuePercent });
           totalAmount = acceptedProviderBidRate;
           console.log('1. booking model', { totalAmount }, { acceptedProviderBidRate });
           let totalOfferPrice = 0;

@@ -102,6 +102,18 @@ const stripeDuePaymentByBookingId = catchAsync(async (req: Request, res: Respons
      });
 });
 
+const updateCashPayment = catchAsync(async (req: Request, res: Response) => {
+     const { id } = req.params;
+     const result = await PaymentService.updateCashPayment(id, req.body);
+
+     sendResponse<IPayment>(res, {
+          statusCode: 200,
+          success: true,
+          message: 'Payment updated successfully',
+          data: result || undefined,
+     });
+});
+
 export const PaymentController = {
      createPayment,
      getAllPayments,
@@ -111,5 +123,6 @@ export const PaymentController = {
      getPaymentById,
      successPage,
      cancelPage,
-     stripeDuePaymentByBookingId
+     stripeDuePaymentByBookingId,
+     updateCashPayment,
 };

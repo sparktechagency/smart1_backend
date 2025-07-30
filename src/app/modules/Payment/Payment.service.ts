@@ -174,6 +174,37 @@ const stripeDuePaymentByBookingId = async (bookingId: string, user: IJwtPayload)
      }
 };
 
+const updateCashPayment = async (id: string, payload: Partial<IPayment>): Promise<IPayment> => {
+     const session = await mongoose.startSession();
+     session.startTransaction();
+     try {
+          // find payment matching the payload amount and transaction id and _id
+          const payment = await Payment.findOne({ amount: payload.amount, transactionId: payload.transactionId, _id: id }).session(session);
+          if (!payment) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Payment not found!');
+          }
+          const booking = await Booking.findOne({ _id: payment.booking }).session(session);
+          if (!booking) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found!');
+          }
+          payment.paymentIntent = payload.paymentIntent;
+          payment.status = PAYMENT_STATUS.PAID;
+          const updatedPayment = await payment.save({ session });
+          booking.paymentStatus = PAYMENT_STATUS.PAID;
+          const updatedBooking = await booking.save({ session });
+          if (!updatedPayment || !updatedBooking) {
+               throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update payment or booking!');
+          }
+          await session.commitTransaction();
+          session.endSession();
+          return updatedPayment;
+     } catch (error) {
+          await session.abortTransaction();
+          session.endSession();
+          throw error;
+     }
+};
+
 export const PaymentService = {
      createPayment,
      getAllPayments,
@@ -183,5 +214,6 @@ export const PaymentService = {
      getPaymentById,
      isPaymentExist,
      refundPayment,
-     stripeDuePaymentByBookingId
+     stripeDuePaymentByBookingId,
+     updateCashPayment
 };

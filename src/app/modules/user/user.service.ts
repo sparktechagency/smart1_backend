@@ -153,9 +153,21 @@ const getUserProfileFromDB = async (user: JwtPayload): Promise<Partial<IUser>> =
 
 // update user profile
 const updateProfileToDB = async (user: JwtPayload, payload: Partial<IUser>): Promise<Partial<IUser | null>> => {
+     // if user.role is service provider and trying to update own adminRevenuePercent then throw error
+     if (user.role === USER_ROLES.SERVICE_PROVIDER && payload.adminRevenuePercent) {
+          //unlink file here
+          if (payload.image) {
+               unlinkFile(payload.image);
+          }
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Service provider cannot update adminRevenuePercent');
+     }
      const { id } = user;
      const isExistUser = await User.isExistUserById(id);
      if (!isExistUser) {
+          //unlink file here
+          if (payload.image) {
+               unlinkFile(payload.image);
+          }
           throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
      }
 

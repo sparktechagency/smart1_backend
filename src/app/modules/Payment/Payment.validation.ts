@@ -13,8 +13,9 @@ const createPaymentZodSchema = z.object({
 
 const updatePaymentZodSchema = z.object({
      body: z.object({
-          image: z.string().optional(),
-          altText: z.string().optional(),
+          amount: z.number({ required_error: 'Amount is required' }),
+          transactionId: z.string({ required_error: 'Transaction ID is required' }),
+          paymentIntent: z.string({ required_error: 'Payment intent is required' }),
      }),
 });
 

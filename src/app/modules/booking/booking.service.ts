@@ -648,8 +648,11 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
                throw new AppError(StatusCodes.NOT_FOUND, 'Current accepted bid not found');
           }
 
+          console.log('previouslyAcceptedBidToBeChanged : 11', previouslyAcceptedBidToBeChanged._id.toString());
+          console.log('isExistBid : 11', isExistBid._id.toString());
+          console.log('=============================');
           // previouslyAcceptedBidToBeChanged and isExistBid are the same
-          if (previouslyAcceptedBidToBeChanged._id.toString() === isExistBid._id.toString()) {
+          if (previouslyAcceptedBidToBeChanged._id.toString() == isExistBid._id.toString()) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'New bid is the same as the current accepted bid');
           }
 
@@ -662,7 +665,13 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
           const previousPaymentOnPreviouslyAcceptedBid = await Payment.findOne({ booking: bookingId }).session(session);
           if (previousPaymentOnPreviouslyAcceptedBid && previousPaymentOnPreviouslyAcceptedBid.status === PAYMENT_STATUS.PAID) {
                if (previousPaymentOnPreviouslyAcceptedBid.method === PAYMENT_METHOD.ONLINE && thisBooking.isPaymentTransferd) {
-                    await PaymentService.refundPayment(previousPaymentOnPreviouslyAcceptedBid._id.toString(), user, CANCELL_OR_REFUND_REASON.BID_CHANGED_BY_USER);
+                    const resultRefundOnline = await PaymentService.refundPayment(previousPaymentOnPreviouslyAcceptedBid._id.toString(), user, CANCELL_OR_REFUND_REASON.BID_CHANGED_BY_USER);
+                    if (resultRefundOnline) {
+                         console.log('refund online', resultRefundOnline);
+                    }
+                    else {
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'Previous ONLINE payment refund failed');
+                    }
                } else {
                     previousPaymentOnPreviouslyAcceptedBid.isNeedRefund = true;
                     await previousPaymentOnPreviouslyAcceptedBid.save({ session });
@@ -697,6 +706,12 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
 
                // Update all other bids to rejected
                await Bid.updateMany({ _id: { $ne: isExistBid._id }, booking: thisBooking._id }, { $set: { isAccepted: false, status: BID_STATUS.REJECTED } }, { session });
+
+               // delete old payment
+               const oldPayment = await Payment.findByIdAndDelete(thisBooking.payment).session(session);
+               if (!oldPayment) {
+                    throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to delete old payment');
+               }
 
                const transactionId = generateTransactionId();
                const payment = new Payment({

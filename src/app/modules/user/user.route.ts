@@ -12,7 +12,7 @@ router
      .route('/profile')
      .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SUPER_ADMIN, USER_ROLES.SERVICE_PROVIDER), UserController.getUserProfile)
      .patch(
-          auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+          auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER),
           fileUploadHandler(),
           (req: Request, res: Response, next: NextFunction) => {
                const image = getSingleFilePath(req.files, 'image');

@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { model, Schema } from 'mongoose';
 import config from '../../../config';
 import AppError from '../../../errors/AppError';
+import { DEFAULT_ADMIN_REVENUE } from '../Bid/Bid.enum';
 import { USER_ROLES } from './user.enums';
 import { IUser, UserModel } from './user.interface';
 
@@ -163,7 +164,7 @@ const userSchema = new Schema<IUser, UserModel>(
                     ref: 'PaymentCard',
                },
           ],
-          adminRevenuePercent: { type: Number, default: 0 },
+          adminRevenuePercent: { type: Number, default: DEFAULT_ADMIN_REVENUE },
      },
      { timestamps: true },
 );

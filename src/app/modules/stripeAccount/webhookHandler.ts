@@ -72,6 +72,7 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
           // Parsing the 'notificationReceivers' metadata, as it was previously stringified before sending to Stripe
           const notificationReceiversParsed = JSON.parse(notificationReceivers);
           const paymentIntent = session.payment_intent as string;
+          console.log('=============================');
           console.log('paymentIntent : 2', paymentIntent);
           const isPaymentExist = await PaymentService.isPaymentExist(paymentIntent);
           if (isPaymentExist) {
@@ -114,6 +115,7 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
           thisAcceptedBid.status = BID_STATUS.ACCEPTED;
           thisAcceptedBid.booking = isBookingExists._id;
           await thisAcceptedBid.save();
+          console.log('thisAcceptedBid : 11', thisAcceptedBid);
 
           // Update all other bids to rejected
           await Bid.updateMany({ _id: { $ne: thisAcceptedBid._id }, booking: isBookingExists._id }, { $set: { isAccepted: false, status: BID_STATUS.REJECTED } });
