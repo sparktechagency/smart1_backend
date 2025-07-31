@@ -1,9 +1,12 @@
 import { StatusCodes } from 'http-status-codes';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import AppError from '../../../errors/AppError';
 import unlinkFile from '../../../shared/unlinkFile';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { IJwtPayload } from '../auth/auth.interface';
+import { BOOKING_STATUS } from '../booking/booking.enums';
+import { Booking } from '../booking/booking.model';
+import Settings from '../settings/settings.model';
 import { IReport } from './Report.interface';
 import { Report } from './Report.model';
 
@@ -17,6 +20,21 @@ const createReport = async (payload: IReport, user: IJwtPayload): Promise<IRepor
      try {
           // Start the transaction
           session.startTransaction();
+          // if payload.type = Settings then refferenceId is the id of setting
+          if (payload.type === 'Settings') {
+               const isExistSetting = await Settings.findOne().select('_id').session(session);
+               if (!isExistSetting) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
+               }
+               payload.refferenceId = isExistSetting._id as Types.ObjectId;
+          }
+
+
+          // step 0: check if report already exists for this refferenceId and type by the user
+          const isExistReport = await Report.findOne({ refferenceId: payload.refferenceId, type: payload.type, createdBy: user.id }).session(session);
+          if (isExistReport) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'You have already reported this.');
+          }
 
           // Step 1: Check if the referenced document exists based on `type` and `refferenceId`
           const isExistRefference = await mongoose.model(payload.type).findById(payload.refferenceId).session(session);
@@ -28,6 +46,39 @@ const createReport = async (payload: IReport, user: IJwtPayload): Promise<IRepor
                     });
                }
                throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
+          }
+
+          // user must be either service provider or user of the referenced document
+          if (isExistRefference) {
+               if (payload.type === 'Booking') {
+                    if (isExistRefference.status !== BOOKING_STATUS.COMPLETED) {
+                         if (payload.images) {
+                              payload.images.forEach((image) => {
+                                   unlinkFile(image);
+                              });
+                         }
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
+                    }
+                    if (isExistRefference.user.toString() !== user.id && isExistRefference.serviceProvider.toString() !== user.id) {
+                         if (payload.images) {
+                              payload.images.forEach((image) => {
+                                   unlinkFile(image);
+                              });
+                         }
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
+                    }
+               } else if (payload.type === 'Settings') {
+                    // user mustbe a customer or service provider of any of a completed booking
+                    const hasAnyBooking = await Booking.find({ user: user.id, status: BOOKING_STATUS.COMPLETED });
+                    if (!hasAnyBooking) {
+                         if (payload.images) {
+                              payload.images.forEach((image) => {
+                                   unlinkFile(image);
+                              });
+                         }
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review. Cause you have no completed booking.');
+                    }
+               }
           }
 
           // Step 2: Create the Report document
@@ -63,15 +114,21 @@ const createReport = async (payload: IReport, user: IJwtPayload): Promise<IRepor
      }
 };
 
-const getAllReports = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IReport[]; }> => {
-     const queryBuilder = new QueryBuilder(Report.find(), query);
+const getAllReportsByType = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IReport[]; }> => {
+     const queryBuilder = new QueryBuilder(Report.find({ type }), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Reports not found.');
+     }
      const meta = await queryBuilder.countTotal();
      return { meta, result };
 };
 
-const getAllUnpaginatedReports = async (): Promise<IReport[]> => {
-     const result = await Report.find();
+const getAllUnpaginatedReportsByType = async (type: string): Promise<IReport[]> => {
+     const result = await Report.find({ type });
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Reports not found.');
+     }
      return result;
 };
 
@@ -194,8 +251,8 @@ const getAllReportsByBookingId = async (bookingId: string, query: Record<string,
 
 export const ReportService = {
      createReport,
-     getAllReports,
-     getAllUnpaginatedReports,
+     getAllReportsByType,
+     getAllUnpaginatedReportsByType,
      updateReport,
      deleteReport,
      hardDeleteReport,

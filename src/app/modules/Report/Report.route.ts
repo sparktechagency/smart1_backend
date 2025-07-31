@@ -15,20 +15,20 @@ router.post('/', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER),
     parseMultipleFilesdata(FOLDER_NAMES.IMAGE),
     validateRequest(ReportValidation.createReportZodSchema), ReportController.createReport);
 
-router.get('/', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.getAllReports);
 
-router.get('/unpaginated', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.getAllUnpaginatedReports);
+router.get('/unpaginated/:type', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.getAllUnpaginatedReportsByType);
 
-router.get('/booking/:bookingId', ReportController.getAllReportsByBookingId);
+router.get('/booking/:bookingId', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.getAllReportsByBookingId);
 
 router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.hardDeleteReport);
+router.get('/details/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), ReportController.getReportById);
+router.get('/:type', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.getAllReportsByType);
 
-router.patch('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), fileUploadHandler(),
+router.patch('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), fileUploadHandler(),
     parseMultipleFilesdata(FOLDER_NAMES.IMAGE),
     validateRequest(ReportValidation.updateReportZodSchema), ReportController.updateReport);
 
 router.delete('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.deleteReport);
 
-router.get('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.getReportById);
 
 export const ReportRoutes = router;

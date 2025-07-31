@@ -1,11 +1,11 @@
 import { StatusCodes } from 'http-status-codes';
 import AppError from '../../../errors/AppError';
+import unlinkFile from '../../../shared/unlinkFile';
+import QueryBuilder from '../../builder/QueryBuilder';
+import { Faq } from '../Faq/Faq.model';
+import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
 import { IService } from './Service.interface';
 import { Service } from './Service.model';
-import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
-import QueryBuilder from '../../builder/QueryBuilder';
-import unlinkFile from '../../../shared/unlinkFile';
-import { Faq } from '../Faq/Faq.model';
 
 const createService = async (payload: IService): Promise<IService> => {
      // check is exist serviceCategory 
@@ -20,7 +20,7 @@ const createService = async (payload: IService): Promise<IService> => {
 
 const getAllServices = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IService[]; }> => {
      const queryBuilder = new QueryBuilder(Service.find().populate('serviceCategory', 'name').populate('faqs', 'question answer'), query);
-     const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
+     const result = await queryBuilder.search(['name', 'description', 'serviceCategory.name']).filter().sort().paginate().fields().modelQuery;
      const meta = await queryBuilder.countTotal();
      return { meta, result };
 };
@@ -89,6 +89,16 @@ const getServiceById = async (id: string): Promise<IService | null> => {
      return result;
 };
 
+const getAllServicesByServiceCategoryId = async (serviceCategoryId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IService[]; }> => {
+     const queryBuilder = new QueryBuilder(Service.find({ serviceCategory: serviceCategoryId }).populate('serviceCategory', 'name').populate('faqs', 'question answer'), query);
+     const result = await queryBuilder.search(['name', 'description', 'serviceCategory.name']).filter().sort().paginate().fields().modelQuery;
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Service not found.');
+     }
+     const meta = await queryBuilder.countTotal();
+     return { meta, result };
+};
+
 export const ServiceService = {
      createService,
      getAllServices,
@@ -96,5 +106,6 @@ export const ServiceService = {
      updateService,
      deleteService,
      hardDeleteService,
-     getServiceById
+     getServiceById,
+     getAllServicesByServiceCategoryId
 };

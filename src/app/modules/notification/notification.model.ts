@@ -1,14 +1,9 @@
 import { model, Schema } from 'mongoose';
+import { NOTIFICATION_MODEL_TYPE, NotificationScreen } from './notification.enum';
 import { INotification } from './notification.interface';
-import { NOTIFICATION_MODEL_TYPE } from './notification.enum';
 
 
 
-enum NotificationScreen {
-     DASHBOARD = 'DASHBOARD',
-     PAYMENT_HISTORY = 'PAYMENT_HISTORY',
-     PROFILE = 'PROFILE',
-}
 
 const notificationSchema = new Schema<INotification>(
      {
@@ -34,11 +29,6 @@ const notificationSchema = new Schema<INotification>(
           reference: {
                type: Schema.Types.ObjectId,
                refPath: 'referenceModel',
-               required: false,
-          },
-          referenceModel: {
-               type: String,
-               enum: Object.values(NOTIFICATION_MODEL_TYPE),
                required: false,
           },
           screen: {

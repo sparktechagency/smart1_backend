@@ -122,6 +122,17 @@ const getServiceCategoryBasedBidsToAccept = catchAsync(async (req: Request, res:
      });
 });
 
+const reScheduleBookingById = catchAsync(async (req: Request, res: Response) => {
+     const result = await BookingService.reScheduleBookingById(req.params.bookingId, req.body, req.user as IJwtPayload);
+
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Booking re-scheduled succesfully',
+          data: result,
+     });
+});
+
 export const BookingController = {
      createBooking,
      getBookingDetails,
@@ -133,4 +144,5 @@ export const BookingController = {
      getServiceCategoryBasedBookingsForProviderToBid,
      getBidsOfBookingByIdToAccept,
      getServiceCategoryBasedBidsToAccept,
+     reScheduleBookingById,
 };

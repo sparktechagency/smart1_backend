@@ -97,7 +97,7 @@ const bookingSchema = new Schema<IBooking>(
           },
           serviceTaskAdditionalInfo: {
                type: String,
-               required: true,
+               required: false,
           },
           bookingCancelReason: {
                type: String,

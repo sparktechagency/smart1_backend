@@ -78,10 +78,18 @@ export const cancelBookingSchema = z.object({
   }),
 });
 
+export const reScheduleBookingSchema = z.object({
+  body: z.object({
+    bookingDate: z.union([z.date(), z.string()]),
+    bookingTime: z.union([z.date(), z.string()]),
+  }),
+});
+
 export const BookingValidation = {
   createBookingSchema,
   updateBookingStatusSchema,
   updatePaymentStatusSchema,
   acceptBidForBookingSchema,
-  cancelBookingSchema
+  cancelBookingSchema,
+  reScheduleBookingSchema
 }

@@ -5,3 +5,11 @@ export enum NOTIFICATION_MODEL_TYPE {
     BOOKING = 'Booking',
     NOTIFICATION = 'Notification',
 }
+
+export enum NotificationScreen {
+    DASHBOARD = 'DASHBOARD',
+    PAYMENT_HISTORY = 'PAYMENT HISTORY',
+    PROFILE = 'PROFILE',
+    BOOKING = 'BOOKING',
+    APP = 'APP',
+}

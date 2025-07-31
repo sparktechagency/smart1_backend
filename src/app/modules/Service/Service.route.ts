@@ -17,6 +17,7 @@ router.post('/', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
 
 router.get('/', ServiceController.getAllServices);
 router.get('/unpaginated', ServiceController.getAllUnpaginatedServices);
+router.get('/service-category/:serviceCategoryId', ServiceController.getAllServicesByServiceCategoryId);
 router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ServiceController.hardDeleteService);
 
 router.patch('/:id', fileUploadHandler(),

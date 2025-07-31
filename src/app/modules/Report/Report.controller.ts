@@ -16,8 +16,8 @@ const createReport = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-const getAllReports = catchAsync(async (req: Request, res: Response) => {
-     const result = await ReportService.getAllReports(req.query);
+const getAllReportsByType = catchAsync(async (req: Request, res: Response) => {
+     const result = await ReportService.getAllReportsByType(req.params.type, req.query);
 
      sendResponse<{ meta: { total: number; page: number; limit: number; }; result: IReport[]; }>(res, {
           statusCode: 200,
@@ -27,8 +27,8 @@ const getAllReports = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-const getAllUnpaginatedReports = catchAsync(async (req: Request, res: Response) => {
-     const result = await ReportService.getAllUnpaginatedReports();
+const getAllUnpaginatedReportsByType = catchAsync(async (req: Request, res: Response) => {
+     const result = await ReportService.getAllUnpaginatedReportsByType(req.params.type);
 
      sendResponse<IReport[]>(res, {
           statusCode: 200,
@@ -100,8 +100,8 @@ const getAllReportsByBookingId = catchAsync(async (req: Request, res: Response) 
 
 export const ReportController = {
      createReport,
-     getAllReports,
-     getAllUnpaginatedReports,
+     getAllReportsByType,
+     getAllUnpaginatedReportsByType,
      updateReport,
      deleteReport,
      hardDeleteReport,

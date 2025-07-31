@@ -4,6 +4,7 @@ import { BidRoutes } from '../app/modules/Bid/Bid.route';
 import { ContactRoutes } from '../app/modules/Contact/Contact.route';
 import { FaqRoutes } from '../app/modules/Faq/Faq.route';
 import { PaymentRoutes } from '../app/modules/Payment/Payment.route';
+import { ReviewsRoutes } from '../app/modules/Reviews/Reviews.route';
 import { ServiceRoutes } from '../app/modules/Service/Service.route';
 import { ServiceCategoryRoutes } from '../app/modules/ServiceCategory/ServiceCategory.route';
 import { AuthRouter } from '../app/modules/auth/auth.route';
@@ -19,7 +20,7 @@ import { paymentCardRoutes } from '../app/modules/paymentCard/paymentCard.route'
 import SettingsRoutes from '../app/modules/settings/settings.route';
 import stripeAccountRoutes from '../app/modules/stripeAccount/stripeAccount.route';
 import { UserRouter } from '../app/modules/user/user.route';
-import { ReviewsRoutes } from '../app/modules/Reviews/Reviews.route';
+import { ReportRoutes } from '../app/modules/Report/Report.route';
 const router = express.Router();
 const routes = [
      {
@@ -105,6 +106,10 @@ const routes = [
      {
           path: '/reviews',
           route: ReviewsRoutes,
+     },
+     {
+          path: '/report',
+          route: ReportRoutes,
      },
 ];
 

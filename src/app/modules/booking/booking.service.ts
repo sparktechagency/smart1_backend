@@ -12,7 +12,7 @@ import stripe from '../../config/stripe.config';
 import { IJwtPayload } from '../auth/auth.interface';
 import { BID_STATUS, DEFAULT_CURRENCY } from '../Bid/Bid.enum';
 import { Bid } from '../Bid/Bid.model';
-import { NOTIFICATION_MODEL_TYPE } from '../notification/notification.enum';
+import { NOTIFICATION_MODEL_TYPE, NotificationScreen } from '../notification/notification.enum';
 import { Payment } from '../Payment/Payment.model';
 import { PaymentService } from '../Payment/Payment.service';
 import { Service } from '../Service/Service.model';
@@ -851,6 +851,48 @@ const getServiceCategoryBasedBidsToAccept = async (query: Record<string, any>, s
      return { meta, bids };
 };
 
+const reScheduleBookingById = async (bookingId: string, bookingData: {
+     bookingDate: Date,
+     bookingTime: Date
+}, user: IJwtPayload) => {
+     const session = await mongoose.startSession();
+     session.startTransaction();
+     try {
+          const thisBooking = await Booking.findOne({ _id: bookingId, user: user.id, status: { $in: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.PENDING] } }).session(session);
+          if (!thisBooking) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found or booking either completed or cancelled or in processing');
+          }
+          // ensure booking date and time is not less than current date and time+not as same as previous booking date and time
+          if (bookingData.bookingDate < new Date() || bookingData.bookingTime < new Date() || bookingData.bookingDate === thisBooking.bookingDate || bookingData.bookingTime === thisBooking.bookingTime) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Booking date and time must be different from previous booking date and time and must be greater than current date and time');
+          }
+          thisBooking.bookingDate = bookingData.bookingDate;
+          thisBooking.bookingTime = bookingData.bookingTime;
+          await thisBooking.save({ session });
+
+          // send notification to user
+          await sendNotifications({
+               receiver: user.id,
+               type: NOTIFICATION_MODEL_TYPE.BOOKING,
+               title: 'Booking re-scheduled',
+               message: `Booking: ${thisBooking._id} is re-scheduled for ${bookingData.bookingDate} at ${bookingData.bookingTime} by ${user.role}`,
+               booking: thisBooking,
+               reference: thisBooking._id,
+               screen: NotificationScreen.APP,
+          });
+          // commit transaction
+          await session.commitTransaction();
+          return thisBooking;
+     } catch (error) {
+          console.log(error);
+          // Abort the transaction if any error occurs
+          await session.abortTransaction();
+          throw error;
+     } finally {
+          session.endSession();
+     }
+};
+
 export const BookingService = {
      createBooking,
      getBookingDetails,
@@ -863,4 +905,5 @@ export const BookingService = {
      getUnpaginatedBidsOfBookingByIdToAccept,
      changeAcceptedBid,
      getServiceCategoryBasedBidsToAccept,
+     reScheduleBookingById,
 };
