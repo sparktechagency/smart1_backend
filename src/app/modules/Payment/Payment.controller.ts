@@ -114,6 +114,17 @@ const updateCashPayment = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
+const getMyPayments = catchAsync(async (req: Request, res: Response) => {
+     const result = await PaymentService.getMyPayments(req.user as IJwtPayload, req.query);
+
+     sendResponse<IPayment[]>(res, {
+          statusCode: 200,
+          success: true,
+          message: 'Payments retrieved successfully',
+          data: result || undefined,
+     });
+});
+
 export const PaymentController = {
      createPayment,
      getAllPayments,
@@ -125,4 +136,5 @@ export const PaymentController = {
      cancelPage,
      stripeDuePaymentByBookingId,
      updateCashPayment,
+     getMyPayments
 };

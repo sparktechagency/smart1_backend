@@ -205,6 +205,22 @@ const updateCashPayment = async (id: string, payload: Partial<IPayment>): Promis
      }
 };
 
+const getMyPayments = async (user: IJwtPayload, query: Record<string, unknown>) => {
+     const queryBuilder = new QueryBuilder(Payment.find({ user: user.id }).populate('user', 'full_name email phoneNumber'), query);
+     const result = await queryBuilder.search([]).filter().sort().paginate().fields().modelQuery.exec();
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Payments not found!');
+     }
+     const meta = await queryBuilder.countTotal();
+
+     const data: any = {
+          meta,
+          result,
+     };
+
+     return data;
+};
+
 export const PaymentService = {
      createPayment,
      getAllPayments,
@@ -215,5 +231,6 @@ export const PaymentService = {
      isPaymentExist,
      refundPayment,
      stripeDuePaymentByBookingId,
-     updateCashPayment
+     updateCashPayment,
+     getMyPayments
 };

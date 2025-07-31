@@ -48,15 +48,18 @@ const createFaq = async (payload: IFaq, user: IJwtPayload): Promise<IFaq> => {
      }
 };
 
-const getAllFaqs = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }> => {
-     const queryBuilder = new QueryBuilder(Faq.find().populate('refferenceId', 'name'), query);
+const getAllFaqsByType = async (query: Record<string, any>, type: string): Promise<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }> => {
+     const queryBuilder = new QueryBuilder(Faq.find({ type }).populate('refferenceId', 'name'), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      const meta = await queryBuilder.countTotal();
      return { meta, result };
 };
 
-const getAllUnpaginatedFaqs = async (): Promise<IFaq[]> => {
-     const result = await Faq.find();
+const getAllUnpaginatedFaqsByType = async (type: string): Promise<IFaq[]> => {
+     const result = await Faq.find({ type });
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Faqs not found.');
+     }
      return result;
 };
 
@@ -159,8 +162,8 @@ const getAllFaqsByServiceId = async (serviceId: string, query: Record<string, an
 
 export const FaqService = {
      createFaq,
-     getAllFaqs,
-     getAllUnpaginatedFaqs,
+     getAllFaqsByType,
+     getAllUnpaginatedFaqsByType,
      updateFaq,
      deleteFaq,
      hardDeleteFaq,

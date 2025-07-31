@@ -13,10 +13,10 @@ import cryptoToken from '../../../utils/cryptoToken';
 import generateOTP from '../../../utils/generateOTP';
 import { verifyToken } from '../../../utils/verifyToken';
 import stripe from '../../config/stripe.config';
+import { NOTIFICATION_MODEL_TYPE, NotificationTitle } from '../notification/notification.enum';
 import { ResetToken } from '../resetToken/resetToken.model';
 import { USER_ROLES } from '../user/user.enums';
 import { User } from '../user/user.model';
-import { NOTIFICATION_MODEL_TYPE } from '../notification/notification.enum';
 
 //login
 const loginUserFromDB = async (payload: ILoginData) => {
@@ -79,7 +79,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
      };
      if (isExistUser.role === USER_ROLES.ADMIN) {
           await sendNotifications({
-               title: `${isExistUser.full_name}`,
+               title: NotificationTitle.LOGIN,
                receiver: getAdmin._id,
                message: `Admin ${isExistUser.full_name} has just logged into the dashboard.`,
                type: NOTIFICATION_MODEL_TYPE.MESSAGE,
@@ -87,7 +87,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
      }
      if (isExistUser.role === USER_ROLES.SUPER_ADMIN) {
           await sendNotifications({
-               title: `${isExistUser.full_name}`,
+               title: NotificationTitle.LOGIN,
                receiver: isExistUser._id,
                message: `Hay super admin ${isExistUser.full_name} wellcome back to the dashboard.`,
                type: NOTIFICATION_MODEL_TYPE.MESSAGE,
@@ -96,7 +96,7 @@ const loginUserFromDB = async (payload: ILoginData) => {
 
      if (isExistUser.role === USER_ROLES.USER) {
           await sendNotifications({
-               title: `${isExistUser.full_name}`,
+               title: NotificationTitle.LOGIN,
                receiver: isExistUser._id,
                message: `Wellcome ${isExistUser.full_name} to the app.`,
                type: NOTIFICATION_MODEL_TYPE.MESSAGE,
@@ -164,27 +164,27 @@ const SocialLoginUserFromDB = async (payload: ILoginData) => {
      };
      if (isExistUser.role === USER_ROLES.ADMIN) {
           await sendNotifications({
-               title: `${isExistUser.full_name}`,
+               title: NotificationTitle.LOGIN,
                receiver: getAdmin._id,
                message: `Admin ${isExistUser.full_name} has just logged into the dashboard.`,
-               type: 'MESSAGE',
+               type: NOTIFICATION_MODEL_TYPE.MESSAGE,
           });
      }
      if (isExistUser.role === USER_ROLES.SUPER_ADMIN) {
           await sendNotifications({
-               title: `${isExistUser.full_name}`,
+               title: NotificationTitle.LOGIN,
                receiver: isExistUser._id,
                message: `Hay super admin ${isExistUser.full_name} wellcome back to the dashboard.`,
-               type: 'MESSAGE',
+               type: NOTIFICATION_MODEL_TYPE.MESSAGE,
           });
      }
 
      if (isExistUser.role === USER_ROLES.USER) {
           await sendNotifications({
-               title: `${isExistUser.full_name}`,
+               title: NotificationTitle.LOGIN,
                receiver: isExistUser._id,
                message: `Wellcome ${isExistUser.full_name} to the app.`,
-               type: 'MESSAGE',
+               type: NOTIFICATION_MODEL_TYPE.MESSAGE,
           });
      }
      const accessToken = jwtHelper.createToken(jwtData, config.jwt.jwt_secret as Secret, config.jwt.jwt_expire_in as string);

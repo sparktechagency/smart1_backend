@@ -12,7 +12,7 @@ import { BID_STATUS } from '../Bid/Bid.enum';
 import { Bid } from '../Bid/Bid.model';
 import { BOOKING_STATUS, PAYMENT_STATUS } from '../booking/booking.enums';
 import { Booking } from '../booking/booking.model';
-import { NOTIFICATION_MODEL_TYPE } from '../notification/notification.enum';
+import { NOTIFICATION_MODEL_TYPE, NotificationTitle } from '../notification/notification.enum';
 import { Payment } from '../Payment/Payment.model';
 import { PaymentService } from '../Payment/Payment.service';
 import { Service } from '../Service/Service.model';
@@ -133,8 +133,9 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
                     await sendNotifications({
                          receiver: previouslyAcceptedBidProvider,
                          type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                         title: `Your accepted bid for booking ${booking._id} has been cancelled by the customer ${thisCustomer?.full_name}.`,
-                         booking: booking,
+                         title: NotificationTitle.BID_CHANGED,
+                         message: `Your accepted bid for booking ${booking._id} has been cancelled by the customer ${thisCustomer?.full_name}.`,
+                         reference: booking,
                     });
                }
           }
@@ -144,8 +145,9 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
                await sendNotifications({
                     receiver: receiverId,
                     type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                    title: notificationTitle,
-                    booking: isBookingExists,
+                    title: NotificationTitle.NEW_BOOKING,
+                    message: `New order placed by  ${thisCustomer?.full_name}. But pending for accepted bid. booking id : ${isBookingExists._id}`,
+                    reference: isBookingExists._id,
                });
           }
 

@@ -12,7 +12,7 @@ import stripe from '../../config/stripe.config';
 import { IJwtPayload } from '../auth/auth.interface';
 import { BID_STATUS, DEFAULT_CURRENCY } from '../Bid/Bid.enum';
 import { Bid } from '../Bid/Bid.model';
-import { NOTIFICATION_MODEL_TYPE, NotificationScreen } from '../notification/notification.enum';
+import { NOTIFICATION_MODEL_TYPE, NotificationScreen, NotificationTitle } from '../notification/notification.enum';
 import { Payment } from '../Payment/Payment.model';
 import { PaymentService } from '../Payment/Payment.service';
 import { Service } from '../Service/Service.model';
@@ -70,10 +70,11 @@ const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) 
           notificationReceivers = [...notificationReceivers, ...providersWithinRange.map((provider: any) => provider._id.toString())];
           for (const receiverId of notificationReceivers) {
                await sendNotifications({
-                    receiver: receiverId,
+                    receiver: receiverId as unknown as Types.ObjectId,
                     type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                    title: `New order placed by  ${thisCustomer?.full_name}. But pending for accepted bid. booking id : ${createdBooking._id}`,
-                    booking: createdBooking,
+                    title: NotificationTitle.NEW_BOOKING,
+                    message: `New order placed by  ${thisCustomer?.full_name}. But pending for accepted bid. booking id : ${createdBooking._id}`,
+                    reference: createdBooking._id,
                });
           }
 
@@ -304,10 +305,12 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
                for (const receiverId of admins) {
                     await sendNotifications({
-                         receiver: receiverId,
+                         receiver: receiverId as unknown as Types.ObjectId,
                          type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                         title: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
-                         booking: isExistBooking,
+                         message: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
+                         title: NotificationTitle.BOOKING_CANCELLED,
+                         reference: isExistBooking._id,
+
                     });
                }
 
@@ -371,10 +374,11 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
           const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBooking.user as any)._id.toString(), (isExistBooking.serviceProvider as any)._id.toString()];
           for (const receiverId of notificationReceivers) {
                await sendNotifications({
-                    receiver: receiverId,
+                    receiver: receiverId as unknown as Types.ObjectId,
                     type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                    title: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
-                    booking: isExistBooking,
+                    message: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
+                    reference: isExistBooking._id,
+                    title: NotificationTitle.BOOKING_CANCELLED,
                });
           }
 
@@ -466,10 +470,11 @@ const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | a
                const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBid.serviceProvider as any)._id.toString()];
                for (const receiverId of notificationReceivers) {
                     await sendNotifications({
-                         receiver: receiverId,
+                         receiver: receiverId as unknown as Types.ObjectId,
                          type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                         title: `New order placed by ${thisCustomer?.full_name} Accepting Bid.`,
-                         booking: updatedBooking,
+                         message: `New booking placed by ${thisCustomer?.full_name} Accepting Bid.`,
+                         reference: updatedBooking._id,
+                         title: NotificationTitle.NEW_BOOKING,
                     });
                }
 
@@ -754,20 +759,22 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
 
                for (const receiverId of notificationReceivers) {
                     await sendNotifications({
-                         receiver: receiverId,
+                         receiver: receiverId as unknown as Types.ObjectId,
                          type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                         title: `Booking bid changed by ${thisCustomer?.full_name}. New service provider assigned.`,
-                         booking: updatedBooking,
+                         message: `Booking bid changed by ${thisCustomer?.full_name}. New service provider assigned.`,
+                         reference: updatedBooking._id,
+                         title: NotificationTitle.BID_CHANGED,
                     });
                }
 
                // Also notify the previous service provider about the change
                if (previouslyAcceptedBidToBeChanged.serviceProvider) {
                     await sendNotifications({
-                         receiver: previouslyAcceptedBidToBeChanged.serviceProvider.toString(),
+                         receiver: previouslyAcceptedBidToBeChanged.serviceProvider as unknown as Types.ObjectId,
                          type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                         title: `Your accepted bid for booking ${updatedBooking._id} has been cancelled by the customer ${thisCustomer?.full_name}.`,
-                         booking: updatedBooking,
+                         message: `Your accepted bid for booking ${updatedBooking._id} has been cancelled by the customer ${thisCustomer?.full_name}.`,
+                         reference: updatedBooking._id,
+                         title: NotificationTitle.BID_CHANGED,
                     });
                }
           } else if (thisBooking.paymentMethod === PAYMENT_METHOD.ONLINE) {
@@ -872,13 +879,11 @@ const reScheduleBookingById = async (bookingId: string, bookingData: {
 
           // send notification to user
           await sendNotifications({
-               receiver: user.id,
+               receiver: user.id as unknown as Types.ObjectId,
                type: NOTIFICATION_MODEL_TYPE.BOOKING,
-               title: 'Booking re-scheduled',
                message: `Booking: ${thisBooking._id} is re-scheduled for ${bookingData.bookingDate} at ${bookingData.bookingTime} by ${user.role}`,
-               booking: thisBooking,
                reference: thisBooking._id,
-               screen: NotificationScreen.APP,
+               title: NotificationTitle.BOOKING_RE_SCHEDULED,
           });
           // commit transaction
           await session.commitTransaction();

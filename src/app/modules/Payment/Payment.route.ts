@@ -13,6 +13,8 @@ router.patch('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
     validateRequest(PaymentValidation.updatePaymentZodSchema), PaymentController.updateCashPayment);
 
 router.get('/', PaymentController.getAllPayments);
+// get my payments
+router.get('/my-payments', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), PaymentController.getMyPayments);
 
 router.get('/unpaginated', PaymentController.getAllUnpaginatedPayments);
 

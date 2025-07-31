@@ -1,5 +1,5 @@
 import { model, Schema } from 'mongoose';
-import { NOTIFICATION_MODEL_TYPE, NotificationScreen } from './notification.enum';
+import { NOTIFICATION_MODEL_TYPE, NotificationScreen, NotificationTitle } from './notification.enum';
 import { INotification } from './notification.interface';
 
 
@@ -18,6 +18,7 @@ const notificationSchema = new Schema<INotification>(
           },
           title: {
                type: String,
+               enum: Object.values(NotificationTitle),
                required: false,
           },
           receiver: {

@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
+import { IJwtPayload } from '../auth/auth.interface';
 import { IFaq } from './Faq.interface';
 import { FaqService } from './Faq.service';
-import { IJwtPayload } from '../auth/auth.interface';
 
 const createFaq = catchAsync(async (req: Request, res: Response) => {
      const result = await FaqService.createFaq(req.body, req.user as IJwtPayload);
@@ -16,8 +16,8 @@ const createFaq = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-const getAllFaqs = catchAsync(async (req: Request, res: Response) => {
-     const result = await FaqService.getAllFaqs(req.query);
+const getAllFaqsByType = catchAsync(async (req: Request, res: Response) => {
+     const result = await FaqService.getAllFaqsByType(req.query, req.params.type);
 
      sendResponse<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }>(res, {
           statusCode: 200,
@@ -27,8 +27,8 @@ const getAllFaqs = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-const getAllUnpaginatedFaqs = catchAsync(async (req: Request, res: Response) => {
-     const result = await FaqService.getAllUnpaginatedFaqs();
+const getAllUnpaginatedFaqsByType = catchAsync(async (req: Request, res: Response) => {
+     const result = await FaqService.getAllUnpaginatedFaqsByType(req.params.type);
 
      sendResponse<IFaq[]>(res, {
           statusCode: 200,
@@ -100,8 +100,8 @@ const getAllFaqsByServiceId = catchAsync(async (req: Request, res: Response) => 
 
 export const FaqController = {
      createFaq,
-     getAllFaqs,
-     getAllUnpaginatedFaqs,
+     getAllFaqsByType,
+     getAllUnpaginatedFaqsByType,
      updateFaq,
      deleteFaq,
      hardDeleteFaq,

@@ -70,8 +70,15 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
                })
                     .sort({ createdAt: -1 })
                     .select('text offer createdAt sender');
+               // Count unread messages for the current user
+               const unreadMessagesCount = await Message.countDocuments({
+                    chatId: chat?._id,
+                    read: false, // Assuming 'read' is the field that marks a message as unread
+                    sender: { $ne: user.id }, // Exclude the messages sent by the current user
+               });
 
                return {
+                    unreadMessagesCount,
                     ...data,
                     lastMessage: lastMessage || null,
                };

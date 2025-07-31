@@ -1,26 +1,20 @@
 import { INotification } from '../app/modules/notification/notification.interface';
 import { Notification } from '../app/modules/notification/notification.model';
 
-// receiver: user.id,
-//      type: NOTIFICATION_MODEL_TYPE.BOOKING,
-//           title: 'Booking re-scheduled',
-//                booking: thisBooking,
+
 // ========================================
 // receiver
 // type
 // title
 // message
-// booking
 // reference
 // referenceModel
 // screen
 // =========================================
-// message: string;
-//      postId: Types.ObjectId;****
-//      read: boolean; ****
 
 
-export const sendNotifications = async (data: any): Promise<INotification> => {
+
+export const sendNotifications = async (data: INotification): Promise<INotification> => {
      const result = await Notification.create(data);
 
      //@ts-ignore
