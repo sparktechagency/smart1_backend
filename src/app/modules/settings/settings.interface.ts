@@ -9,4 +9,5 @@ export interface ISettings extends Document {
      appVersion: string;
      faqs: Types.ObjectId[];
      reports: Types.ObjectId[];
+     reviews: Types.ObjectId[];
 }

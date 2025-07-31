@@ -16,8 +16,8 @@ const createReviews = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-const getAllReviews = catchAsync(async (req: Request, res: Response) => {
-     const result = await ReviewsService.getAllReviews(req.query);
+const getAllReviewsByType = catchAsync(async (req: Request, res: Response) => {
+     const result = await ReviewsService.getAllReviewsByTypes(req.params.type, req.query);
 
      sendResponse<{ meta: { total: number; page: number; limit: number; }; result: IReviews[]; }>(res, {
           statusCode: 200,
@@ -27,8 +27,8 @@ const getAllReviews = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-const getAllUnpaginatedReviews = catchAsync(async (req: Request, res: Response) => {
-     const result = await ReviewsService.getAllUnpaginatedReviews();
+const getAllUnpaginatedReviewsByType = catchAsync(async (req: Request, res: Response) => {
+     const result = await ReviewsService.getAllUnpaginatedReviewsByType(req.params.type);
 
      sendResponse<IReviews[]>(res, {
           statusCode: 200,
@@ -100,8 +100,8 @@ const getAllReviewsByBookingId = catchAsync(async (req: Request, res: Response) 
 
 export const ReviewsController = {
      createReviews,
-     getAllReviews,
-     getAllUnpaginatedReviews,
+     getAllReviewsByType,
+     getAllUnpaginatedReviewsByType,
      updateReviews,
      deleteReviews,
      hardDeleteReviews,

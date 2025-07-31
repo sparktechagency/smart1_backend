@@ -7,9 +7,10 @@ const ReviewsSchema = new Schema<IReviews>({
      rating: { type: Number, required: true },
      review: { type: String, required: true },
      type: { type: String, enum: Object.values(ReviewsType), required: true },
-     refferenceId: { type: Schema.Types.ObjectId, refPath: 'type', required: true },
+     refferenceId: { type: Schema.Types.ObjectId, refPath: 'type', required: false },
      isDeleted: { type: Boolean, default: false },
      deletedAt: { type: Date },
+     deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
 ReviewsSchema.pre('find', function (next) {

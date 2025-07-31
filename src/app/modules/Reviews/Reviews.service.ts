@@ -1,15 +1,14 @@
 import { StatusCodes } from 'http-status-codes';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import AppError from '../../../errors/AppError';
 import QueryBuilder from '../../builder/QueryBuilder';
-import { Service } from '../Service/Service.model';
 import { IJwtPayload } from '../auth/auth.interface';
 import { BOOKING_STATUS } from '../booking/booking.enums';
+import { Booking } from '../booking/booking.model';
+import Settings from '../settings/settings.model';
+import { USER_ROLES } from '../user/user.enums';
 import { IReviews } from './Reviews.interface';
 import { Reviews } from './Reviews.model';
-import { Booking } from '../booking/booking.model';
-import { USER_ROLES } from '../user/user.enums';
-
 
 
 const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IReviews> => {
@@ -19,6 +18,14 @@ const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IRev
      try {
           // Start the transaction
           session.startTransaction();
+          // if payload.type = Settings then refferenceId is the id of setting
+          if (payload.type === 'Settings') {
+               const isExistSetting = await Settings.findOne().select('_id').session(session);
+               if (!isExistSetting) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
+               }
+               payload.refferenceId = isExistSetting._id as Types.ObjectId;
+          }
           // step 0: check if review already exists for this refferenceId and type by the user
           const isExistReview = await Reviews.findOne({ refferenceId: payload.refferenceId, type: payload.type, createdBy: user.id }).session(session);
           if (isExistReview) {
@@ -34,11 +41,19 @@ const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IRev
 
           // user must be either service provider or user of the referenced document
           if (isExistRefference) {
-               if (payload.type === 'Booking' && isExistRefference.status !== BOOKING_STATUS.COMPLETED) {
-                    throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
-               }
-               if (isExistRefference.user.toString() !== user.id && isExistRefference.serviceProvider.toString() !== user.id) {
-                    throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
+               if (payload.type === 'Booking') {
+                    if (isExistRefference.status !== BOOKING_STATUS.COMPLETED) {
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
+                    }
+                    if (isExistRefference.user.toString() !== user.id && isExistRefference.serviceProvider.toString() !== user.id) {
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
+                    }
+               } else if (payload.type === 'Settings') {
+                    // user mustbe a customer or service provider of any of a completed booking
+                    const hasAnyBooking = await Booking.find({ user: user.id, status: BOOKING_STATUS.COMPLETED });
+                    if (!hasAnyBooking) {
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review. Cause you have no completed booking.');
+                    }
                }
           }
 
@@ -67,15 +82,21 @@ const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IRev
      }
 };
 
-const getAllReviews = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IReviews[]; }> => {
-     const queryBuilder = new QueryBuilder(Reviews.find().populate('refferenceId', 'name'), query);
+const getAllReviewsByTypes = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IReviews[]; }> => {
+     const queryBuilder = new QueryBuilder(Reviews.find({ type }), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Reviews not found.');
+     }
      const meta = await queryBuilder.countTotal();
      return { meta, result };
 };
 
-const getAllUnpaginatedReviews = async (): Promise<IReviews[]> => {
-     const result = await Reviews.find();
+const getAllUnpaginatedReviewsByType = async (type: string): Promise<IReviews[]> => {
+     const result = await Reviews.find({ type });
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Reviews not found.');
+     }
      return result;
 };
 
@@ -106,6 +127,7 @@ const deleteReviews = async (id: string, user: IJwtPayload): Promise<IReviews | 
 
           result.isDeleted = true;
           result.deletedAt = new Date();
+          result.deletedBy = new mongoose.Types.ObjectId(user.id);
           await result.save({ session });
 
           if (result.refferenceId) {
@@ -183,8 +205,8 @@ const getAllReviewsByBookingId = async (bookingId: string, query: Record<string,
 
 export const ReviewsService = {
      createReviews,
-     getAllReviews,
-     getAllUnpaginatedReviews,
+     getAllReviewsByTypes,
+     getAllUnpaginatedReviewsByType,
      updateReviews,
      deleteReviews,
      hardDeleteReviews,

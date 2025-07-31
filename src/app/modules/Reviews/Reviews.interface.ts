@@ -6,11 +6,12 @@ export interface IReviews {
      rating: number;
      review: string;
      type: ReviewsType;
-     refferenceId: Types.ObjectId;
+     refferenceId?: Types.ObjectId;
      createdAt: Date;
      updatedAt: Date;
      isDeleted: boolean;
      deletedAt?: Date;
+     deletedBy?: Types.ObjectId;
 }
 
 export type IReviewsFilters = {

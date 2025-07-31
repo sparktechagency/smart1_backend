@@ -19,6 +19,7 @@ import { paymentCardRoutes } from '../app/modules/paymentCard/paymentCard.route'
 import SettingsRoutes from '../app/modules/settings/settings.route';
 import stripeAccountRoutes from '../app/modules/stripeAccount/stripeAccount.route';
 import { UserRouter } from '../app/modules/user/user.route';
+import { ReviewsRoutes } from '../app/modules/Reviews/Reviews.route';
 const router = express.Router();
 const routes = [
      {
@@ -100,6 +101,10 @@ const routes = [
      {
           path: '/dashboard',
           route: DashboardRoutes,
+     },
+     {
+          path: '/reviews',
+          route: ReviewsRoutes,
      },
 ];
 

@@ -24,6 +24,7 @@ const settingsSchema = new Schema<ISettings>(
           },
           faqs: [{ type: Schema.Types.ObjectId, ref: 'Faq', default: [] }],
           reports: [{ type: Schema.Types.ObjectId, ref: 'Report', default: [] }],
+          reviews: [{ type: Schema.Types.ObjectId, ref: 'Reviews', default: [] }],
      },
      { timestamps: true },
 );
