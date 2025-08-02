@@ -12,7 +12,7 @@ import stripe from '../../config/stripe.config';
 import { IJwtPayload } from '../auth/auth.interface';
 import { BID_STATUS, DEFAULT_CURRENCY } from '../Bid/Bid.enum';
 import { Bid } from '../Bid/Bid.model';
-import { NOTIFICATION_MODEL_TYPE, NotificationScreen, NotificationTitle } from '../notification/notification.enum';
+import { NOTIFICATION_MODEL_TYPE, NotificationTitle } from '../notification/notification.enum';
 import { Payment } from '../Payment/Payment.model';
 import { PaymentService } from '../Payment/Payment.service';
 import { Service } from '../Service/Service.model';
@@ -21,18 +21,24 @@ import { User } from '../user/user.model';
 import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, DEFAULT_BOOKING_RANGE, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 import { IBooking } from './booking.interface';
 import { Booking } from './booking.model';
-import { generateTransactionId, transferToServiceProvider } from './booking.utils';
-
+import { combineBookingDateTime, generateTransactionId, transferToServiceProvider } from './booking.utils';
 
 const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) => {
      const session = await mongoose.startSession();
      session.startTransaction();
      try {
+          const combinedDateTime = new Date(combineBookingDateTime(bookingData.bookingDate?.toString() as string, bookingData.bookingTime?.toString() as string));
+          // ensure booking date and time is not less than current date and time+not as same as previous booking date and time
+          if (combinedDateTime < new Date()) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Booking date and time must be greater than current date and time');
+          }
           const thisCustomer = await User.findById(user.id).session(session);
           if (!thisCustomer || !thisCustomer.stripeCustomerId) {
                throw new AppError(StatusCodes.NOT_FOUND, 'User or Stripe Customer ID not found');
           }
-
+          // re assign booking date and time
+          bookingData.bookingDate = combinedDateTime;
+          bookingData.bookingTime = combinedDateTime;
           const booking = new Booking({
                ...bookingData,
                user: user.id,
@@ -86,7 +92,6 @@ const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) 
           // commit transaction
           await session.commitTransaction();
           return createdBooking;
-
      } catch (error) {
           console.log(error);
           // Abort the transaction if any error occurs
@@ -96,7 +101,6 @@ const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) 
           session.endSession();
      }
 };
-
 
 const getBookingDetails = async (bookingId: string, user: IJwtPayload) => {
      let booking: IBooking | null = null;
@@ -143,6 +147,10 @@ const getMyBookings = async (query: Record<string, unknown>, user: IJwtPayload) 
                select: 'full_name _id email phone',
           },
           {
+               path: 'serviceCategory',
+               select: 'name',
+          },
+          {
                path: 'services.service',
                select: 'serviceCategory image serviceCharge name servedCount',
           },
@@ -171,7 +179,6 @@ const getMyBookings = async (query: Record<string, unknown>, user: IJwtPayload) 
           result,
      };
 };
-
 
 const changeBookingStatus = async (bookingId: string, status: string, user: IJwtPayload) => {
      const session = await mongoose.startSession();
@@ -247,24 +254,15 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
           }
 
           // Update booking status
-          const updatedBooking = await Booking.findOneAndUpdate(
-               { _id: new Types.ObjectId(bookingId), acceptedBid: bid!._id },
-               { status },
-               { new: true, session }
-          );
+          const updatedBooking = await Booking.findOneAndUpdate({ _id: new Types.ObjectId(bookingId), acceptedBid: bid!._id }, { status }, { new: true, session });
 
           // Update bid status
-          const updatedBid = await Bid.findOneAndUpdate(
-               { _id: bid!._id },
-               { status },
-               { new: true, session }
-          );
+          const updatedBid = await Bid.findOneAndUpdate({ _id: bid!._id }, { status }, { new: true, session });
 
           // Commit the transaction
           await session.commitTransaction();
 
           return { updatedBooking, updatedBid };
-
      } catch (error) {
           // Rollback the transaction in case of an error
           await session.abortTransaction();
@@ -274,8 +272,6 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
           session.endSession();
      }
 };
-
-
 
 const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_REFUND_REASON, user: IJwtPayload) => {
      const session = await mongoose.startSession();
@@ -310,7 +306,6 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                          message: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
                          title: NotificationTitle.BOOKING_CANCELLED,
                          reference: isExistBooking._id,
-
                     });
                }
 
@@ -344,7 +339,6 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                               }
                          }
                     }
-
                } else if (isExistBooking.paymentMethod === PAYMENT_METHOD.CASH) {
                     if (isExistPayment.status !== PAYMENT_STATUS.REFUNDED) {
                          isExistPayment.isNeedRefund = true;
@@ -395,7 +389,6 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
      }
 };
 
-
 const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | any) => {
      const session = await mongoose.startSession();
      session.startTransaction();
@@ -422,8 +415,6 @@ const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | a
                     throw new AppError(StatusCodes.BAD_REQUEST, 'Bid does not match with booking');
                }
           }
-
-
 
           const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
           // Process payment if method is CASH
@@ -556,7 +547,7 @@ const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | a
                try {
                     const session = await stripe.checkout.sessions.create(stripeSessionData);
 
-                    result = { url: session.url, };
+                    result = { url: session.url };
                } catch (error) {
                     console.log({ error });
                     throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Stripe session creation failed');
@@ -616,7 +607,6 @@ const getUnpaginatedBidsOfBookingByIdToAccept = async (bookingId: string) => {
      return result;
 };
 
-
 const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwtPayload) => {
      const session = await mongoose.startSession();
      session.startTransaction();
@@ -635,7 +625,9 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
           }
 
           // Check if the new bid exists and is valid
-          const isExistBid = await Bid.findOne({ _id: { $ne: thisBooking.acceptedBid, $eq: newBidId }, serviceCategory: thisBooking.serviceCategory, isAccepted: false }).populate('serviceProvider').session(session);
+          const isExistBid = await Bid.findOne({ _id: { $ne: thisBooking.acceptedBid, $eq: newBidId }, serviceCategory: thisBooking.serviceCategory, isAccepted: false })
+               .populate('serviceProvider')
+               .session(session);
           if (!isExistBid) {
                throw new AppError(StatusCodes.NOT_FOUND, 'New bid not found || not in pending || already accepted');
           }
@@ -673,8 +665,7 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
                     const resultRefundOnline = await PaymentService.refundPayment(previousPaymentOnPreviouslyAcceptedBid._id.toString(), user, CANCELL_OR_REFUND_REASON.BID_CHANGED_BY_USER);
                     if (resultRefundOnline) {
                          console.log('refund online', resultRefundOnline);
-                    }
-                    else {
+                    } else {
                          throw new AppError(StatusCodes.BAD_REQUEST, 'Previous ONLINE payment refund failed');
                     }
                } else {
@@ -683,7 +674,6 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
                     throw new AppError(StatusCodes.BAD_REQUEST, 'Previous payment is not online payment. So do the refund manually first');
                }
           }
-
 
           // // **Payment Handling for the new accepted bid**
           let result;
@@ -752,7 +742,6 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
                });
 
                result = updatedBooking;
-
 
                // Send notifications and emails (not inside the transaction, as they are external calls)
                const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBid.serviceProvider as any)._id.toString()];
@@ -832,7 +821,7 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
                     result = { url: session.url };
                } catch (error) {
                     console.log({ error });
-                    result = { message: 'Bid no changed', booking: thisBooking };// Fallback to booking without payment URL
+                    result = { message: 'Bid no changed', booking: thisBooking }; // Fallback to booking without payment URL
                }
           }
 
@@ -849,8 +838,6 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
      }
 };
 
-
-
 const getServiceCategoryBasedBidsToAccept = async (query: Record<string, any>, serviceCategoryId: string) => {
      const queryBuilder = new QueryBuilder(Bid.find({ serviceCategory: serviceCategoryId }), query);
      const bids = await queryBuilder.modelQuery;
@@ -858,10 +845,14 @@ const getServiceCategoryBasedBidsToAccept = async (query: Record<string, any>, s
      return { meta, bids };
 };
 
-const reScheduleBookingById = async (bookingId: string, bookingData: {
-     bookingDate: Date,
-     bookingTime: Date
-}, user: IJwtPayload) => {
+const reScheduleBookingById = async (
+     bookingId: string,
+     bookingData: {
+          bookingDate: Date;
+          bookingTime: Date;
+     },
+     user: IJwtPayload,
+) => {
      const session = await mongoose.startSession();
      session.startTransaction();
      try {
@@ -869,12 +860,13 @@ const reScheduleBookingById = async (bookingId: string, bookingData: {
           if (!thisBooking) {
                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found or booking either completed or cancelled or in processing');
           }
+          const combinedDateTime = new Date(combineBookingDateTime(bookingData.bookingDate?.toString() as string, bookingData.bookingTime?.toString() as string));
           // ensure booking date and time is not less than current date and time+not as same as previous booking date and time
-          if (bookingData.bookingDate < new Date() || bookingData.bookingTime < new Date() || bookingData.bookingDate === thisBooking.bookingDate || bookingData.bookingTime === thisBooking.bookingTime) {
+          if (combinedDateTime < new Date() || combinedDateTime === thisBooking.bookingDate || combinedDateTime === thisBooking.bookingTime) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'Booking date and time must be different from previous booking date and time and must be greater than current date and time');
           }
-          thisBooking.bookingDate = bookingData.bookingDate;
-          thisBooking.bookingTime = bookingData.bookingTime;
+          thisBooking.bookingDate = combinedDateTime;
+          thisBooking.bookingTime = combinedDateTime;
           await thisBooking.save({ session });
 
           // send notification to user

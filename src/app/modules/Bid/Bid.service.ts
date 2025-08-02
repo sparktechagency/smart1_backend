@@ -34,6 +34,12 @@ const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
      if (!result) {
           throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create bid.');
      }
+
+     //@ts-ignore
+     const io = global.io;
+     if (io) {
+          io.emit(`getBid::${payload?.booking}`, result);
+     }
      return result;
 };
 
@@ -89,8 +95,6 @@ const getBidById = async (id: string): Promise<IBid | null> => {
      }
      return result;
 };
-
-
 
 const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJwtPayload) => {
      const session = await mongoose.startSession();
@@ -184,12 +188,10 @@ const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJ
                throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to update booking or bid');
           }
 
-
           // Commit the transaction
           await session.commitTransaction();
 
           return { updatedBooking, updatedBid };
-
      } catch (error) {
           // Rollback the transaction in case of an error
           await session.abortTransaction();
@@ -199,8 +201,6 @@ const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJ
           session.endSession();
      }
 };
-
-
 
 const getAllBidsByBookingId = async (query: Record<string, any>, bookingId: string, user: IJwtPayload) => {
      const booking = await Booking.findOne({ _id: bookingId, user: user.id, status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } });
@@ -231,5 +231,5 @@ export const BidService = {
      hardDeleteBid,
      getBidById,
      changeBidStatus,
-     getAllBidsByBookingId
+     getAllBidsByBookingId,
 };

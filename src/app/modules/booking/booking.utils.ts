@@ -72,9 +72,20 @@ export async function createPayout({
      }
 }
 
-
 export const generateTransactionId = (): string => {
      const timestamp = Date.now().toString().slice(-6);
      const randomString = Math.random().toString(36).substring(2, 8);
      return `${timestamp}${randomString}`;
+};
+
+export const combineBookingDateTime = (bookingDate: string, bookingTime: string) => {
+     // Extract the date from bookingDate and time from bookingTime
+     const date = new Date(bookingDate).toISOString().split('T')[0]; // Extract just the date part
+     const time = bookingTime.split('T')[1]; // Extract the time part (HH:MM:SS)
+
+     // Combine the date and time into a valid ISO string
+     const combinedDateTime = `${date}T${time}`;
+
+     // Return the combined DateTime as a JavaScript Date object
+     return new Date(combinedDateTime);
 };
