@@ -18,7 +18,7 @@ import { PaymentService } from '../Payment/Payment.service';
 import { Service } from '../Service/Service.model';
 import { USER_ROLES } from '../user/user.enums';
 import { User } from '../user/user.model';
-import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, DEFAULT_BOOKING_RANGE, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
+import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, DEFAULT_BOOKING_RANGE, MINIMUM_ACCEPTABLE_DUE_AMOUNT, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 import { IBooking } from './booking.interface';
 import { Booking } from './booking.model';
 import { combineBookingDateTime, generateTransactionId, transferToServiceProvider } from './booking.utils';
@@ -61,7 +61,8 @@ const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) 
 
           const providersWithinRange = await User.find({
                role: USER_ROLES.SERVICE_PROVIDER,
-               serviceCategory: createdBooking.serviceCategory,
+               serviceCategories: { $in: [createdBooking.serviceCategory] }, // ensures serviceCategory is in the array
+               adminDueAmount: { $lte: MINIMUM_ACCEPTABLE_DUE_AMOUNT }, // ensures adminDueAmount is less than or equal to 200
                geoLocation: {
                     $near: {
                          $geometry: {
@@ -230,7 +231,8 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                                              const transfer = await transferToServiceProvider({
                                                   stripeConnectedAccount: (bid!.serviceProvider as any).stripeConnectedAccount,
                                                   finalAmount: booking.finalAmount,
-                                                  revenue: (bid!.serviceProvider as any).adminRevenuePercent,
+                                                  adminRevenuePercent: (bid!.serviceProvider as any).adminRevenuePercent,
+                                                  serviceProvider: (bid!.serviceProvider as any)._id.toString(),
                                                   bookingId: booking._id.toString(),
                                              });
                                              console.log('🚀 ~ changeBookingStatus ~ transfer:', transfer);
@@ -572,7 +574,7 @@ const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | a
 const getServiceCategoryBasedBookingsForProviderToBid = async (query: any, user: IJwtPayload) => {
      // get service category from provider
      const provider = await User.findOne({ _id: user.id, role: USER_ROLES.SERVICE_PROVIDER }).select('serviceCategory').lean();
-     const queryBuilder = new QueryBuilder(Booking.find({ serviceCategory: provider?.serviceCategory, status: BOOKING_STATUS.PENDING }), query);
+     const queryBuilder = new QueryBuilder(Booking.find({ serviceCategory: provider?.serviceCategories, status: BOOKING_STATUS.PENDING }), query);
      const result = await queryBuilder.modelQuery;
      const meta = await queryBuilder.countTotal();
      return { meta, result };

@@ -37,8 +37,8 @@ const userSchema = new Schema<IUser, UserModel>(
                trim: true,
                unique: true,
           }, // for provider
-          serviceCategory: {
-               type: String,
+          serviceCategories: {
+               type: [String],
                trim: true,
           }, // for provider
           role: {
@@ -165,6 +165,7 @@ const userSchema = new Schema<IUser, UserModel>(
                },
           ],
           adminRevenuePercent: { type: Number, default: DEFAULT_ADMIN_REVENUE },
+          adminDueAmount: { type: Number, default: 0 }, // Amount due to admin
      },
      { timestamps: true },
 );

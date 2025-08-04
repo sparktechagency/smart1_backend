@@ -40,3 +40,4 @@ export enum CANCELL_OR_REFUND_REASON {
 }
 
 export const DEFAULT_BOOKING_RANGE: number = 10; // in km
+export const MINIMUM_ACCEPTABLE_DUE_AMOUNT: number = 200;

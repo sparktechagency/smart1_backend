@@ -1,6 +1,9 @@
 import { string, z } from 'zod';
 import { USER_ROLES } from './user.enums';
-export const objectIdSchemaOptional = z.string().regex(/^[a-f\d]{24}$/i, { message: 'Invalid ObjectId' }).optional();
+export const objectIdSchemaOptional = z
+     .string()
+     .regex(/^[a-f\d]{24}$/i, { message: 'Invalid ObjectId' })
+     .optional();
 export const objectIdSchemaMendatory = (fieldName: string) => z.string().regex(/^[a-f\d]{24}$/i, { message: `Invalid ${fieldName} Id` });
 export const createUserZodSchema = z.object({
      body: z.object({
@@ -16,7 +19,7 @@ export const createServiceProviderZodSchema = z.object({
           password: z.string({ required_error: 'Password is required' }).min(8, 'Password must be at least 8 characters long'),
           full_name: z.string({ required_error: 'Name is required' }).min(2, 'Name must be at least 2 characters long'),
           businessName: z.string().min(2, 'Business Name must be at least 2 characters long'),
-          serviceCategory: z.string(),
+          serviceCategories: z.array(z.string().min(2, 'Service Category must be at least 2 characters long')),
           phone: string().default(''),
      }),
 });
@@ -25,7 +28,7 @@ const updateUserZodSchema = z.object({
      body: z.object({
           full_name: z.string().optional(),
           businessName: z.string().min(2, 'Business Name must be at least 2 characters long').optional(), // for provider
-          serviceCategory: z.string().optional(), // for provider
+          serviceCategories: z.array(z.string().min(2, 'Service Category must be at least 2 characters long')).optional(), // for provider
           phone: z.string().optional(),
           address: z
                .union([

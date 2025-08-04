@@ -1,8 +1,6 @@
 import { Model, Schema } from 'mongoose';
 import { USER_ROLES } from './user.enums';
 
-
-
 export interface IGeoLocation {
      type: 'Point';
      coordinates: [number, number]; // [longitude, latitude]
@@ -14,7 +12,7 @@ export type IUser = {
      provider?: string;
      full_name: string;
      businessName?: string; // for provider
-     serviceCategory?: string; // for provider
+     serviceCategories?: [string]; // for provider
      role: USER_ROLES;
      email: string;
      password: string;
@@ -23,14 +21,14 @@ export type IUser = {
      joinDate: Date;
      isDeleted: boolean;
      address?:
-     | {
-          province: string;
-          territory: string;
-          city: string;
-          country?: string;
-          detail_address?: string;
-     }
-     | string;
+          | {
+                 province: string;
+                 territory: string;
+                 city: string;
+                 country?: string;
+                 detail_address?: string;
+            }
+          | string;
      businesses: Schema.Types.ObjectId[];
      lastLogin: Date;
      tokenVersion: number;
@@ -46,8 +44,9 @@ export type IUser = {
      };
      balance: number;
      geoLocation?: IGeoLocation;
-     paymentCards: Schema.Types.ObjectId[]
-     adminRevenuePercent: number
+     paymentCards: Schema.Types.ObjectId[];
+     adminRevenuePercent: number;
+     adminDueAmount: number;
 };
 
 export type UserModel = {

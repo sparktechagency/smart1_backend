@@ -64,10 +64,13 @@ const createServiceProviderToDB = async (payload: IUser, host: string, protocol:
           throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
      }
      payload.role = USER_ROLES.SERVICE_PROVIDER;
-     // handl is exist serviceCategory
-     const serviceCategory = await ServiceCategory.findById(payload.serviceCategory);
-     if (!serviceCategory) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Service category not found');
+     // handl is exist serviceCategories
+     const serviceCategories = await ServiceCategory.find({
+          _id: { $in: payload.serviceCategories },
+     });
+
+     if (serviceCategories.length !== payload.serviceCategories!.length) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Some service categories not found');
      }
      const createServiceProvider = await User.create(payload);
      if (!createServiceProvider) {
@@ -104,7 +107,7 @@ const createServiceProviderToDB = async (payload: IUser, host: string, protocol:
 
      createServiceProvider.stripeCustomerId = stripeCustomer.id;
      await User.findOneAndUpdate({ _id: createServiceProvider._id }, { $set: { authentication, stripeCustomerId: stripeCustomer.id } });
-     // return createServiceProvider;    
+     // return createServiceProvider;
 
      const stripe_account_onboarding_url = await stripeAccountService.createConnectedStripeAccount(createServiceProvider, host, protocol);
 

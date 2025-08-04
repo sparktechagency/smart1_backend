@@ -22,15 +22,12 @@ const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
      if (!serviceProvider) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Service provider not found.');
      }
-     if (payload.booking) {
-          // is exist booking or not
-          const isExistBooking = await Booking.findOne({ _id: payload.booking, serviceCategory: serviceProvider.serviceCategory });
-          if (!isExistBooking) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found.');
-          }
+     const isExistBooking = await Booking.findOne({ _id: payload.booking, serviceCategory: { $in: serviceProvider.serviceCategories } });
+     if (!isExistBooking) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found.');
      }
 
-     const result = await Bid.create({ ...payload, serviceProvider: user.id, serviceCategory: serviceProvider.serviceCategory });
+     const result = await Bid.create({ ...payload, serviceProvider: user.id, serviceCategory: isExistBooking.serviceCategory });
      if (!result) {
           throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create bid.');
      }
@@ -143,7 +140,8 @@ const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJ
                                              const transfer = await transferToServiceProvider({
                                                   stripeConnectedAccount: (booking!.serviceProvider as any).stripeConnectedAccount,
                                                   finalAmount: booking!.finalAmount,
-                                                  revenue: (booking!.serviceProvider as any).adminRevenuePercent,
+                                                  adminRevenuePercent: (booking!.serviceProvider as any).adminRevenuePercent,
+                                                  serviceProvider: (booking!.serviceProvider as any)._id.toString(),
                                                   bookingId: booking!._id.toString(),
                                              });
                                              console.log('🚀 ~ changeBookingStatus ~ transfer:', transfer);
