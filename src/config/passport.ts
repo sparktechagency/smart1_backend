@@ -1,5 +1,5 @@
 import passport from 'passport';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
+// import { Strategy as FacebookStrategy } from 'passport-facebook';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import config from '.';
 import { USER_ROLES } from '../app/modules/user/user.enums';
@@ -74,45 +74,45 @@ passport.use(
 );
 
 // Facebook OAuth Strategy
-passport.use(
-     new FacebookStrategy(
-          {
-               clientID: config.social.facebook_client_id as string,
-               clientSecret: config.social.facebook_client_secret as string,
-               callbackURL: `${config.backend_url}/api/v1/auth/facebook/callback`,
-               profileFields: ['id', 'displayName', 'photos', 'email'],
-          },
-          async (accessToken, refreshToken, profile, done) => {
-               try {
-                    let user = await User.findOne({ facebookId: profile.id });
-                    let isNewUser = false;
+// passport.use(
+//      new FacebookStrategy(
+//           {
+//                clientID: config.social.facebook_client_id as string,
+//                clientSecret: config.social.facebook_client_secret as string,
+//                callbackURL: `${config.backend_url}/api/v1/auth/facebook/callback`,
+//                profileFields: ['id', 'displayName', 'photos', 'email'],
+//           },
+//           async (accessToken, refreshToken, profile, done) => {
+//                try {
+//                     let user = await User.findOne({ facebookId: profile.id });
+//                     let isNewUser = false;
 
-                    if (!user) {
-                         const newUser = {
-                              facebookId: profile?.id,
-                              full_name: profile?.displayName,
-                              provider: 'facebook',
-                              email: profile?.emails && profile?.emails[0]?.value,
-                              image: profile?.photos && profile?.photos[0]?.value,
-                              verified: true,
-                              role: USER_ROLES.USER,
-                         };
+//                     if (!user) {
+//                          const newUser = {
+//                               facebookId: profile?.id,
+//                               full_name: profile?.displayName,
+//                               provider: 'facebook',
+//                               email: profile?.emails && profile?.emails[0]?.value,
+//                               image: profile?.photos && profile?.photos[0]?.value,
+//                               verified: true,
+//                               role: USER_ROLES.USER,
+//                          };
 
-                         user = await User.create(newUser);
-                         isNewUser = true;
-                    }
+//                          user = await User.create(newUser);
+//                          isNewUser = true;
+//                     }
 
-                    // Add the isNewUser flag to the user object
-                    const userWithIsNewUser = { ...user.toObject(), isNewUser };
+//                     // Add the isNewUser flag to the user object
+//                     const userWithIsNewUser = { ...user.toObject(), isNewUser };
 
-                    return done(null, userWithIsNewUser);
-               } catch (error) {
-                    logger.error(error, 'Error in Facebook Strategy');
-                    done(error, null);
-               }
-          },
-     ),
-);
+//                     return done(null, userWithIsNewUser);
+//                } catch (error) {
+//                     logger.error(error, 'Error in Facebook Strategy');
+//                     done(error, null);
+//                }
+//           },
+//      ),
+// );
 
 // Serialize & Deserialize User
 passport.serializeUser((user: any, done) => {

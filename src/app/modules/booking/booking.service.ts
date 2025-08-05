@@ -18,10 +18,10 @@ import { PaymentService } from '../Payment/Payment.service';
 import { Service } from '../Service/Service.model';
 import { USER_ROLES } from '../user/user.enums';
 import { User } from '../user/user.model';
-import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, DEFAULT_BOOKING_RANGE, MINIMUM_ACCEPTABLE_DUE_AMOUNT, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
+import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, DEFAULT_BOOKING_RANGE, DUE_AMOUNT_FOR_REMIND, MINIMUM_ACCEPTABLE_DUE_AMOUNT, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 import { IBooking } from './booking.interface';
 import { Booking } from './booking.model';
-import { combineBookingDateTime, generateTransactionId, transferToServiceProvider } from './booking.utils';
+import { combineBookingDateTime, cronJobs, generateTransactionId, transferToServiceProvider } from './booking.utils';
 
 const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) => {
      const session = await mongoose.startSession();
@@ -893,6 +893,20 @@ const reScheduleBookingById = async (
      }
 };
 
+// remidUserAboutTheirAdminDueAmount
+const remidUserAboutTheirAdminDueAmount = async (userId: string) => {
+     const users = await User.find({
+          role: USER_ROLES.SERVICE_PROVIDER,
+          adminDueAmount: { $gte: DUE_AMOUNT_FOR_REMIND },
+     });
+     if (!users) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+     }
+
+     // Send socket notification to user about their admin due amount
+     cronJobs(users);
+};
+
 export const BookingService = {
      createBooking,
      getBookingDetails,
@@ -906,4 +920,5 @@ export const BookingService = {
      changeAcceptedBid,
      getServiceCategoryBasedBidsToAccept,
      reScheduleBookingById,
+     remidUserAboutTheirAdminDueAmount,
 };

@@ -1,4 +1,4 @@
-import { Model, Schema } from 'mongoose';
+import { Model, Schema, Types } from 'mongoose';
 import { USER_ROLES } from './user.enums';
 
 export interface IGeoLocation {
@@ -7,6 +7,7 @@ export interface IGeoLocation {
 }
 
 export type IUser = {
+     _id: Types.ObjectId;
      googleId?: string;
      facebookId?: string;
      provider?: string;

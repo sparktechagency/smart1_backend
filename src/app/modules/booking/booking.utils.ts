@@ -89,12 +89,14 @@
 //      // Return the combined DateTime as a JavaScript Date object
 //      return new Date(combinedDateTime);
 // };
-
 import { StatusCodes } from 'http-status-codes';
+import cron from 'node-cron';
 import AppError from '../../../errors/AppError';
 import stripe from '../../config/stripe.config';
 import { DEFAULT_CURRENCY } from '../Bid/Bid.enum';
+import { IUser } from '../user/user.interface';
 import { User } from '../user/user.model';
+import { DUE_AMOUNT_FOR_REMIND } from './booking.enums';
 export async function transferToServiceProvider({
      stripeConnectedAccount,
      finalAmount,
@@ -118,24 +120,25 @@ export async function transferToServiceProvider({
           throw new AppError(StatusCodes.NOT_FOUND, 'Service provider not found');
      }
      if (isExistServiceProvider.adminDueAmount > finalAmount) {
+          isExistServiceProvider.adminDueAmount -= finalAmount;
+          await isExistServiceProvider.save();
+          finalAmount = 0;
+          return { transfer: null, message: `Admin due amount cleared:${finalAmount} | still due: ${isExistServiceProvider.adminDueAmount}` };
+     } else if (isExistServiceProvider.adminDueAmount < finalAmount) {
           isExistServiceProvider.adminDueAmount = 0;
           await isExistServiceProvider.save();
-          return { transfer: null, message: 'Admin due amount cleared' };
+          finalAmount -= isExistServiceProvider.adminDueAmount;
      }
 
-     let adminRevenue = 0;
-     // If the service provider has an admin due amount, add it to the admin revenue
-     if (isExistServiceProvider.adminDueAmount > 0) {
-          adminRevenue = Math.ceil((finalAmount * adminRevenuePercent) / 100) + isExistServiceProvider.adminDueAmount;
-     }
+     let adminRevenueAmount = 0;
 
-     adminRevenue = Math.ceil((finalAmount * adminRevenuePercent) / 100);
+     adminRevenueAmount = Math.ceil((finalAmount * adminRevenuePercent) / 100);
 
-     const serviceProviderRevenue = finalAmount - adminRevenue;
+     const serviceProviderRevenueAmount = finalAmount - adminRevenueAmount;
 
      const balance = await stripe.balance.retrieve();
 
-     if (balance?.available?.[0].amount < serviceProviderRevenue * 100) {
+     if (balance?.available?.[0].amount < serviceProviderRevenueAmount * 100) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'Insufficient funds in admin account for transfer');
      }
 
@@ -146,7 +149,7 @@ export async function transferToServiceProvider({
      }
 
      const transfer = await stripe.transfers.create({
-          amount: Math.round(serviceProviderRevenue * 100), // in cents
+          amount: Math.round(serviceProviderRevenueAmount * 100), // in cents
           currency: DEFAULT_CURRENCY.USD || 'usd',
           destination: stripeConnectedAccount,
           metadata: {
@@ -198,4 +201,21 @@ export const combineBookingDateTime = (bookingDate: string, bookingTime: string)
 
      // Return the combined DateTime as a JavaScript Date object
      return new Date(combinedDateTime);
+};
+
+export const cronJobs = (users: IUser[]) => {
+     // Run every minute: adjust as needed
+     cron.schedule('0 6 * * *', () => {
+          users.forEach((user: IUser) => {
+               if (user.adminDueAmount > DUE_AMOUNT_FOR_REMIND) {
+                    // @ts-ignore
+                    const io = global.io;
+                    if (io) {
+                         io.emit(`reminder::${user._id}`, {
+                              message: `You have admin due amount of ${user.adminDueAmount}. Please clear your dues to continue accepting new bookings.`,
+                         });
+                    }
+               }
+          });
+     });
 };
