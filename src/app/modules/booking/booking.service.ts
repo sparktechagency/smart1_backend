@@ -574,7 +574,8 @@ const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | a
 const getServiceCategoryBasedBookingsForProviderToBid = async (query: any, user: IJwtPayload) => {
      // get service category from provider
      const provider = await User.findOne({ _id: user.id, role: USER_ROLES.SERVICE_PROVIDER }).select('serviceCategory').lean();
-     const queryBuilder = new QueryBuilder(Booking.find({ serviceCategory: provider?.serviceCategories, status: BOOKING_STATUS.PENDING }), query);
+     const serviceCategories = provider?.serviceCategories || [];
+     const queryBuilder = new QueryBuilder(Booking.find({ serviceCategory: { $in: serviceCategories }, status: BOOKING_STATUS.PENDING }), query);
      const result = await queryBuilder.modelQuery;
      const meta = await queryBuilder.countTotal();
      return { meta, result };
