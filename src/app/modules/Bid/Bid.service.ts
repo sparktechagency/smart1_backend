@@ -149,6 +149,22 @@ const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJ
                                              throw new AppError(StatusCodes.BAD_REQUEST, 'Stripe account not found');
                                         }
                                    }
+                              } else if (booking!.paymentMethod === PAYMENT_METHOD.CASH) {
+                                   // make adminDueAmount += adminRevenue// get serviceProvider from db
+                                   // calculate admin revenue amount
+                                   const adminRevenueAmount = Math.ceil((booking!.finalAmount * (booking!.serviceProvider as any).adminRevenuePercent) / 100);
+
+                                   // update adminDueAmount of the service provider
+                                   const isExistServiceProvider = await User.findByIdAndUpdate(
+                                        (booking!.serviceProvider as any)._id.toString(),
+                                        { $inc: { adminDueAmount: adminRevenueAmount } },
+                                        { new: true, session },
+                                   );
+
+                                   // check if update succeeded
+                                   if (!isExistServiceProvider) {
+                                        throw new AppError(StatusCodes.NOT_FOUND, 'Service provider not found');
+                                   }
                               }
                          } else if (booking!.paymentStatus === PAYMENT_STATUS.UNPAID) {
                               throw new AppError(StatusCodes.BAD_REQUEST, `Payment is not done yet. Do the payment first. payment id : ${booking!.payment}`);
