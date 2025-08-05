@@ -1,5 +1,6 @@
 import { StatusCodes } from 'http-status-codes';
 import { JwtPayload } from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import config from '../../../config';
 import AppError from '../../../errors/AppError';
 import { emailHelper } from '../../../helpers/emailHelper';
@@ -14,107 +15,258 @@ import { IUser } from './user.interface';
 import { User } from './user.model';
 // create user
 const createUserToDB = async (payload: IUser): Promise<IUser> => {
-     //set role
-     const user = await User.isExistUserByEmail(payload.email);
-     if (user) {
-          throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
-     }
-     payload.role = USER_ROLES.USER;
-     const createUser = await User.create(payload);
-     if (!createUser) {
-          throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
-     }
+     const session = await mongoose.startSession();
+     session.startTransaction();
 
-     //send email
-     const otp = generateOTP(4);
-     const values = {
-          name: createUser.full_name,
-          otp: otp,
-          email: createUser.email!,
-     };
-     const createAccountTemplate = emailTemplate.createAccount(values);
-     emailHelper.sendEmail(createAccountTemplate);
-
-     //save to DB
-     const authentication = {
-          oneTimeCode: otp,
-          expireAt: new Date(Date.now() + Number(config.otp.otpExpiryTimeInMin) * 60000),
-     };
-     await User.findOneAndUpdate({ _id: createUser._id }, { $set: { authentication } });
-
-     let stripeCustomer;
      try {
-          stripeCustomer = await stripe.customers.create({
-               email: createUser.email,
-               name: createUser.full_name,
-          });
+          // Check if user already exists
+          const user = await User.isExistUserByEmail(payload.email);
+          if (user) {
+               throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
+          }
+
+          // Set default role
+          payload.role = USER_ROLES.USER;
+
+          // Create user
+          const createUser = await User.create([payload], { session });
+          if (!createUser || createUser.length === 0) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
+          }
+
+          const createdUser = createUser[0];
+
+          // Generate OTP and prepare authentication object
+          const otp = generateOTP(4);
+          const authentication = {
+               oneTimeCode: otp,
+               expireAt: new Date(Date.now() + Number(config.otp.otpExpiryTimeInMin) * 60000),
+          };
+
+          // Update user with authentication data
+          await User.findByIdAndUpdate(createdUser._id, { $set: { authentication } }, { session });
+
+          // Send email (outside of transaction, since it's external)
+          const values = {
+               name: createdUser.full_name,
+               otp,
+               email: createdUser.email!,
+          };
+          const createAccountTemplate = emailTemplate.createAccount(values);
+          emailHelper.sendEmail(createAccountTemplate); // Not rolled back if it fails
+
+          // Create Stripe customer
+          let stripeCustomer;
+          try {
+               stripeCustomer = await stripe.customers.create({
+                    email: createdUser.email,
+                    name: createdUser.full_name,
+               });
+          } catch (error) {
+               console.log('🚀 ~ createUserToDB ~ error:', error);
+               throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create Stripe customer');
+          }
+
+          // Update user with Stripe customer ID
+          await User.findByIdAndUpdate(createdUser._id, { $set: { stripeCustomerId: stripeCustomer.id } }, { session });
+
+          // Commit the transaction
+          await session.commitTransaction();
+          session.endSession();
+
+          // Return the created user (with latest info)
+          return createdUser; // fresh fetch with updates
      } catch (error) {
-          console.log('🚀 ~ createUserToDB ~ error:', error);
-          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create Stripe customer');
+          await session.abortTransaction();
+          session.endSession();
+          throw error;
      }
-
-     createUser.stripeCustomerId = stripeCustomer.id;
-     await User.findOneAndUpdate({ _id: createUser._id }, { $set: { authentication, stripeCustomerId: stripeCustomer.id } });
-     return createUser;
 };
-const createServiceProviderToDB = async (payload: IUser, host: string, protocol: string): Promise<IUser | any> => {
-     //set role
-     const user = await User.isExistUserByEmail(payload.email);
-     if (user) {
-          throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
-     }
-     payload.role = USER_ROLES.SERVICE_PROVIDER;
-     // handl is exist serviceCategories
-     const serviceCategories = await ServiceCategory.find({
-          _id: { $in: payload.serviceCategories },
-     });
+// const createUserToDB = async (payload: IUser): Promise<IUser> => {
+//      //set role
+//      const user = await User.isExistUserByEmail(payload.email);
+//      if (user) {
+//           throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
+//      }
+//      payload.role = USER_ROLES.USER;
+//      const createUser = await User.create(payload);
+//      if (!createUser) {
+//           throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
+//      }
 
-     if (serviceCategories.length !== payload.serviceCategories!.length) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Some service categories not found');
-     }
-     const createServiceProvider = await User.create(payload);
-     if (!createServiceProvider) {
-          throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
-     }
+//      //send email
+//      const otp = generateOTP(4);
+//      const values = {
+//           name: createUser.full_name,
+//           otp: otp,
+//           email: createUser.email!,
+//      };
+//      const createAccountTemplate = emailTemplate.createAccount(values);
+//      emailHelper.sendEmail(createAccountTemplate);
 
-     //send email
-     const otp = generateOTP(4);
-     const values = {
-          name: createServiceProvider.full_name,
-          otp: otp,
-          email: createServiceProvider.email!,
-     };
-     const createAccountTemplate = emailTemplate.createAccount(values);
-     emailHelper.sendEmail(createAccountTemplate);
+//      //save to DB
+//      const authentication = {
+//           oneTimeCode: otp,
+//           expireAt: new Date(Date.now() + Number(config.otp.otpExpiryTimeInMin) * 60000),
+//      };
+//      await User.findOneAndUpdate({ _id: createUser._id }, { $set: { authentication } });
 
-     //save to DB
-     const authentication = {
-          oneTimeCode: otp,
-          expireAt: new Date(Date.now() + Number(config.otp.otpExpiryTimeInMin) * 60000),
-     };
-     await User.findOneAndUpdate({ _id: createServiceProvider._id }, { $set: { authentication } });
+//      let stripeCustomer;
+//      try {
+//           stripeCustomer = await stripe.customers.create({
+//                email: createUser.email,
+//                name: createUser.full_name,
+//           });
+//      } catch (error) {
+//           console.log('🚀 ~ createUserToDB ~ error:', error);
+//           throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create Stripe customer');
+//      }
 
-     let stripeCustomer;
+//      createUser.stripeCustomerId = stripeCustomer.id;
+//      await User.findOneAndUpdate({ _id: createUser._id }, { $set: { authentication, stripeCustomerId: stripeCustomer.id } });
+//      return createUser;
+// };
+
+const createServiceProviderToDB = async (payload: IUser, host: string, protocol: string): Promise<{ user: IUser; stripe_account_onboarding_url: string }> => {
+     const session = await mongoose.startSession();
+     session.startTransaction();
+
      try {
-          stripeCustomer = await stripe.customers.create({
-               email: createServiceProvider.email,
-               name: createServiceProvider.full_name,
-          });
+          // Check if user already exists
+          const existingUser = await User.isExistUserByEmail(payload.email);
+          if (existingUser) {
+               throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
+          }
+
+          // Validate service categories
+          const serviceCategories = await ServiceCategory.find({
+               _id: { $in: payload.serviceCategories },
+          }).session(session);
+
+          if (serviceCategories.length !== payload.serviceCategories!.length) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'Some service categories not found');
+          }
+
+          // Assign role
+          payload.role = USER_ROLES.SERVICE_PROVIDER;
+
+          // Create user
+          const createdUsers = await User.create([payload], { session });
+          if (!createdUsers || createdUsers.length === 0) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
+          }
+          const createdUser = createdUsers[0];
+
+          // Generate OTP and auth info
+          const otp = generateOTP(4);
+          const authentication = {
+               oneTimeCode: otp,
+               expireAt: new Date(Date.now() + Number(config.otp.otpExpiryTimeInMin) * 60000),
+          };
+
+          // Update user with authentication
+          await User.findByIdAndUpdate(createdUser._id, { $set: { authentication } }, { session });
+
+          // Send email (still within try block — rollback if it fails)
+          const emailData = {
+               name: createdUser.full_name,
+               otp,
+               email: createdUser.email!,
+          };
+          const createAccountTemplate = emailTemplate.createAccount(emailData);
+          await emailHelper.sendEmail(createAccountTemplate); // Await to catch error
+
+          // Create Stripe customer
+          let stripeCustomer;
+          try {
+               stripeCustomer = await stripe.customers.create({
+                    email: createdUser.email,
+                    name: createdUser.full_name,
+               });
+          } catch (error) {
+               throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create Stripe customer');
+          }
+
+          // Update user with Stripe customer ID
+          await User.findByIdAndUpdate(createdUser._id, { $set: { stripeCustomerId: stripeCustomer.id } }, { session });
+
+          // Commit the transaction
+          await session.commitTransaction();
+          session.endSession();
+
+          // Outside transaction: Create Stripe connected account
+          const stripe_account_onboarding_url = await stripeAccountService.createConnectedStripeAccount(createdUser, host, protocol);
+
+          return {
+               user: createdUser, // Return fresh data
+               stripe_account_onboarding_url,
+          };
      } catch (error) {
-          console.log('🚀 ~ createUserToDB ~ error:', error);
-          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create Stripe customer');
+          await session.abortTransaction();
+          session.endSession();
+          throw error;
      }
-
-     createServiceProvider.stripeCustomerId = stripeCustomer.id;
-     await User.findOneAndUpdate({ _id: createServiceProvider._id }, { $set: { authentication, stripeCustomerId: stripeCustomer.id } });
-     // return createServiceProvider;
-
-     const stripe_account_onboarding_url = await stripeAccountService.createConnectedStripeAccount(createServiceProvider, host, protocol);
-
-     return { user: createServiceProvider, stripe_account_onboarding_url };
 };
+
+// const createServiceProviderToDB = async (payload: IUser, host: string, protocol: string): Promise<IUser | any> => {
+//      //set role
+//      const user = await User.isExistUserByEmail(payload.email);
+//      if (user) {
+//           throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
+//      }
+//      payload.role = USER_ROLES.SERVICE_PROVIDER;
+//      // handl is exist serviceCategories
+//      const serviceCategories = await ServiceCategory.find({
+//           _id: { $in: payload.serviceCategories },
+//      });
+
+//      if (serviceCategories.length !== payload.serviceCategories!.length) {
+//           throw new AppError(StatusCodes.NOT_FOUND, 'Some service categories not found');
+//      }
+//      const createServiceProvider = await User.create(payload);
+//      if (!createServiceProvider) {
+//           throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
+//      }
+
+//      //send email
+//      const otp = generateOTP(4);
+//      const values = {
+//           name: createServiceProvider.full_name,
+//           otp: otp,
+//           email: createServiceProvider.email!,
+//      };
+//      const createAccountTemplate = emailTemplate.createAccount(values);
+//      emailHelper.sendEmail(createAccountTemplate);
+
+//      //save to DB
+//      const authentication = {
+//           oneTimeCode: otp,
+//           expireAt: new Date(Date.now() + Number(config.otp.otpExpiryTimeInMin) * 60000),
+//      };
+//      await User.findOneAndUpdate({ _id: createServiceProvider._id }, { $set: { authentication } });
+
+//      let stripeCustomer;
+//      try {
+//           stripeCustomer = await stripe.customers.create({
+//                email: createServiceProvider.email,
+//                name: createServiceProvider.full_name,
+//           });
+//      } catch (error) {
+//           console.log('🚀 ~ createUserToDB ~ error:', error);
+//           throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create Stripe customer');
+//      }
+
+//      createServiceProvider.stripeCustomerId = stripeCustomer.id;
+//      await User.findOneAndUpdate({ _id: createServiceProvider._id }, { $set: { authentication, stripeCustomerId: stripeCustomer.id } });
+//      // return createServiceProvider;
+
+//      const stripe_account_onboarding_url = await stripeAccountService.createConnectedStripeAccount(createServiceProvider, host, protocol);
+
+//      return { user: createServiceProvider, stripe_account_onboarding_url };
+// };
 
 // create Admin
+
 const createAdminToDB = async (payload: Partial<IUser>): Promise<IUser> => {
      //set role
      payload.role = USER_ROLES.ADMIN;

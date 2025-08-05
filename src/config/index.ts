@@ -12,7 +12,6 @@ export default {
      node_env: process.env.NODE_ENV,
      session_secret: process.env.SESSION_SECRET,
      port: process.env.PORT,
-     stripe_secret_key: process.env.STRIPE_SECRET_KYE,
      bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
      socket_port: process.env.SOCKET_PORT,
      allowed_origins: process.env.ALLOWED_ORIGINS,
