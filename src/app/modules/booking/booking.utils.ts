@@ -97,6 +97,7 @@ import { DEFAULT_CURRENCY } from '../Bid/Bid.enum';
 import { IUser } from '../user/user.interface';
 import { User } from '../user/user.model';
 import { DUE_AMOUNT_FOR_REMIND } from './booking.enums';
+import { Socket } from 'socket.io';
 export async function transferToServiceProvider({
      stripeConnectedAccount,
      finalAmount,
@@ -205,11 +206,10 @@ export const combineBookingDateTime = (bookingDate: string, bookingTime: string)
 
 export const cronJobs = (users: IUser[]) => {
      // Run every minute: adjust as needed
-     cron.schedule('0 6 * * *', () => {
+     cron.schedule('0 6,12,18,21 * * *', () => {
           users.forEach((user: IUser) => {
                if (user.adminDueAmount > DUE_AMOUNT_FOR_REMIND) {
-                    // @ts-ignore
-                    const io = global.io;
+                    const io = (global as any).io as Socket;
                     if (io) {
                          io.emit(`reminder::${user._id}`, {
                               message: `You have admin due amount of ${user.adminDueAmount}. Please clear your dues to continue accepting new bookings.`,
