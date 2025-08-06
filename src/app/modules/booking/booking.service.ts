@@ -522,7 +522,7 @@ const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | a
                     line_items: [
                          {
                               price_data: {
-                                   currency: DEFAULT_CURRENCY.USD || 'usd',
+                                   currency: DEFAULT_CURRENCY.SAR || 'sar',
                                    product_data: {
                                         name: 'Amount',
                                    },
@@ -793,7 +793,7 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
                     line_items: [
                          {
                               price_data: {
-                                   currency: DEFAULT_CURRENCY.USD || 'usd',
+                                   currency: DEFAULT_CURRENCY.SAR || 'sar',
                                    product_data: {
                                         name: 'Amount',
                                    },

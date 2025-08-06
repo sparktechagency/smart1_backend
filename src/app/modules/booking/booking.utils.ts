@@ -91,13 +91,13 @@
 // };
 import { StatusCodes } from 'http-status-codes';
 import cron from 'node-cron';
+import { Socket } from 'socket.io';
 import AppError from '../../../errors/AppError';
 import stripe from '../../config/stripe.config';
 import { DEFAULT_CURRENCY } from '../Bid/Bid.enum';
 import { IUser } from '../user/user.interface';
 import { User } from '../user/user.model';
 import { DUE_AMOUNT_FOR_REMIND } from './booking.enums';
-import { Socket } from 'socket.io';
 export async function transferToServiceProvider({
      stripeConnectedAccount,
      finalAmount,
@@ -151,7 +151,7 @@ export async function transferToServiceProvider({
 
      const transfer = await stripe.transfers.create({
           amount: Math.round(serviceProviderRevenueAmount * 100), // in cents
-          currency: DEFAULT_CURRENCY.USD || 'usd',
+          currency: DEFAULT_CURRENCY.SAR || 'sar',
           destination: stripeConnectedAccount,
           metadata: {
                bookingId,
@@ -173,7 +173,7 @@ export async function createPayout({
      try {
           const payout = await stripe.payouts.create({
                amount: Math.round(amount * 100), // in cents
-               currency: DEFAULT_CURRENCY.USD || 'usd',
+               currency: DEFAULT_CURRENCY.SAR || 'sar',
                destination: stripeConnectedAccount,
                metadata: {
                     orderId,
