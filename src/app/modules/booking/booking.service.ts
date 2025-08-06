@@ -15,13 +15,25 @@ import { Bid } from '../Bid/Bid.model';
 import { NOTIFICATION_MODEL_TYPE, NotificationTitle } from '../notification/notification.enum';
 import { Payment } from '../Payment/Payment.model';
 import { PaymentService } from '../Payment/Payment.service';
-import { Service } from '../Service/Service.model';
 import { USER_ROLES } from '../user/user.enums';
 import { User } from '../user/user.model';
-import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, DEFAULT_BOOKING_RANGE, DUE_AMOUNT_FOR_REMIND, MINIMUM_ACCEPTABLE_DUE_AMOUNT, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
+import {
+     BOOKING_STATUS,
+     CANCELL_OR_REFUND_REASON,
+     DEFAULT_BOOKING_RANGE,
+     DUE_AMOUNT_FOR_REMIND,
+     MAXIMUM_WEEKLY_CANCEL_LIMIT,
+     MINIMUM_ACCEPTABLE_DUE_AMOUNT,
+     PAYMENT_METHOD,
+     PAYMENT_STATUS,
+     RATING_PANALTY,
+} from './booking.enums';
 import { IBooking } from './booking.interface';
 import { Booking } from './booking.model';
-import { combineBookingDateTime, cronJobs, generateTransactionId, transferToServiceProvider } from './booking.utils';
+import { combineBookingDateTime, cronJobs, generateTransactionId } from './booking.utils';
+
+//@ts-ignore
+const io = global.io;
 
 const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) => {
      const session = await mongoose.startSession();
@@ -81,6 +93,17 @@ const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) 
                     type: NOTIFICATION_MODEL_TYPE.BOOKING,
                     title: NotificationTitle.NEW_BOOKING,
                     message: `New order placed by  ${thisCustomer?.full_name}. But pending for accepted bid. booking id : ${createdBooking._id}`,
+                    reference: createdBooking._id,
+               });
+          }
+
+          // any off-platform agreement with the provider is the user’s full responsibility and the app won’t offer any support
+          if (createdBooking.paymentMethod === PAYMENT_METHOD.CASH) {
+               await sendNotifications({
+                    receiver: createdBooking.user,
+                    type: NOTIFICATION_MODEL_TYPE.BOOKING,
+                    title: NotificationTitle.NEW_BOOKING,
+                    message: `Any off-platform agreement with the provider is the user’s full responsibility and the app won’t offer any support`,
                     reference: createdBooking._id,
                });
           }
@@ -287,6 +310,14 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
           const booking = await Booking.findById(bookingId).session(session);
           if (!booking) throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found');
 
+          const isExistUser = await User.findById(user.id).session(session);
+          if (!isExistUser) throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+
+          if (user.role === USER_ROLES.SERVICE_PROVIDER && booking.serviceProvider?.toString() !== user.id) {
+               throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as service provider to change Booking Status');
+          } else if (user.role === USER_ROLES.USER && booking.user?.toString() !== user.id) {
+               throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as user to change Booking Status');
+          }
           let bid = null;
           if (booking.acceptedBid) {
                bid = await Bid.findById(booking.acceptedBid).populate('serviceProvider').session(session);
@@ -330,6 +361,10 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
 
                                    const notificationReceivers = [(bid!.serviceProvider as any)._id.toString()];
 
+                                   const tobePaidAmount = isExistUser.adminDueAmount > 0 ? booking.finalAmount + isExistUser.adminDueAmount : booking.finalAmount;
+
+                                   io.emit(`reminder::${isExistUser?._id}`, `You had ${isExistUser.adminDueAmount} amount due previously so we are including that for payment`);
+
                                    const stripeSessionData: any = {
                                         payment_method_types: ['card'],
                                         mode: 'payment',
@@ -339,7 +374,7 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                                                   price_data: {
                                                        currency: DEFAULT_CURRENCY.SAR || 'sar',
                                                        product_data: { name: 'Booking Payment' },
-                                                       unit_amount: booking.finalAmount! * 100,
+                                                       unit_amount: tobePaidAmount! * 100,
                                                   },
                                                   quantity: 1,
                                              },
@@ -703,7 +738,7 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
           } else if (user.role === USER_ROLES.USER && isExistBooking.user?.toString() !== user.id) {
                throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as user to cancel this booking');
           }
-          if (isExistBooking.acceptedBid === null && isExistBooking.payment == null && isExistBooking.paymentStatus !== PAYMENT_STATUS.PAID) {
+          if (isExistBooking.acceptedBid === null && isExistBooking.payment == null) {
                isExistBooking.status = BOOKING_STATUS.CANCELLED;
                isExistBooking.bookingCancelReason = bookingCancelReason;
                isExistBooking.cancelledBy = {
@@ -741,11 +776,26 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                role: user.role as USER_ROLES,
                id: new Types.ObjectId(user.id),
           };
+          isExistBooking.cancelledAt = new Date();
           await isExistBooking.save({ session });
 
           isExistBid.status = BID_STATUS.CANCELLED;
           isExistBid.bidCancelReason = bookingCancelReason;
           await isExistBid.save({ session });
+
+          const isExistUser = await User.findByIdAndUpdate(
+               user.id,
+               {
+                    $inc: {
+                         adminDueAmount: 10, // Increment adminDueAmount by 10
+                         bookingCancelCount: 1, // Increment bookingCancelCount by 1
+                    },
+               },
+               { new: true, session },
+          );
+          if (!isExistUser) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+          }
 
           // Send mail notification for the manager and client
           const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
@@ -758,6 +808,41 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                     reference: isExistBooking._id,
                     title: NotificationTitle.BOOKING_CANCELLED,
                });
+          }
+
+          if (isExistUser.role === USER_ROLES.SERVICE_PROVIDER) {
+               // A warning message is shown: cancellations negatively affect the provider’s rating.
+               if (io) {
+                    io.emit(`reminder::${isExistUser?._id}`, 'cancellations negatively affect the provider’s rating.');
+               }
+               //The provider’s rating is reduced immediately.(The first cancellation does not impact rating. From the third cancellation onward, the rating will be reduced.)
+               if (isExistUser?.bookingCancelCount && isExistUser?.bookingCancelCount >= 3 && isExistUser?.avgRating > 1) {
+                    isExistUser.avgRating -= RATING_PANALTY;
+                    await isExistUser?.save();
+               }
+               // If repeated, the account will be temporarily suspended.
+               const sevenDaysAgo = new Date();
+               sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+               const cancelledBookingsCountByUserWithinLast7Days = await Booking.countDocuments({
+                    user: isExistUser?._id,
+                    status: BOOKING_STATUS.CANCELLED,
+                    cancelledBy: isExistUser?._id,
+                    cancelledAt: { $gte: sevenDaysAgo }, // Get bookings cancelled *within* the last 7 days
+               });
+
+               if (cancelledBookingsCountByUserWithinLast7Days > MAXIMUM_WEEKLY_CANCEL_LIMIT) {
+                    isExistUser!.status = 'blocked';
+                    isExistUser!.blockedAt = new Date();
+                    await isExistUser?.save();
+                    await sendNotifications({
+                         receiver: isExistUser._id,
+                         type: NOTIFICATION_MODEL_TYPE.BOOKING,
+                         title: NotificationTitle.BOOKING_CANCELLED,
+                         message: `Your are temporarily Blocked as you have crossed you weekly max cancel limit: ${MAXIMUM_WEEKLY_CANCEL_LIMIT}. Plz request to unblock or contact with Admin`,
+                         reference: isExistBooking._id,
+                    });
+               }
           }
 
           // Commit the session if no issues found
@@ -995,8 +1080,8 @@ const changeAcceptedBid = async (bookingId: string, newBidId: string, user: IJwt
                // Generate PDF invoice and email it
                const pdfBuffer = await generateBookingInvoicePDF(updatedBooking);
                const values = {
-                    name: thisCustomer?.full_name!,
-                    email: thisCustomer?.email!,
+                    name: thisCustomer?.full_name as string,
+                    email: thisCustomer?.email as string,
                     booking: updatedBooking,
                     attachments: [
                          {
@@ -1162,7 +1247,7 @@ const reScheduleBookingById = async (
 };
 
 // remidUserAboutTheirAdminDueAmount
-const remidUserAboutTheirAdminDueAmount = async (userId: string) => {
+const remidUserAboutTheirAdminDueAmount = async () => {
      const users = await User.find({
           role: USER_ROLES.SERVICE_PROVIDER,
           adminDueAmount: { $gte: DUE_AMOUNT_FOR_REMIND },

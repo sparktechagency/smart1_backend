@@ -7,9 +7,9 @@ import { BOOKING_STATUS } from '../booking/booking.enums';
 import { Booking } from '../booking/booking.model';
 import Settings from '../settings/settings.model';
 import { USER_ROLES } from '../user/user.enums';
+import { ReviewsType } from './Reviews.enum';
 import { IReviews } from './Reviews.interface';
 import { Reviews } from './Reviews.model';
-
 
 const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IReviews> => {
      // Start a session for the transaction
@@ -19,7 +19,12 @@ const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IRev
           // Start the transaction
           session.startTransaction();
           // if payload.type = Settings then refferenceId is the id of setting
-          if (payload.type === 'Settings') {
+          if (payload.type === ReviewsType.SETTINGS) {
+               // user mustbe a customer or service provider of any of a completed booking
+               const hasAnyBooking = await Booking.find({ user: user.id, status: BOOKING_STATUS.COMPLETED });
+               if (!hasAnyBooking) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review. Cause you have no completed booking.');
+               }
                const isExistSetting = await Settings.findOne().select('_id').session(session);
                if (!isExistSetting) {
                     throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
@@ -33,7 +38,7 @@ const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IRev
           }
 
           // Step 1: Check if the referenced document exists based on `type` and `refferenceId`
-          const isExistRefference = await mongoose.model(payload.type).findById(payload.refferenceId).session(session);
+          const isExistRefference = await mongoose.model(payload.type).findById(payload.refferenceId).session(session); // Booking | User | Settings
 
           if (!isExistRefference) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
@@ -41,22 +46,21 @@ const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IRev
 
           // user must be either service provider or user of the referenced document
           if (isExistRefference) {
-               if (payload.type === 'Booking') {
+               if (payload.type === ReviewsType.BOOKING) {
                     if (isExistRefference.status !== BOOKING_STATUS.COMPLETED) {
                          throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
                     }
                     if (isExistRefference.user.toString() !== user.id && isExistRefference.serviceProvider.toString() !== user.id) {
                          throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
                     }
-               } else if (payload.type === 'Settings') {
-                    // user mustbe a customer or service provider of any of a completed booking
-                    const hasAnyBooking = await Booking.find({ user: user.id, status: BOOKING_STATUS.COMPLETED });
-                    if (!hasAnyBooking) {
-                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review. Cause you have no completed booking.');
+               } else if (payload.type === ReviewsType.USER) {
+                    // user wishing to rate the service provider
+                    const hasAnyCommonBooking = await Booking.find({ user: user.id, serviceProvider: payload.refferenceId, status: BOOKING_STATUS.COMPLETED });
+                    if (!hasAnyCommonBooking) {
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to Rate the Service Provider. Cause you have no common booking completed.');
                     }
                }
           }
-
 
           // Step 2: Create the FAQ document
           payload.createdBy = new mongoose.Types.ObjectId(user.id);
@@ -82,7 +86,7 @@ const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IRev
      }
 };
 
-const getAllReviewsByTypes = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IReviews[]; }> => {
+const getAllReviewsByTypes = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IReviews[] }> => {
      const queryBuilder = new QueryBuilder(Reviews.find({ type }), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      if (!result) {
@@ -108,7 +112,6 @@ const updateReviews = async (id: string, payload: Partial<IReviews>, user: IJwtP
 
      return await Reviews.findByIdAndUpdate(id, payload, { new: true });
 };
-
 
 const deleteReviews = async (id: string, user: IJwtPayload): Promise<IReviews | null> => {
      const session = await mongoose.startSession();
@@ -151,7 +154,6 @@ const deleteReviews = async (id: string, user: IJwtPayload): Promise<IReviews | 
      }
 };
 
-
 const hardDeleteReviews = async (id: string): Promise<IReviews | null> => {
      const session = await mongoose.startSession();
      session.startTransaction();
@@ -183,7 +185,6 @@ const hardDeleteReviews = async (id: string): Promise<IReviews | null> => {
      }
 };
 
-
 const getReviewsById = async (id: string): Promise<IReviews | null> => {
      const result = await Reviews.findById(id);
      if (!result) {
@@ -192,7 +193,7 @@ const getReviewsById = async (id: string): Promise<IReviews | null> => {
      return result;
 };
 
-const getAllReviewsByBookingId = async (bookingId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IReviews[]; }> => {
+const getAllReviewsByBookingId = async (bookingId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IReviews[] }> => {
      const isExistBooking = await Booking.findById(bookingId);
      if (!isExistBooking) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found.');
@@ -211,5 +212,5 @@ export const ReviewsService = {
      deleteReviews,
      hardDeleteReviews,
      getReviewsById,
-     getAllReviewsByBookingId
+     getAllReviewsByBookingId,
 };

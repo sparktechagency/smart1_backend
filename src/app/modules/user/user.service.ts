@@ -184,6 +184,7 @@ const createServiceProviderToDB = async (payload: IUser, host: string, protocol:
                     name: createdUser.full_name,
                });
           } catch (error) {
+               console.log('🚀 ~ createServiceProviderToDB ~ error:', error);
                throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create Stripe customer');
           }
 
@@ -383,10 +384,10 @@ const getAllRoleBasedUser = async () => {
 };
 
 const updateUserByIdToDB = async (id: string, payload: Partial<IUser>) => {
-     const isExistUser = await User.isExistUserById(id);
-     if (!isExistUser) {
-          throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
-     }
+     // const isExistUser = await User.isExistUserById(id);
+     // if (!isExistUser) {
+     //      throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+     // }
 
      const updateDoc = await User.findOneAndUpdate({ _id: id }, payload, {
           new: true,

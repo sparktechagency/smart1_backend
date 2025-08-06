@@ -57,6 +57,12 @@ const bookingSchema = new Schema<IBooking>(
                required: true,
                min: 0,
           },
+          avgRating: {
+               type: Number,
+               required: true,
+               min: 0,
+               default: 0,
+          },
           status: {
                type: String,
                enum: BOOKING_STATUS,
@@ -118,6 +124,9 @@ const bookingSchema = new Schema<IBooking>(
                default: false,
           },
           deletedAt: {
+               type: Date,
+          },
+          cancelledAt: {
                type: Date,
           },
           adminRevenuePercent: {

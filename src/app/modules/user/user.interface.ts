@@ -37,6 +37,7 @@ export type IUser = {
      stripeCustomerId: string;
      stripeConnectedAccount?: string;
      status: 'active' | 'blocked';
+     blockedAt: Date;
      verified: boolean;
      authentication?: {
           isResetPassword: boolean;
@@ -48,6 +49,9 @@ export type IUser = {
      paymentCards: Schema.Types.ObjectId[];
      adminRevenuePercent: number;
      adminDueAmount: number;
+     bookingCancelCount: number;
+     reviews: Types.ObjectId[];
+     avgRating: number;
 };
 
 export type UserModel = {

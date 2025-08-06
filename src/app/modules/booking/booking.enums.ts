@@ -42,3 +42,5 @@ export enum CANCELL_OR_REFUND_REASON {
 export const DEFAULT_BOOKING_RANGE: number = 10; // in km
 export const MINIMUM_ACCEPTABLE_DUE_AMOUNT: number = 200;
 export const DUE_AMOUNT_FOR_REMIND: number = 150;
+export const MAXIMUM_WEEKLY_CANCEL_LIMIT: number = 7;
+export const RATING_PANALTY: number = 0.2;

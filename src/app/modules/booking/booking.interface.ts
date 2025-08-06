@@ -35,7 +35,9 @@ export interface IBooking extends Document {
      cancelledBy: {
           role: USER_ROLES;
           id: Types.ObjectId;
-     }
+     };
+     cancelledAt: Date;
+     avgRating:number;
      createdAt?: Date;
      updatedAt?: Date;
      deletedAt?: Date;

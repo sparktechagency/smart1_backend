@@ -106,6 +106,9 @@ const userSchema = new Schema<IUser, UserModel>(
                enum: ['active', 'blocked'],
                default: 'active',
           },
+          blockedAt: {
+               type: Date,
+          },
           verified: {
                type: Boolean,
                default: false,
@@ -166,6 +169,9 @@ const userSchema = new Schema<IUser, UserModel>(
           ],
           adminRevenuePercent: { type: Number, default: DEFAULT_ADMIN_REVENUE },
           adminDueAmount: { type: Number, default: 0 }, // Amount due to admin
+          bookingCancelCount: { type: Number, default: 0 },
+          reviews: [{ type: Schema.Types.ObjectId, ref: 'Reviews', default: [] }],
+          avgRating: { type: Number, default: 0 },
      },
      { timestamps: true },
 );
@@ -230,17 +236,17 @@ userSchema.pre('save', async function (next) {
 
 // Query Middleware to exclude deleted users
 userSchema.pre('find', function (next) {
-     this.find({ isDeleted: { $ne: true } });
+     this.find({ isDeleted: { $ne: true }, status: { $ne: 'blocked' } });
      next();
 });
 
 userSchema.pre('findOne', function (next) {
-     this.find({ isDeleted: { $ne: true } });
+     this.find({ isDeleted: { $ne: true }, status: { $ne: 'blocked' } });
      next();
 });
 
 userSchema.pre('aggregate', function (next) {
-     this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
+     this.pipeline().unshift({ $match: { isDeleted: { $ne: true }, status: { $ne: 'blocked' } } });
      next();
 });
 
