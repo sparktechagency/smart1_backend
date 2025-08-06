@@ -108,8 +108,6 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
           isBookingExists.paymentStatus = PAYMENT_STATUS.PAID;
           await isBookingExists.save();
 
-
-
           // Update the bid status to accepted
           thisAcceptedBid.isAccepted = true;
           thisAcceptedBid.status = BID_STATUS.ACCEPTED;

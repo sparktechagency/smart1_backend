@@ -93,14 +93,29 @@ router.get('/bookings-for-provider', auth(USER_ROLES.SERVICE_PROVIDER), BookingC
 router.get('/bids/service-category/:serviceCategoryId', auth(USER_ROLES.USER), BookingController.getServiceCategoryBasedBidsToAccept);
 router.get('/bids/:bookingId', auth(USER_ROLES.USER), BookingController.getBidsOfBookingByIdToAccept);
 router.patch('/bid/:bookingId', validateRequest(BookingValidation.acceptBidForBookingSchema), auth(USER_ROLES.USER), BookingController.acceptBid);
-router.patch('/change-accepted-bid/:bookingId', validateRequest(BookingValidation.acceptBidForBookingSchema), auth(USER_ROLES.USER), BookingController.changeAcceptedBid); // untill the booking status is <=confirmed and bid status is <=accepted
+// router.patch('/change-accepted-bid/:bookingId', validateRequest(BookingValidation.acceptBidForBookingSchema), auth(USER_ROLES.USER), BookingController.changeAcceptedBid); // untill the booking status is <=confirmed and bid status is <=accepted
 
-router.patch('/status/:bookingId', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER), validateRequest(BookingValidation.updateBookingStatusSchema), BookingController.changeBookingStatus);
+router.patch(
+     '/status/:bookingId',
+     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+     validateRequest(BookingValidation.updateBookingStatusSchema),
+     BookingController.changeBookingStatus,
+);
 
-router.patch('/reschedule/:bookingId', validateRequest(BookingValidation.reScheduleBookingSchema), auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER), BookingController.reScheduleBookingById);
+router.patch(
+     '/reschedule/:bookingId',
+     validateRequest(BookingValidation.reScheduleBookingSchema),
+     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+     BookingController.reScheduleBookingById,
+);
 
 // Cancel booking
-router.delete('/cancel/:id', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(BookingValidation.cancelBookingSchema), BookingController.cancelBooking);
+router.delete(
+     '/cancel/:id',
+     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER),
+     validateRequest(BookingValidation.cancelBookingSchema),
+     BookingController.cancelBooking,
+);
 
 router.get('/:bookingId', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), BookingController.getBookingDetails);
 
