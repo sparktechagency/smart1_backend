@@ -16,6 +16,14 @@ const imageSchema = new Schema<IImage>(
                type: String,
                required: true,
           },
+          title: {
+               type: String,
+               required: true,
+          },
+          description: {
+               type: String,
+               required: true,
+          },
           imageType: {
                type: String,
                enum: Object.values(ImageType),

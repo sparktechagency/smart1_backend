@@ -3,41 +3,41 @@ const path = require('path');
 
 // Function to create the module structure
 function createModuleStructure(moduleName) {
-  const modulePath = path.join(__dirname, 'src', 'app', 'modules', moduleName);
+     const modulePath = path.join(__dirname, 'src', 'app', 'modules', moduleName);
 
-  // Check if the module already exists
-  if (fs.existsSync(modulePath)) {
-    console.log(`Module ${moduleName} already exists.`);
-    return;
-  }
+     // Check if the module already exists
+     if (fs.existsSync(modulePath)) {
+          console.log(`Module ${moduleName} already exists.`);
+          return;
+     }
 
-  // Create the module folder
-  fs.mkdirSync(modulePath, { recursive: true });
-  console.log(`Created module folder: ${modulePath}`);
+     // Create the module folder
+     fs.mkdirSync(modulePath, { recursive: true });
+     console.log(`Created module folder: ${modulePath}`);
 
-  // Define the files to create in the module
-  const files = [
-    { name: `${moduleName}.controller.ts`, content: getControllerContent(moduleName) },
-    { name: `${moduleName}.service.ts`, content: getServiceContent(moduleName) },
-    { name: `${moduleName}.model.ts`, content: getModelContent(moduleName) },
-    { name: `${moduleName}.route.ts`, content: getRouteContent(moduleName) },
-    { name: `${moduleName}.validation.ts`, content: getValidationContent(moduleName) },
-    { name: `${moduleName}.interface.ts`, content: getInterfaceContent(moduleName) },
-  ];
+     // Define the files to create in the module
+     const files = [
+          { name: `${moduleName}.controller.ts`, content: getControllerContent(moduleName) },
+          { name: `${moduleName}.service.ts`, content: getServiceContent(moduleName) },
+          { name: `${moduleName}.model.ts`, content: getModelContent(moduleName) },
+          { name: `${moduleName}.route.ts`, content: getRouteContent(moduleName) },
+          { name: `${moduleName}.validation.ts`, content: getValidationContent(moduleName) },
+          { name: `${moduleName}.interface.ts`, content: getInterfaceContent(moduleName) },
+     ];
 
-  // Create the files
-  files.forEach(file => {
-    const filePath = path.join(modulePath, file.name);
-    fs.writeFileSync(filePath, file.content);
-    console.log(`Created file: ${filePath}`);
-  });
+     // Create the files
+     files.forEach((file) => {
+          const filePath = path.join(modulePath, file.name);
+          fs.writeFileSync(filePath, file.content);
+          console.log(`Created file: ${filePath}`);
+     });
 
-  console.log(`Module ${moduleName} structure created successfully.`);
+     console.log(`Module ${moduleName} structure created successfully.`);
 }
 
 // Helper function to create the controller content
 function getControllerContent(moduleName) {
-  return `import { Request, Response } from 'express';
+     return `import { Request, Response } from 'express';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { I${moduleName} } from './${moduleName}.interface';
@@ -138,7 +138,7 @@ export const ${moduleName}Controller = {
 
 // Helper function to create the service content
 function getServiceContent(moduleName) {
-  return `import { StatusCodes } from 'http-status-codes';
+     return `import { StatusCodes } from 'http-status-codes';
 import AppError from '../../../errors/AppError';
 import { I${moduleName} } from './${moduleName}.interface';
 import { ${capitalize(moduleName)} } from './${moduleName}.model';
@@ -215,12 +215,14 @@ export const ${moduleName}Service = {
 
 // Helper function to create the model content
 function getModelContent(moduleName) {
-  return `import { Schema, model } from 'mongoose';
+     return `import { Schema, model } from 'mongoose';
 import { I${moduleName} } from './${moduleName}.interface';
 
 const ${capitalize(moduleName)}Schema = new Schema<I${moduleName}>({
      image: { type: String, required: true },
      altText: { type: String, required: true },
+     title: { type: String,required: true },
+     description: { type: String,required: true },
      isDeleted: { type: Boolean, default: false },
      deletedAt: { type: Date },
 }, { timestamps: true });
@@ -246,7 +248,7 @@ export const ${capitalize(moduleName)} = model<I${moduleName}>('${capitalize(mod
 
 // Helper function to create the route content
 function getRouteContent(moduleName) {
-  return `import express from 'express';
+     return `import express from 'express';
 import { ${moduleName}Controller } from './${moduleName}.controller';
 import auth from '../../middleware/auth';
 import { USER_ROLES } from '../user/user.enums';
@@ -283,12 +285,14 @@ export const ${moduleName}Routes = router;
 
 // Helper function to create validation content
 function getValidationContent(moduleName) {
-  return `import { z } from 'zod';
+     return `import { z } from 'zod';
 
 const create${capitalize(moduleName)}ZodSchema = z.object({
      body: z.object({
           image: z.string({ required_error: 'Image is required' }),
           altText: z.string({ required_error: 'Alt text is required' }),
+          title: z.string({ required_error: 'title text is required' }),
+          description: z.string({ required_error: 'description text is required' }),
      }),
 });
 
@@ -296,6 +300,8 @@ const update${capitalize(moduleName)}ZodSchema = z.object({
      body: z.object({
           image: z.string().optional(),
           altText: z.string().optional(),
+          title: z.string().optional(),
+          description: z.string().optional(),
      }),
 });
 
@@ -308,9 +314,11 @@ export const ${moduleName}Validation = {
 
 // Helper function to create interface content
 function getInterfaceContent(moduleName) {
-  return `export interface I${moduleName} {
+     return `export interface I${moduleName} {
      image: string;
      altText: string;
+     title: string;
+     description:string;
      createdAt: Date;
      updatedAt: Date;
      isDeleted: boolean;
@@ -325,8 +333,8 @@ export type I${moduleName}Filters = {
 
 // Helper function to capitalize the first letter of the module name
 function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 // Example usage: Create a new module called 'sliderImage'
-createModuleStructure('Report');
+createModuleStructure('Nunu');
