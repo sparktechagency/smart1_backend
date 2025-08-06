@@ -20,7 +20,7 @@ const createPayment = catchAsync(async (req: Request, res: Response) => {
 const getAllPayments = catchAsync(async (req: Request, res: Response) => {
      const result = await PaymentService.getAllPayments(req.query);
 
-     sendResponse<{ meta: { total: number; page: number; limit: number; }; result: IPayment[]; }>(res, {
+     sendResponse<{ meta: { total: number; page: number; limit: number }; result: IPayment[] }>(res, {
           statusCode: 200,
           success: true,
           message: 'Payments retrieved successfully',
@@ -38,8 +38,6 @@ const getAllUnpaginatedPayments = catchAsync(async (req: Request, res: Response)
           data: result,
      });
 });
-
-
 
 const deletePayment = catchAsync(async (req: Request, res: Response) => {
      const { id } = req.params;
@@ -77,17 +75,23 @@ const getPaymentById = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-
 const successPage = catchAsync(async (req: Request, res: Response) => {
      // console.log('hit hoise');
-     res.render('success.ejs');
+     const result = await PaymentService.transferToServiceProviderService(req.query.bookingId as string);
+     if (result == null) {
+          res.render('success.ejs');
+     }
+     sendResponse(res, {
+          statusCode: 200,
+          success: true,
+          message: 'Payment successfully transfered',
+          data: result,
+     });
 });
-
 
 const cancelPage = catchAsync(async (req: Request, res: Response) => {
      res.render('cancel.ejs');
 });
-
 
 const stripeDuePaymentByBookingId = catchAsync(async (req: Request, res: Response) => {
      const { bookingId } = req.params;
@@ -136,5 +140,5 @@ export const PaymentController = {
      cancelPage,
      stripeDuePaymentByBookingId,
      updateCashPayment,
-     getMyPayments
+     getMyPayments,
 };

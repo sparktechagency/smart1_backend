@@ -181,99 +181,512 @@ const getMyBookings = async (query: Record<string, unknown>, user: IJwtPayload) 
      };
 };
 
+// const changeBookingStatus = async (bookingId: string, status: string, user: IJwtPayload) => {
+//      const session = await mongoose.startSession();
+//      session.startTransaction(); // Start the transaction
+
+//      try {
+//           // if status to be cancelled then throws error mentioning the cancel route
+//           if (status === BOOKING_STATUS.CANCELLED) {
+//                throw new AppError(StatusCodes.BAD_REQUEST, 'Use method: Delete and route: /api/v1/booking/cancel/:id to cancel a booking');
+//           }
+
+//           // Find order
+//           const booking = await Booking.findById(bookingId).session(session); // Attach the session to the query
+//           if (!booking) {
+//                throw new AppError(StatusCodes.NOT_FOUND, 'Order not Found');
+//           }
+
+//           let bid;
+//           if (booking.acceptedBid !== null) {
+//                bid = await Bid.findOne({ _id: booking.acceptedBid }).populate('serviceProvider').session(session);
+//                if (!bid) {
+//                     throw new AppError(StatusCodes.NOT_FOUND, 'Bid not Found');
+//                }
+//           }
+
+//           // Status validation for booking
+//           switch (booking.status) {
+//                case BOOKING_STATUS.PENDING:
+//                     if (status === BOOKING_STATUS.CONFIRMED) {
+//                          throw new AppError(StatusCodes.BAD_REQUEST, 'Need to accept a bid before confirming the booking first');
+//                     }
+//                     break;
+//                case BOOKING_STATUS.CONFIRMED:
+//                     if (status === BOOKING_STATUS.ON_THE_WAY) {
+//                          break;
+//                     }
+//                     throw new AppError(StatusCodes.BAD_REQUEST, `Confirmed Booking can't be updated to ${status} can only be updated to "on The Way"`);
+//                case BOOKING_STATUS.ON_THE_WAY:
+//                     if (status === BOOKING_STATUS.WORK_STARTED) {
+//                          break;
+//                     }
+//                     throw new AppError(StatusCodes.BAD_REQUEST, `"On The Way" Booking can't be updated to ${status} can only be updated to "work started"`);
+//                case BOOKING_STATUS.WORK_STARTED:
+//                     if (status === BOOKING_STATUS.COMPLETED) {
+//                          if (booking.paymentStatus === PAYMENT_STATUS.PAID) {
+//                               if (booking.paymentMethod === PAYMENT_METHOD.ONLINE) {
+//                                    if (booking.isPaymentTransferd === false) {
+//                                         if ((bid!.serviceProvider as any).stripeConnectedAccount) {
+//                                              const transfer = await transferToServiceProvider({
+//                                                   stripeConnectedAccount: (bid!.serviceProvider as any).stripeConnectedAccount,
+//                                                   finalAmount: booking.finalAmount,
+//                                                   adminRevenuePercent: (bid!.serviceProvider as any).adminRevenuePercent,
+//                                                   serviceProvider: (bid!.serviceProvider as any)._id.toString(),
+//                                                   bookingId: booking._id.toString(),
+//                                              });
+//                                              console.log('🚀 ~ changeBookingStatus ~ transfer:', transfer);
+//                                         } else {
+//                                              throw new AppError(StatusCodes.BAD_REQUEST, 'Stripe account not found');
+//                                         }
+//                                    }
+//                               }
+//                          } else if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
+//                               throw new AppError(StatusCodes.BAD_REQUEST, `Payment is not done yet. Do the payment first. payment id : ${booking.payment}`);
+//                          }
+//                          break;
+//                     }
+//                     throw new AppError(StatusCodes.BAD_REQUEST, `"Work Started" Booking can't be updated to ${status} can only be updated to "completed"`);
+//                case BOOKING_STATUS.COMPLETED:
+//                     throw new AppError(StatusCodes.BAD_REQUEST, "COMPLETED Booking can't be updated");
+//                case BOOKING_STATUS.CANCELLED:
+//                     throw new AppError(StatusCodes.BAD_REQUEST, "CANCELLED Booking can't be updated");
+//                default:
+//                     throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid booking status');
+//           }
+
+//           // Update booking status
+//           const updatedBooking = await Booking.findOneAndUpdate({ _id: new Types.ObjectId(bookingId), acceptedBid: bid!._id }, { status }, { new: true, session });
+
+//           // Update bid status
+//           const updatedBid = await Bid.findOneAndUpdate({ _id: bid!._id }, { status }, { new: true, session });
+
+//           // Commit the transaction
+//           await session.commitTransaction();
+
+//           return { updatedBooking, updatedBid };
+//      } catch (error) {
+//           // Rollback the transaction in case of an error
+//           await session.abortTransaction();
+//           throw error; // Re-throw the error to be handled by the caller
+//      } finally {
+//           // End the session
+//           session.endSession();
+//      }
+// };
+
 const changeBookingStatus = async (bookingId: string, status: string, user: IJwtPayload) => {
      const session = await mongoose.startSession();
-     session.startTransaction(); // Start the transaction
+     session.startTransaction();
 
      try {
-          // if status to be cancelled then throws error mentioning the cancel route
           if (status === BOOKING_STATUS.CANCELLED) {
-               throw new AppError(StatusCodes.BAD_REQUEST, 'Use method: Delete and route: /api/v1/booking/cancel/:id to cancel a booking');
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Use DELETE /booking/cancel/:id to cancel bookings');
           }
 
-          // Find order
-          const booking = await Booking.findById(bookingId).session(session); // Attach the session to the query
-          if (!booking) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'Order not Found');
+          const booking = await Booking.findById(bookingId).session(session);
+          if (!booking) throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found');
+
+          let bid = null;
+          if (booking.acceptedBid) {
+               bid = await Bid.findById(booking.acceptedBid).populate('serviceProvider').session(session);
+               if (!bid) throw new AppError(StatusCodes.NOT_FOUND, 'Accepted bid not found');
           }
 
-          let bid;
-          if (booking.acceptedBid !== null) {
-               bid = await Bid.findOne({ _id: booking.acceptedBid }).populate('serviceProvider').session(session);
-               if (!bid) {
-                    throw new AppError(StatusCodes.NOT_FOUND, 'Bid not Found');
-               }
-          }
-
-          // Status validation for booking
           switch (booking.status) {
                case BOOKING_STATUS.PENDING:
                     if (status === BOOKING_STATUS.CONFIRMED) {
-                         throw new AppError(StatusCodes.BAD_REQUEST, 'Need to accept a bid before confirming the booking first');
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'Accept a bid before confirming');
                     }
                     break;
                case BOOKING_STATUS.CONFIRMED:
-                    if (status === BOOKING_STATUS.ON_THE_WAY) {
-                         break;
+                    if (status !== BOOKING_STATUS.ON_THE_WAY) {
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'Can only move to "on the way"');
                     }
-                    throw new AppError(StatusCodes.BAD_REQUEST, `Confirmed Booking can't be updated to ${status} can only be updated to "on The Way"`);
+                    break;
                case BOOKING_STATUS.ON_THE_WAY:
-                    if (status === BOOKING_STATUS.WORK_STARTED) {
-                         break;
+                    if (status !== BOOKING_STATUS.WORK_STARTED) {
+                         throw new AppError(StatusCodes.BAD_REQUEST, 'Can only move to "work started"');
                     }
-                    throw new AppError(StatusCodes.BAD_REQUEST, `"On The Way" Booking can't be updated to ${status} can only be updated to "work started"`);
+                    break;
                case BOOKING_STATUS.WORK_STARTED:
                     if (status === BOOKING_STATUS.COMPLETED) {
-                         if (booking.paymentStatus === PAYMENT_STATUS.PAID) {
+                         // ✅ Payment trigger here
+                         if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
                               if (booking.paymentMethod === PAYMENT_METHOD.ONLINE) {
-                                   if (booking.isPaymentTransferd === false) {
-                                        if ((bid!.serviceProvider as any).stripeConnectedAccount) {
-                                             const transfer = await transferToServiceProvider({
-                                                  stripeConnectedAccount: (bid!.serviceProvider as any).stripeConnectedAccount,
-                                                  finalAmount: booking.finalAmount,
-                                                  adminRevenuePercent: (bid!.serviceProvider as any).adminRevenuePercent,
-                                                  serviceProvider: (bid!.serviceProvider as any)._id.toString(),
-                                                  bookingId: booking._id.toString(),
-                                             });
-                                             console.log('🚀 ~ changeBookingStatus ~ transfer:', transfer);
-                                        } else {
-                                             throw new AppError(StatusCodes.BAD_REQUEST, 'Stripe account not found');
-                                        }
-                                   }
+                                   const thisCustomer = await User.findById(booking.user);
+                                   const stripeCustomer = await stripe.customers.create({
+                                        name: thisCustomer?.full_name,
+                                        email: thisCustomer?.email,
+                                   });
+
+                                   await User.findByIdAndUpdate(
+                                        thisCustomer?.id,
+                                        {
+                                             $set: { stripeCustomerId: stripeCustomer.id },
+                                        },
+                                        { session },
+                                   );
+
+                                   const notificationReceivers = [(bid!.serviceProvider as any)._id.toString()];
+
+                                   const stripeSessionData: any = {
+                                        payment_method_types: ['card'],
+                                        mode: 'payment',
+                                        customer: stripeCustomer.id,
+                                        line_items: [
+                                             {
+                                                  price_data: {
+                                                       currency: DEFAULT_CURRENCY.SAR || 'sar',
+                                                       product_data: { name: 'Booking Payment' },
+                                                       unit_amount: booking.finalAmount! * 100,
+                                                  },
+                                                  quantity: 1,
+                                             },
+                                        ],
+                                        metadata: {
+                                             user: booking.user.toString(),
+                                             acceptedBid: bid!._id.toString(),
+                                             booking: booking._id.toString(),
+                                             serviceCategory: booking.serviceCategory.toString(),
+                                             method: booking.paymentMethod,
+                                             amount: booking.finalAmount,
+                                             notificationReceivers: JSON.stringify(notificationReceivers),
+                                             isAcceptedBidChanged: false,
+                                             previouslyAcceptedBidProvider: '',
+                                        },
+                                        success_url: `${config.stripe.success_url}?bookingId=${bookingId}`,
+                                        cancel_url: config.stripe.cancel_url,
+                                   };
+
+                                   const stripeSession = await stripe.checkout.sessions.create(stripeSessionData);
+                                   await session.commitTransaction();
+                                   return { message: 'Redirect to payment', url: stripeSession.url };
+                              } else if (booking.paymentMethod === PAYMENT_METHOD.CASH) {
+                                   await session.commitTransaction();
+                                   return { message: 'Service completed. Collect cash from customer.' };
                               }
-                         } else if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
-                              throw new AppError(StatusCodes.BAD_REQUEST, `Payment is not done yet. Do the payment first. payment id : ${booking.payment}`);
                          }
                          break;
                     }
-                    throw new AppError(StatusCodes.BAD_REQUEST, `"Work Started" Booking can't be updated to ${status} can only be updated to "completed"`);
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid transition from "work started"');
                case BOOKING_STATUS.COMPLETED:
-                    throw new AppError(StatusCodes.BAD_REQUEST, "COMPLETED Booking can't be updated");
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Cannot update completed booking');
                case BOOKING_STATUS.CANCELLED:
-                    throw new AppError(StatusCodes.BAD_REQUEST, "CANCELLED Booking can't be updated");
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Cannot update cancelled booking');
                default:
-                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid booking status');
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid status');
           }
 
-          // Update booking status
-          const updatedBooking = await Booking.findOneAndUpdate({ _id: new Types.ObjectId(bookingId), acceptedBid: bid!._id }, { status }, { new: true, session });
+          const updatedBooking = await Booking.findOneAndUpdate({ _id: bookingId }, { status }, { new: true, session });
 
-          // Update bid status
-          const updatedBid = await Bid.findOneAndUpdate({ _id: bid!._id }, { status }, { new: true, session });
+          const updatedBid = bid ? await Bid.findOneAndUpdate({ _id: bid._id }, { status }, { new: true, session }) : null;
 
-          // Commit the transaction
           await session.commitTransaction();
-
           return { updatedBooking, updatedBid };
      } catch (error) {
-          // Rollback the transaction in case of an error
           await session.abortTransaction();
-          throw error; // Re-throw the error to be handled by the caller
+          throw error;
      } finally {
-          // End the session
           session.endSession();
      }
 };
+
+// const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_REFUND_REASON, user: IJwtPayload) => {
+//      const session = await mongoose.startSession();
+//      session.startTransaction();
+
+//      try {
+//           // isExistBooking by this user
+//           const isExistBooking = await Booking.findOne({ _id: new Types.ObjectId(orderId), status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } }).session(session);
+//           if (!isExistBooking) {
+//                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found. Booking status must be pending or confirmed to cancel');
+//           }
+//           if (user.role === USER_ROLES.SERVICE_PROVIDER && isExistBooking.serviceProvider?.toString() !== user.id) {
+//                throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as service provider to cancel this booking');
+//           } else if (user.role === USER_ROLES.USER && isExistBooking.user?.toString() !== user.id) {
+//                throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as user to cancel this booking');
+//           }
+//           if (isExistBooking.acceptedBid === null && isExistBooking.payment == null && isExistBooking.paymentStatus !== PAYMENT_STATUS.PAID) {
+//                isExistBooking.status = BOOKING_STATUS.CANCELLED;
+//                isExistBooking.bookingCancelReason = bookingCancelReason;
+//                isExistBooking.cancelledBy = {
+//                     role: user.role as USER_ROLES,
+//                     id: new Types.ObjectId(user.id),
+//                };
+//                await isExistBooking.save({ session });
+
+//                // Send mail notification for the manager and client
+//                const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
+//                for (const receiverId of admins) {
+//                     await sendNotifications({
+//                          receiver: receiverId as unknown as Types.ObjectId,
+//                          type: NOTIFICATION_MODEL_TYPE.BOOKING,
+//                          message: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
+//                          title: NotificationTitle.BOOKING_CANCELLED,
+//                          reference: isExistBooking._id,
+//                     });
+//                }
+
+//                // Commit the session if no issues found
+//                await session.commitTransaction();
+//                return { booking: isExistBooking };
+//           }
+
+//           // isExistBid
+//           const isExistBid = await Bid.findOne({ _id: isExistBooking.acceptedBid, status: { $in: [BID_STATUS.PENDING, BID_STATUS.ACCEPTED, BID_STATUS.REJECTED] } }).session(session);
+//           if (!isExistBid) {
+//                throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found');
+//           }
+
+//           // same for payment
+//           const isExistPayment = await Payment.findOne({ booking: isExistBooking._id, status: { $ne: PAYMENT_STATUS.CANCELLED } }).session(session);
+//           if (!isExistPayment) {
+//                throw new AppError(StatusCodes.NOT_FOUND, 'Payment not found');
+//           }
+
+//           // Check if the booking payment status is paid
+//           if (isExistBooking.paymentStatus === PAYMENT_STATUS.PAID) {
+//                if (isExistBooking.paymentMethod === PAYMENT_METHOD.ONLINE) {
+//                     if (isExistBooking.isPaymentTransferd) {
+//                          throw new AppError(StatusCodes.BAD_REQUEST, 'Payment is already transferd to provider');
+//                     } else {
+//                          if (isExistPayment.status !== PAYMENT_STATUS.REFUNDED) {
+//                               const refundedPayment = await PaymentService.refundPayment(isExistBooking.payment?.toString() || '', user, bookingCancelReason);
+//                               if (!refundedPayment) {
+//                                    throw new AppError(StatusCodes.BAD_REQUEST, 'Payment refund failed');
+//                               }
+//                          }
+//                     }
+//                } else if (isExistBooking.paymentMethod === PAYMENT_METHOD.CASH) {
+//                     if (isExistPayment.status !== PAYMENT_STATUS.REFUNDED) {
+//                          isExistPayment.isNeedRefund = true;
+//                          await isExistPayment.save({ session });
+//                          throw new AppError(StatusCodes.BAD_REQUEST, 'payment is not online payment. So do the refund manually first');
+//                     }
+//                }
+//           }
+//           isExistBooking.status = BOOKING_STATUS.CANCELLED;
+//           isExistBooking.bookingCancelReason = bookingCancelReason;
+//           isExistBooking.cancelledBy = {
+//                role: user.role as USER_ROLES,
+//                id: new Types.ObjectId(user.id),
+//           };
+//           await isExistBooking.save({ session });
+
+//           isExistBid.status = BID_STATUS.CANCELLED;
+//           isExistBid.bidCancelReason = bookingCancelReason;
+//           await isExistBid.save({ session });
+
+//           isExistPayment.status = PAYMENT_STATUS.CANCELLED;
+//           isExistPayment.refundReason = bookingCancelReason;
+//           await isExistPayment.save({ session });
+
+//           // Send mail notification for the manager and client
+//           const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
+//           const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBooking.user as any)._id.toString(), (isExistBooking.serviceProvider as any)._id.toString()];
+//           for (const receiverId of notificationReceivers) {
+//                await sendNotifications({
+//                     receiver: receiverId as unknown as Types.ObjectId,
+//                     type: NOTIFICATION_MODEL_TYPE.BOOKING,
+//                     message: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
+//                     reference: isExistBooking._id,
+//                     title: NotificationTitle.BOOKING_CANCELLED,
+//                });
+//           }
+
+//           // Commit the session if no issues found
+//           await session.commitTransaction();
+//           return { booking: isExistBooking };
+//      } catch (error) {
+//           // Rollback the transaction in case of an error
+//           await session.abortTransaction();
+//           throw error; // Re-throw the error to be handled by the caller
+//      } finally {
+//           // End the session
+//           session.endSession();
+//      }
+// };
+
+// const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | any) => {
+//      const session = await mongoose.startSession();
+//      session.startTransaction();
+//      try {
+//           // Find the customer and booking
+//           const thisCustomer = await User.findOne({ _id: user.id }).session(session);
+//           const thisBooking = await Booking.findOne({ _id: bookingId, user: user.id }).session(session);
+//           if (!thisBooking) {
+//                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found');
+//           }
+//           if (thisBooking.status !== BOOKING_STATUS.PENDING) {
+//                throw new AppError(StatusCodes.BAD_REQUEST, 'Booking is not in pending status');
+//           }
+
+//           // Check if the bid exists
+//           const isExistBid = await Bid.findOne({ _id: bidId, serviceCategory: thisBooking.serviceCategory, status: BID_STATUS.PENDING }).populate('serviceProvider').session(session);
+//           if (!isExistBid) {
+//                throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found');
+//           }
+
+//           // Check if the bid is already assigned to a booking
+//           if (isExistBid.booking && isExistBid.booking !== null) {
+//                if (isExistBid.booking.toString() !== new mongoose.Types.ObjectId(bookingId).toString()) {
+//                     throw new AppError(StatusCodes.BAD_REQUEST, 'Bid does not match with booking');
+//                }
+//           }
+
+//           const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
+//           // Process payment if method is CASH
+//           if (thisBooking.paymentMethod === PAYMENT_METHOD.CASH) {
+//                // Update booking with accepted bid
+//                thisBooking.acceptedBid = isExistBid._id;
+//                thisBooking.serviceProvider = (isExistBid.serviceProvider as any)._id;
+//                thisBooking.status = BOOKING_STATUS.CONFIRMED;
+//                thisBooking.adminRevenuePercent = (isExistBid.serviceProvider as any)?.adminRevenuePercent;
+//                await thisBooking.validate();
+
+//                const updatedBooking = await thisBooking.save({ session });
+//                if (!updatedBooking) {
+//                     throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update booking');
+//                }
+//                console.log('🚀 ~ acceptBid ~ updatedBooking:', updatedBooking);
+
+//                // Update the bid status to accepted
+//                isExistBid.isAccepted = true;
+//                isExistBid.status = BID_STATUS.ACCEPTED;
+//                isExistBid.booking = thisBooking._id as Types.ObjectId;
+//                await isExistBid.save({ session });
+
+//                // Update all other bids to rejected
+//                await Bid.updateMany({ _id: { $ne: isExistBid._id }, booking: thisBooking._id }, { $set: { isAccepted: false, status: BID_STATUS.REJECTED } }, { session });
+
+//                const transactionId = generateTransactionId();
+//                const payment = new Payment({
+//                     user: updatedBooking.user,
+//                     booking: updatedBooking._id,
+//                     serviceCategory: updatedBooking.serviceCategory,
+//                     method: updatedBooking.paymentMethod,
+//                     transactionId,
+//                     amount: updatedBooking.finalAmount,
+//                });
+//                updatedBooking.payment = payment._id;
+//                await updatedBooking.save({ session });
+//                await payment.save({ session });
+
+//                // Update service counts
+//                await Service.updateMany({ _id: { $in: updatedBooking.services.map((item: any) => item.service) } }, { $inc: { servedCount: 1 } }, { session });
+
+//                // Send notifications and emails (not inside the transaction, as they are external calls)
+//                const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBid.serviceProvider as any)._id.toString()];
+//                for (const receiverId of notificationReceivers) {
+//                     await sendNotifications({
+//                          receiver: receiverId as unknown as Types.ObjectId,
+//                          type: NOTIFICATION_MODEL_TYPE.BOOKING,
+//                          message: `New booking placed by ${thisCustomer?.full_name} Accepting Bid.`,
+//                          reference: updatedBooking._id,
+//                          title: NotificationTitle.NEW_BOOKING,
+//                     });
+//                }
+
+//                // Generate PDF invoice
+//                const pdfBuffer = await generateBookingInvoicePDF(updatedBooking);
+
+//                // Prepare email with PDF attachment
+//                const values = {
+//                     name: thisCustomer!.full_name!,
+//                     email: thisCustomer!.email!,
+//                     booking: updatedBooking,
+//                     attachments: [
+//                          {
+//                               filename: `invoice-${updatedBooking._id}.pdf`,
+//                               content: pdfBuffer,
+//                               contentType: 'application/pdf',
+//                          },
+//                     ],
+//                };
+
+//                // Send email with invoice attachment
+//                const emailTemplateData = emailTemplate.bookingInvoice(values);
+//                emailHelper.sendEmail({
+//                     ...emailTemplateData,
+//                     attachments: values.attachments,
+//                });
+
+//                // Commit the transaction
+//                await session.commitTransaction();
+//                return updatedBooking;
+//           }
+//           let result;
+//           if (thisBooking.paymentMethod == PAYMENT_METHOD.ONLINE) {
+//                // notificationReceivers
+//                const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBid.serviceProvider as any)._id.toString()];
+//                // Update booking with accepted bid
+//                thisBooking.acceptedBid = isExistBid._id;
+//                thisBooking.adminRevenuePercent = (isExistBid.serviceProvider as any)?.adminRevenuePercent;
+//                thisBooking.serviceProvider = (isExistBid.serviceProvider as any)._id;
+//                thisBooking.status = BOOKING_STATUS.CONFIRMED;
+//                await thisBooking.validate();
+
+//                const stripeCustomer = await stripe.customers.create({
+//                     name: thisCustomer?.full_name,
+//                     email: thisCustomer?.email,
+//                });
+//                await User.findByIdAndUpdate(thisCustomer?.id, { $set: { stripeCustomerId: stripeCustomer.id } }, { session });
+//                const stripeSessionData: any = {
+//                     payment_method_types: ['card'],
+//                     mode: 'payment',
+//                     customer: stripeCustomer.id,
+//                     line_items: [
+//                          {
+//                               price_data: {
+//                                    currency: DEFAULT_CURRENCY.SAR || 'sar',
+//                                    product_data: {
+//                                         name: 'Amount',
+//                                    },
+//                                    unit_amount: thisBooking.finalAmount! * 100, // Convert to cents
+//                               },
+//                               quantity: 1,
+//                          },
+//                     ],
+//                     metadata: {
+//                          user: thisBooking.user.toString(),
+//                          acceptedBid: isExistBid._id.toString(),
+//                          booking: thisBooking._id.toString(),
+//                          serviceCategory: thisBooking.serviceCategory.toString(),
+//                          method: thisBooking.paymentMethod,
+//                          amount: thisBooking.finalAmount,
+//                          notificationReceivers: JSON.stringify(notificationReceivers),
+//                          previouslyAcceptedBidProvider: '',
+//                          isAcceptedBidChanged: false,
+//                     },
+//                     success_url: config.stripe.success_url,
+//                     cancel_url: config.stripe.cancel_url,
+//                };
+
+//                try {
+//                     const session = await stripe.checkout.sessions.create(stripeSessionData);
+
+//                     result = { url: session.url };
+//                } catch (error) {
+//                     console.log({ error });
+//                     throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Stripe session creation failed');
+//                }
+//           } else {
+//                result = { message: 'Bid no accepted', booking: thisBooking };
+//           }
+
+//           // Commit transaction for any other changes
+//           await session.commitTransaction();
+//           return result;
+//      } catch (error) {
+//           // Rollback the transaction in case of an error
+//           await session.abortTransaction();
+//           throw error; // Re-throw the error to be handled by the caller
+//      } finally {
+//           // End the session
+//           session.endSession();
+//      }
+// };
 
 const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_REFUND_REASON, user: IJwtPayload) => {
      const session = await mongoose.startSession();
@@ -281,9 +694,9 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
 
      try {
           // isExistBooking by this user
-          const isExistBooking = await Booking.findOne({ _id: new Types.ObjectId(orderId), status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] } }).session(session);
+          const isExistBooking = await Booking.findOne({ _id: new Types.ObjectId(orderId), status: { $in: [BOOKING_STATUS.PENDING], paymentStatus: PAYMENT_STATUS.UNPAID } }).session(session);
           if (!isExistBooking) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found. Booking status must be pending or confirmed to cancel');
+               throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found. Booking status must be pending and Payment must be unpaid to cancel');
           }
           if (user.role === USER_ROLES.SERVICE_PROVIDER && isExistBooking.serviceProvider?.toString() !== user.id) {
                throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as service provider to cancel this booking');
@@ -322,33 +735,6 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found');
           }
 
-          // same for payment
-          const isExistPayment = await Payment.findOne({ booking: isExistBooking._id, status: { $ne: PAYMENT_STATUS.CANCELLED } }).session(session);
-          if (!isExistPayment) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'Payment not found');
-          }
-
-          // Check if the booking payment status is paid
-          if (isExistBooking.paymentStatus === PAYMENT_STATUS.PAID) {
-               if (isExistBooking.paymentMethod === PAYMENT_METHOD.ONLINE) {
-                    if (isExistBooking.isPaymentTransferd) {
-                         throw new AppError(StatusCodes.BAD_REQUEST, 'Payment is already transferd to provider');
-                    } else {
-                         if (isExistPayment.status !== PAYMENT_STATUS.REFUNDED) {
-                              const refundedPayment = await PaymentService.refundPayment(isExistBooking.payment?.toString() || '', user, bookingCancelReason);
-                              if (!refundedPayment) {
-                                   throw new AppError(StatusCodes.BAD_REQUEST, 'Payment refund failed');
-                              }
-                         }
-                    }
-               } else if (isExistBooking.paymentMethod === PAYMENT_METHOD.CASH) {
-                    if (isExistPayment.status !== PAYMENT_STATUS.REFUNDED) {
-                         isExistPayment.isNeedRefund = true;
-                         await isExistPayment.save({ session });
-                         throw new AppError(StatusCodes.BAD_REQUEST, 'payment is not online payment. So do the refund manually first');
-                    }
-               }
-          }
           isExistBooking.status = BOOKING_STATUS.CANCELLED;
           isExistBooking.bookingCancelReason = bookingCancelReason;
           isExistBooking.cancelledBy = {
@@ -360,10 +746,6 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
           isExistBid.status = BID_STATUS.CANCELLED;
           isExistBid.bidCancelReason = bookingCancelReason;
           await isExistBid.save({ session });
-
-          isExistPayment.status = PAYMENT_STATUS.CANCELLED;
-          isExistPayment.refundReason = bookingCancelReason;
-          await isExistPayment.save({ session });
 
           // Send mail notification for the manager and client
           const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
@@ -394,179 +776,65 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
 const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | any) => {
      const session = await mongoose.startSession();
      session.startTransaction();
+
      try {
-          // Find the customer and booking
           const thisCustomer = await User.findOne({ _id: user.id }).session(session);
           const thisBooking = await Booking.findOne({ _id: bookingId, user: user.id }).session(session);
-          if (!thisBooking) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found');
-          }
-          if (thisBooking.status !== BOOKING_STATUS.PENDING) {
-               throw new AppError(StatusCodes.BAD_REQUEST, 'Booking is not in pending status');
+
+          if (!thisBooking || thisBooking.status !== BOOKING_STATUS.PENDING) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid or non-pending booking');
           }
 
-          // Check if the bid exists
-          const isExistBid = await Bid.findOne({ _id: bidId, serviceCategory: thisBooking.serviceCategory, status: BID_STATUS.PENDING }).populate('serviceProvider').session(session);
+          const isExistBid = await Bid.findOne({
+               _id: bidId,
+               serviceCategory: thisBooking.serviceCategory,
+               status: BID_STATUS.PENDING,
+          })
+               .populate('serviceProvider')
+               .session(session);
+
           if (!isExistBid) {
                throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found');
           }
 
-          // Check if the bid is already assigned to a booking
-          if (isExistBid.booking && isExistBid.booking !== null) {
-               if (isExistBid.booking.toString() !== new mongoose.Types.ObjectId(bookingId).toString()) {
-                    throw new AppError(StatusCodes.BAD_REQUEST, 'Bid does not match with booking');
-               }
+          if (isExistBid.booking && isExistBid.booking.toString() !== bookingId) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Bid already linked to another booking');
           }
 
           const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
-          // Process payment if method is CASH
-          if (thisBooking.paymentMethod === PAYMENT_METHOD.CASH) {
-               // Update booking with accepted bid
-               thisBooking.acceptedBid = isExistBid._id;
-               thisBooking.serviceProvider = (isExistBid.serviceProvider as any)._id;
-               thisBooking.status = BOOKING_STATUS.CONFIRMED;
-               thisBooking.adminRevenuePercent = (isExistBid.serviceProvider as any)?.adminRevenuePercent;
-               await thisBooking.validate();
 
-               const updatedBooking = await thisBooking.save({ session });
-               if (!updatedBooking) {
-                    throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update booking');
-               }
-               console.log('🚀 ~ acceptBid ~ updatedBooking:', updatedBooking);
+          // ✅ Accept the bid and update booking
+          thisBooking.acceptedBid = isExistBid._id;
+          thisBooking.serviceProvider = (isExistBid.serviceProvider as any)._id;
+          thisBooking.adminRevenuePercent = (isExistBid.serviceProvider as any)?.adminRevenuePercent;
+          thisBooking.status = BOOKING_STATUS.CONFIRMED;
+          await thisBooking.validate();
+          const updatedBooking = await thisBooking.save({ session });
 
-               // Update the bid status to accepted
-               isExistBid.isAccepted = true;
-               isExistBid.status = BID_STATUS.ACCEPTED;
-               isExistBid.booking = thisBooking._id as Types.ObjectId;
-               await isExistBid.save({ session });
+          isExistBid.isAccepted = true;
+          isExistBid.status = BID_STATUS.ACCEPTED;
+          isExistBid.booking = thisBooking._id;
+          await isExistBid.save({ session });
 
-               // Update all other bids to rejected
-               await Bid.updateMany({ _id: { $ne: isExistBid._id }, booking: thisBooking._id }, { $set: { isAccepted: false, status: BID_STATUS.REJECTED } }, { session });
+          await Bid.updateMany({ _id: { $ne: isExistBid._id }, booking: thisBooking._id }, { $set: { isAccepted: false, status: BID_STATUS.REJECTED } }, { session });
 
-               const transactionId = generateTransactionId();
-               const payment = new Payment({
-                    user: updatedBooking.user,
-                    booking: updatedBooking._id,
-                    serviceCategory: updatedBooking.serviceCategory,
-                    method: updatedBooking.paymentMethod,
-                    transactionId,
-                    amount: updatedBooking.finalAmount,
+          const notificationReceivers = [...admins.map((u) => u._id.toString()), (isExistBid.serviceProvider as any)._id.toString()];
+          for (const receiverId of notificationReceivers) {
+               await sendNotifications({
+                    receiver: receiverId,
+                    type: NOTIFICATION_MODEL_TYPE.BOOKING,
+                    title: NotificationTitle.NEW_BOOKING,
+                    message: `New booking placed by ${thisCustomer?.full_name} Accepting Bid.`,
+                    reference: updatedBooking._id,
                });
-               updatedBooking.payment = payment._id;
-               await updatedBooking.save({ session });
-               await payment.save({ session });
-
-               // Update service counts
-               await Service.updateMany({ _id: { $in: updatedBooking.services.map((item: any) => item.service) } }, { $inc: { servedCount: 1 } }, { session });
-
-               // Send notifications and emails (not inside the transaction, as they are external calls)
-               const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBid.serviceProvider as any)._id.toString()];
-               for (const receiverId of notificationReceivers) {
-                    await sendNotifications({
-                         receiver: receiverId as unknown as Types.ObjectId,
-                         type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                         message: `New booking placed by ${thisCustomer?.full_name} Accepting Bid.`,
-                         reference: updatedBooking._id,
-                         title: NotificationTitle.NEW_BOOKING,
-                    });
-               }
-
-               // Generate PDF invoice
-               const pdfBuffer = await generateBookingInvoicePDF(updatedBooking);
-
-               // Prepare email with PDF attachment
-               const values = {
-                    name: thisCustomer!.full_name!,
-                    email: thisCustomer!.email!,
-                    booking: updatedBooking,
-                    attachments: [
-                         {
-                              filename: `invoice-${updatedBooking._id}.pdf`,
-                              content: pdfBuffer,
-                              contentType: 'application/pdf',
-                         },
-                    ],
-               };
-
-               // Send email with invoice attachment
-               const emailTemplateData = emailTemplate.bookingInvoice(values);
-               emailHelper.sendEmail({
-                    ...emailTemplateData,
-                    attachments: values.attachments,
-               });
-
-               // Commit the transaction
-               await session.commitTransaction();
-               return updatedBooking;
-          }
-          let result;
-          if (thisBooking.paymentMethod == PAYMENT_METHOD.ONLINE) {
-               // notificationReceivers
-               const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBid.serviceProvider as any)._id.toString()];
-               // Update booking with accepted bid
-               thisBooking.acceptedBid = isExistBid._id;
-               thisBooking.adminRevenuePercent = (isExistBid.serviceProvider as any)?.adminRevenuePercent;
-               thisBooking.serviceProvider = (isExistBid.serviceProvider as any)._id;
-               thisBooking.status = BOOKING_STATUS.CONFIRMED;
-               await thisBooking.validate();
-
-               const stripeCustomer = await stripe.customers.create({
-                    name: thisCustomer?.full_name,
-                    email: thisCustomer?.email,
-               });
-               await User.findByIdAndUpdate(thisCustomer?.id, { $set: { stripeCustomerId: stripeCustomer.id } }, { session });
-               const stripeSessionData: any = {
-                    payment_method_types: ['card'],
-                    mode: 'payment',
-                    customer: stripeCustomer.id,
-                    line_items: [
-                         {
-                              price_data: {
-                                   currency: DEFAULT_CURRENCY.SAR || 'sar',
-                                   product_data: {
-                                        name: 'Amount',
-                                   },
-                                   unit_amount: thisBooking.finalAmount! * 100, // Convert to cents
-                              },
-                              quantity: 1,
-                         },
-                    ],
-                    metadata: {
-                         user: thisBooking.user.toString(),
-                         acceptedBid: isExistBid._id.toString(),
-                         booking: thisBooking._id.toString(),
-                         serviceCategory: thisBooking.serviceCategory.toString(),
-                         method: thisBooking.paymentMethod,
-                         amount: thisBooking.finalAmount,
-                         notificationReceivers: JSON.stringify(notificationReceivers),
-                         previouslyAcceptedBidProvider: '',
-                         isAcceptedBidChanged: false,
-                    },
-                    success_url: config.stripe.success_url,
-                    cancel_url: config.stripe.cancel_url,
-               };
-
-               try {
-                    const session = await stripe.checkout.sessions.create(stripeSessionData);
-
-                    result = { url: session.url };
-               } catch (error) {
-                    console.log({ error });
-                    throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Stripe session creation failed');
-               }
-          } else {
-               result = { message: 'Bid no accepted', booking: thisBooking };
           }
 
-          // Commit transaction for any other changes
           await session.commitTransaction();
-          return result;
+          return updatedBooking;
      } catch (error) {
-          // Rollback the transaction in case of an error
           await session.abortTransaction();
-          throw error; // Re-throw the error to be handled by the caller
+          throw error;
      } finally {
-          // End the session
           session.endSession();
      }
 };

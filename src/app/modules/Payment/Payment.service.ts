@@ -11,13 +11,15 @@ import { USER_ROLES } from '../user/user.enums';
 import { User } from '../user/user.model';
 import { IPayment } from './Payment.interface';
 import { Payment } from './Payment.model';
+import { transferToServiceProvider } from '../booking/booking.utils';
+import { Bid } from '../Bid/Bid.model';
 
 const createPayment = async (payload: Partial<IPayment>): Promise<IPayment> => {
      const result = await Payment.create(payload);
      return result;
 };
 
-const getAllPayments = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IPayment[]; }> => {
+const getAllPayments = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IPayment[] }> => {
      const queryBuilder = new QueryBuilder(Payment.find(), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      const meta = await queryBuilder.countTotal();
@@ -29,7 +31,35 @@ const getAllUnpaginatedPayments = async (): Promise<IPayment[]> => {
      return result;
 };
 
-
+const transferToServiceProviderService = async (bookingId: string) => {
+     if (!bookingId) {
+          return null;
+     }
+     const booking = await Booking.findById(bookingId);
+     if (!booking || !booking.acceptedBid) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'No booking or acceptedBid found');
+     }
+     const bid = await Bid.findById(booking.acceptedBid);
+     if (!bid) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'No Bid found');
+     }
+     let result;
+     // Optionally handle Stripe transfer if paid
+     if (booking.paymentStatus === PAYMENT_STATUS.PAID && !booking.isPaymentTransferd) {
+          if ((bid!.serviceProvider as any).stripeConnectedAccount) {
+               result = await transferToServiceProvider({
+                    stripeConnectedAccount: (bid!.serviceProvider as any).stripeConnectedAccount,
+                    finalAmount: booking.finalAmount,
+                    adminRevenuePercent: (bid!.serviceProvider as any).adminRevenuePercent,
+                    serviceProvider: (bid!.serviceProvider as any)._id.toString(),
+                    bookingId: booking._id.toString(),
+               });
+          } else {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'No connected Stripe account');
+          }
+     }
+     return result;
+};
 
 const deletePayment = async (id: string): Promise<IPayment | null> => {
      const result = await Payment.findById(id);
@@ -63,7 +93,6 @@ const isPaymentExist = async (paymentIntent: string) => {
      return result;
 };
 
-
 const refundPayment = async (paymentId: string, user: IJwtPayload, refundReason: CANCELL_OR_REFUND_REASON) => {
      try {
           const payment = await Payment.findOne({ _id: paymentId, user: user.id, status: { $nin: [PAYMENT_STATUS.UNPAID, PAYMENT_STATUS.REFUNDED] } }).populate('booking');
@@ -95,7 +124,6 @@ const refundPayment = async (paymentId: string, user: IJwtPayload, refundReason:
      }
 };
 
-
 const stripeDuePaymentByBookingId = async (bookingId: string, user: IJwtPayload) => {
      const session = await mongoose.startSession();
      session.startTransaction();
@@ -119,10 +147,7 @@ const stripeDuePaymentByBookingId = async (bookingId: string, user: IJwtPayload)
           }
 
           thisUser.stripeCustomerId = stripeCustomer?.id;
-          console.log(
-               '🚀 ~ createBookingToDB ~ New customer created:',
-               stripeCustomer
-          );
+          console.log('🚀 ~ createBookingToDB ~ New customer created:', stripeCustomer);
           await User.findByIdAndUpdate(thisUser._id, { stripeCustomerId: stripeCustomer?.id }, { session });
 
           const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
@@ -156,7 +181,7 @@ const stripeDuePaymentByBookingId = async (bookingId: string, user: IJwtPayload)
                },
                success_url: config.stripe.success_url,
                cancel_url: config.stripe.cancel_url,
-          }
+          };
           const stripeSession: any = await stripe.checkout.sessions.create(stripeSessionData);
           console.log('🚀 ~ createBookingToDB ~:', {
                url: stripeSession.url,
@@ -232,5 +257,6 @@ export const PaymentService = {
      refundPayment,
      stripeDuePaymentByBookingId,
      updateCashPayment,
-     getMyPayments
+     getMyPayments,
+     transferToServiceProviderService,
 };
