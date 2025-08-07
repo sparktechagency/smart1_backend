@@ -729,7 +729,11 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
 
      try {
           // isExistBooking by this user
-          const isExistBooking = await Booking.findOne({ _id: new Types.ObjectId(orderId), status: { $in: [BOOKING_STATUS.PENDING], paymentStatus: PAYMENT_STATUS.UNPAID } }).session(session);
+          const isExistBooking = await Booking.findOne({
+               _id: new Types.ObjectId(orderId),
+               status: BOOKING_STATUS.PENDING,
+               paymentStatus: PAYMENT_STATUS.UNPAID,
+          }).session(session);
           if (!isExistBooking) {
                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found. Booking status must be pending and Payment must be unpaid to cancel');
           }
@@ -801,8 +805,15 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
           }
 
           // Send mail notification for the manager and client
-          const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
-          const notificationReceivers = [...admins.map((u: any) => u._id.toString()), (isExistBooking.user as any)._id.toString(), (isExistBooking.serviceProvider as any)._id.toString()];
+          const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } })
+               .select('_id')
+               .session(session);
+
+          const notificationReceivers = [
+               ...admins.map((a: any) => a._id.toString()),
+               (isExistBooking.user as any).toString(),
+               isExistBooking.serviceProvider ? isExistBooking.serviceProvider.toString() : undefined,
+          ].filter(Boolean);
           for (const receiverId of notificationReceivers) {
                await sendNotifications({
                     receiver: receiverId as unknown as Types.ObjectId,
@@ -929,7 +940,7 @@ const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | a
 
 const getServiceCategoryBasedBookingsForProviderToBid = async (query: any, user: IJwtPayload) => {
      // get service category from provider
-     const provider = await User.findOne({ _id: user.id, role: USER_ROLES.SERVICE_PROVIDER }).select('serviceCategory').lean();
+     const provider = await User.findOne({ _id: user.id, role: USER_ROLES.SERVICE_PROVIDER }).select('serviceCategories').lean();
      const serviceCategories = provider?.serviceCategories || [];
      const queryBuilder = new QueryBuilder(Booking.find({ serviceCategory: { $in: serviceCategories }, status: BOOKING_STATUS.PENDING }), query);
      const result = await queryBuilder.modelQuery;

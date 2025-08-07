@@ -18,7 +18,7 @@ router.get('/unpaginated', PaymentController.getAllUnpaginatedPayments);
 
 // router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), PaymentController.hardDeletePayment);
 
-router.post('/stripe/booking/:bookingId', auth(USER_ROLES.USER), PaymentController.stripeDuePaymentByBookingId);
+// router.post('/stripe/booking/:bookingId', auth(USER_ROLES.USER), PaymentController.stripeDuePaymentByBookingId);
 router.get('/success', PaymentController.successPage);
 router.get('/cancel', PaymentController.cancelPage);
 

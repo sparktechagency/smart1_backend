@@ -18,7 +18,7 @@ const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
           throw new AppError(StatusCodes.CONFLICT, 'You have already placed a bid for this booking.');
      }
      // get serviceProvider
-     const serviceProvider = await User.findById(user.id).select('serviceCategory').lean();
+     const serviceProvider = await User.findById(user.id).select('serviceCategories').lean();
      if (!serviceProvider) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Service provider not found.');
      }
