@@ -171,7 +171,12 @@ const userSchema = new Schema<IUser, UserModel>(
           adminDueAmount: { type: Number, default: 0 }, // Amount due to admin
           bookingCancelCount: { type: Number, default: 0 },
           reviews: [{ type: Schema.Types.ObjectId, ref: 'Reviews', default: [] }],
-          avgRating: { type: Number, default: 0 },
+          avgRating: {
+               type: Number,
+               required: true,
+               min: 0,
+               default: 0,
+          },
      },
      { timestamps: true },
 );

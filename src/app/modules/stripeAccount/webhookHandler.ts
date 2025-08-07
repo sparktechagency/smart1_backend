@@ -120,13 +120,13 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
 
           console.log('newPayment : 11');
 
-          let notificationTitle = '';
           if (!isAcceptedBidChanged) {
                // increase the purchase count of the all the proudcts use operatros
                const updateServedCount = await Service.updateMany({ _id: { $in: isBookingExists.services.map((item: any) => item.service) } }, { $inc: { servedCount: 1 } });
-               notificationTitle = `New order placed by ${thisCustomer?.full_name} Accepting Bid.`;
+               if (!updateServedCount) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'ServedCount not update');
+               }
           } else {
-               notificationTitle = `Booking bid changed by ${thisCustomer?.full_name}. New service provider assigned.`;
                if (previouslyAcceptedBidProvider) {
                     await sendNotifications({
                          receiver: previouslyAcceptedBidProvider,
@@ -154,8 +154,8 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
 
           // Prepare email with PDF attachment
           const values = {
-               name: thisCustomer?.full_name!,
-               email: thisCustomer?.email!,
+               name: thisCustomer?.full_name as string,
+               email: thisCustomer?.email as string,
                booking: isBookingExists,
                attachments: [
                     {

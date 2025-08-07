@@ -10,4 +10,5 @@ export interface ISettings extends Document {
      faqs: Types.ObjectId[];
      reports: Types.ObjectId[];
      reviews: Types.ObjectId[];
+     avgRating: number;
 }
