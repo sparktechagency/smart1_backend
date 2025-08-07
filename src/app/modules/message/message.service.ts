@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes';
 import { Types } from 'mongoose';
 import AppError from '../../../errors/AppError';
 import unlinkFile from '../../../shared/unlinkFile';
+import QueryBuilder from '../../builder/QueryBuilder';
 import { IJwtPayload } from '../auth/auth.interface';
 import { Chat } from '../chat/chat.model';
 import { MessageReaction } from './message.enum';
@@ -56,17 +57,17 @@ const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> =>
 //      return messages;
 // };
 
-
-
-const getMessageFromDB = async (id: any, user: IJwtPayload): Promise<IMessage[]> => {
-     const messages = await Message.find({ chatId: id }).sort({ createdAt: -1 }).populate('replies', 'text image');
+const getMessageFromDB = async (id: any, user: IJwtPayload, query: Record<string, unknown>) => {
+     // const messages = await Message.find({ chatId: id }).sort({ createdAt: -1 }).populate('replies', 'text image'); // Initialize the query builder with the base query
+     const queryBuilder = new QueryBuilder(Message.find({ chatId: id }).sort({ createdAt: -1 }).populate('replies', 'text image'), query);
      // if no message
+     const messages = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      if (!messages || messages.length === 0) {
           throw new AppError(StatusCodes.NOT_FOUND, 'No message found');
      }
 
      // Filter out messages that are deleted for everyone or for the current user
-     const filteredMessages = messages.filter(message => {
+     const filteredMessages = messages.filter((message) => {
           // Skip messages deleted for everyone
           if (message.deletedForEveryone) {
                return false;
@@ -82,9 +83,9 @@ const getMessageFromDB = async (id: any, user: IJwtPayload): Promise<IMessage[]>
      if (filteredMessages.length === 0) {
           throw new AppError(StatusCodes.NOT_FOUND, 'No message found');
      }
+     const meta = await queryBuilder.countTotal();
 
-
-     return filteredMessages;
+     return { meta, messages: filteredMessages };
 };
 
 // Reaction methods
@@ -95,9 +96,7 @@ const addRemoveEditReactionToDB = async (messageId: string, userId: string, emoj
      }
 
      // Check if user already reacted with this emoji
-     const existingReaction = message.reactions?.find(
-          (reaction) => reaction.userId.toString() == userId
-     );
+     const existingReaction = message.reactions?.find((reaction) => reaction.userId.toString() == userId);
 
      if (!existingReaction) {
           // Add new reaction
@@ -107,11 +106,7 @@ const addRemoveEditReactionToDB = async (messageId: string, userId: string, emoj
                createdAt: new Date(),
           };
 
-          const updatedMessage = await Message.findByIdAndUpdate(
-               messageId,
-               { $push: { reactions: newReaction } },
-               { new: true }
-          ).populate('reactions.userId', 'name email');
+          const updatedMessage = await Message.findByIdAndUpdate(messageId, { $push: { reactions: newReaction } }, { new: true }).populate('reactions.userId', 'name email');
 
           if (!updatedMessage) {
                throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to add reaction');
@@ -129,11 +124,10 @@ const addRemoveEditReactionToDB = async (messageId: string, userId: string, emoj
 
           return updatedMessage;
      } else if (existingReaction && existingReaction.emoji == emoji) {
-          const updatedMessage = await Message.findByIdAndUpdate(
-               messageId,
-               { $pull: { reactions: { userId: new Types.ObjectId(userId), emoji } } },
-               { new: true }
-          ).populate('reactions.userId', 'name email');
+          const updatedMessage = await Message.findByIdAndUpdate(messageId, { $pull: { reactions: { userId: new Types.ObjectId(userId), emoji } } }, { new: true }).populate(
+               'reactions.userId',
+               'name email',
+          );
 
           if (!updatedMessage) {
                throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to remove reaction');
@@ -152,11 +146,10 @@ const addRemoveEditReactionToDB = async (messageId: string, userId: string, emoj
 
           return updatedMessage;
      } else {
-          const updatedMessage = await Message.findOneAndUpdate(
-               { _id: messageId, 'reactions.userId': userId },
-               { $set: { 'reactions.$.emoji': emoji } },
-               { new: true }
-          ).populate('reactions.userId', 'name email');
+          const updatedMessage = await Message.findOneAndUpdate({ '_id': messageId, 'reactions.userId': userId }, { $set: { 'reactions.$.emoji': emoji } }, { new: true }).populate(
+               'reactions.userId',
+               'name email',
+          );
 
           if (!updatedMessage) {
                throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update reaction');
@@ -175,8 +168,6 @@ const addRemoveEditReactionToDB = async (messageId: string, userId: string, emoj
 
           return updatedMessage;
      }
-
-
 };
 
 const removeReactionFromDB = async (messageId: string, userId: string, emoji: MessageReaction): Promise<IMessage> => {
@@ -185,11 +176,10 @@ const removeReactionFromDB = async (messageId: string, userId: string, emoji: Me
           throw new AppError(StatusCodes.NOT_FOUND, 'Message not found');
      }
 
-     const updatedMessage = await Message.findByIdAndUpdate(
-          messageId,
-          { $pull: { reactions: { userId: new Types.ObjectId(userId), emoji } } },
-          { new: true }
-     ).populate('reactions.userId', 'name email');
+     const updatedMessage = await Message.findByIdAndUpdate(messageId, { $pull: { reactions: { userId: new Types.ObjectId(userId), emoji } } }, { new: true }).populate(
+          'reactions.userId',
+          'name email',
+     );
 
      if (!updatedMessage) {
           throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to remove reaction');
@@ -223,7 +213,7 @@ const pinUpinMessageTogglerToDB = async (messageId: string, userId: string): Pro
                     isPinned: false,
                     $unset: { pinnedBy: 1, pinnedAt: 1 },
                },
-               { new: true }
+               { new: true },
           );
 
           if (!updatedMessage) {
@@ -249,7 +239,7 @@ const pinUpinMessageTogglerToDB = async (messageId: string, userId: string): Pro
                pinnedBy: new Types.ObjectId(userId),
                pinnedAt: new Date(),
           },
-          { new: true }
+          { new: true },
      ).populate('pinnedBy', 'name email');
 
      if (!updatedMessage) {
@@ -270,8 +260,6 @@ const pinUpinMessageTogglerToDB = async (messageId: string, userId: string): Pro
      return updatedMessage;
 };
 
-
-
 // Delete methods
 const deleteMessageForMeByMessageId = async (messageId: string, userId: string): Promise<void> => {
      const message = await Message.findById(messageId);
@@ -284,10 +272,7 @@ const deleteMessageForMeByMessageId = async (messageId: string, userId: string):
           throw new AppError(StatusCodes.BAD_REQUEST, 'Message already deleted for you');
      }
 
-     await Message.findByIdAndUpdate(
-          messageId,
-          { $addToSet: { deletedForUsers: new Types.ObjectId(userId) } }
-     );
+     await Message.findByIdAndUpdate(messageId, { $addToSet: { deletedForUsers: new Types.ObjectId(userId) } });
 
      // Emit socket event
      //@ts-ignore
@@ -316,15 +301,12 @@ const deleteMessageForEveryoneByMessageId = async (messageId: string, userId: st
           throw new AppError(StatusCodes.BAD_REQUEST, 'Message already deleted for everyone');
      }
 
-     await Message.findByIdAndUpdate(
-          messageId,
-          {
-               deletedForEveryone: true,
-               deletedAt: new Date(),
-               text: 'This message was deleted',
-               $unset: { image: 1 },
-          }
-     );
+     await Message.findByIdAndUpdate(messageId, {
+          deletedForEveryone: true,
+          deletedAt: new Date(),
+          text: 'This message was deleted',
+          $unset: { image: 1 },
+     });
 
      // Delete image file if exists
      if (message.image) {
@@ -346,7 +328,7 @@ const deleteMessageForEveryoneByMessageId = async (messageId: string, userId: st
 const deleteChatForMeByChatId = async (chatId: string, userId: string): Promise<void> => {
      const chat = await Chat.findOne({
           _id: new Types.ObjectId(chatId),
-          participants: { $in: [new Types.ObjectId(userId)] }
+          participants: { $in: [new Types.ObjectId(userId)] },
      });
 
      if (!chat) {
@@ -354,10 +336,7 @@ const deleteChatForMeByChatId = async (chatId: string, userId: string): Promise<
      }
 
      // Mark all messages in this chat as deleted for this user
-     await Message.updateMany(
-          { chatId: new Types.ObjectId(chatId) },
-          { $addToSet: { deletedForUsers: new Types.ObjectId(userId) } }
-     );
+     await Message.updateMany({ chatId: new Types.ObjectId(chatId) }, { $addToSet: { deletedForUsers: new Types.ObjectId(userId) } });
 
      // Emit socket event
      //@ts-ignore
@@ -435,5 +414,5 @@ export const MessageService = {
      deleteMessageForEveryoneByMessageId,
      deleteChatForMeByChatId,
      getPinnedMessagesFromDB,
-     replyMessageToDB
+     replyMessageToDB,
 };

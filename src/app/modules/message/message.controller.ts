@@ -30,7 +30,7 @@ const sendMessage = catchAsync(async (req: Request, res: Response) => {
 
 const getMessage = catchAsync(async (req: Request, res: Response) => {
      const id = req.params.id;
-     const messages = await MessageService.getMessageFromDB(id, req.user as IJwtPayload);
+     const messages = await MessageService.getMessageFromDB(id, req.user as IJwtPayload, req.query);
      sendResponse(res, {
           statusCode: StatusCodes.OK,
           success: true,
@@ -81,8 +81,6 @@ const pinUpinMessageToggler = catchAsync(async (req: Request, res: Response) => 
           data: message,
      });
 });
-
-
 
 const getPinnedMessages = catchAsync(async (req: Request, res: Response) => {
      const { chatId } = req.params;
@@ -170,5 +168,5 @@ export const MessageController = {
      deleteMessageForMe,
      deleteMessageForEveryone,
      deleteChatForMe,
-     replyMessage
+     replyMessage,
 };

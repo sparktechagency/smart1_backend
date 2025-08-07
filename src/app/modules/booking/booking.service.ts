@@ -738,38 +738,35 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
           } else if (user.role === USER_ROLES.USER && isExistBooking.user?.toString() !== user.id) {
                throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as user to cancel this booking');
           }
-          if (isExistBooking.acceptedBid === null && isExistBooking.payment == null) {
-               isExistBooking.status = BOOKING_STATUS.CANCELLED;
-               isExistBooking.bookingCancelReason = bookingCancelReason;
-               isExistBooking.cancelledBy = {
-                    role: user.role as USER_ROLES,
-                    id: new Types.ObjectId(user.id),
-               };
-               await isExistBooking.save({ session });
+          // if (isExistBooking.acceptedBid === null && isExistBooking.payment == null) {
+          //      isExistBooking.status = BOOKING_STATUS.CANCELLED;
+          //      isExistBooking.bookingCancelReason = bookingCancelReason;
+          //      isExistBooking.cancelledBy = {
+          //           role: user.role as USER_ROLES,
+          //           id: new Types.ObjectId(user.id),
+          //      };
+          //      await isExistBooking.save({ session });
 
-               // Send mail notification for the manager and client
-               const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
-               for (const receiverId of admins) {
-                    await sendNotifications({
-                         receiver: receiverId as unknown as Types.ObjectId,
-                         type: NOTIFICATION_MODEL_TYPE.BOOKING,
-                         message: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
-                         title: NotificationTitle.BOOKING_CANCELLED,
-                         reference: isExistBooking._id,
-                    });
-               }
+          //      // Send mail notification for the manager and client
+          //      const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
+          //      for (const receiverId of admins) {
+          //           await sendNotifications({
+          //                receiver: receiverId as unknown as Types.ObjectId,
+          //                type: NOTIFICATION_MODEL_TYPE.BOOKING,
+          //                message: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
+          //                title: NotificationTitle.BOOKING_CANCELLED,
+          //                reference: isExistBooking._id,
+          //           });
+          //      }
 
-               // Commit the session if no issues found
-               await session.commitTransaction();
-               return { booking: isExistBooking };
-          }
+          //      // Commit the session if no issues found
+          //      await session.commitTransaction();
+          //      return { booking: isExistBooking };
+          // }
 
           // isExistBid
-          const isExistBid = await Bid.findOne({ _id: isExistBooking.acceptedBid, status: { $in: [BID_STATUS.PENDING, BID_STATUS.ACCEPTED, BID_STATUS.REJECTED] } }).session(session);
-          if (!isExistBid) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found');
-          }
 
+          // update booking for cancel
           isExistBooking.status = BOOKING_STATUS.CANCELLED;
           isExistBooking.bookingCancelReason = bookingCancelReason;
           isExistBooking.cancelledBy = {
@@ -778,10 +775,16 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
           };
           isExistBooking.cancelledAt = new Date();
           await isExistBooking.save({ session });
-
-          isExistBid.status = BID_STATUS.CANCELLED;
-          isExistBid.bidCancelReason = bookingCancelReason;
-          await isExistBid.save({ session });
+          if (isExistBooking.acceptedBid) {
+               // update bid for cancel
+               const isExistBid = await Bid.findOne({ _id: isExistBooking.acceptedBid, status: { $in: [BID_STATUS.PENDING, BID_STATUS.ACCEPTED, BID_STATUS.REJECTED] } }).session(session);
+               if (!isExistBid) {
+                    throw new AppError(StatusCodes.NOT_FOUND, 'Bid not found');
+               }
+               isExistBid.status = BID_STATUS.CANCELLED;
+               isExistBid.bidCancelReason = bookingCancelReason;
+               await isExistBid.save({ session });
+          }
 
           const isExistUser = await User.findByIdAndUpdate(
                user.id,
