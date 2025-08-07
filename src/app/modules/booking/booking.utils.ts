@@ -9,13 +9,13 @@ import { User } from '../user/user.model';
 import { DUE_AMOUNT_FOR_REMIND } from './booking.enums';
 export async function transferToServiceProvider({
      stripeConnectedAccount,
-     finalAmount,
+     toBeTransferAmount,
      adminRevenuePercent,
      serviceProvider,
      bookingId,
 }: {
      stripeConnectedAccount: string;
-     finalAmount: number; // in dollars
+     toBeTransferAmount: number; // in dollars
      adminRevenuePercent: number; // in percentage
      serviceProvider: string; // service provider ID
      bookingId: string;
@@ -29,22 +29,42 @@ export async function transferToServiceProvider({
      if (!isExistServiceProvider) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Service provider not found');
      }
-     if (isExistServiceProvider.adminDueAmount > finalAmount) {
-          isExistServiceProvider.adminDueAmount -= finalAmount;
-          await isExistServiceProvider.save();
-          finalAmount = 0;
-          return { transfer: null, message: `Admin due amount cleared:${finalAmount} | still due: ${isExistServiceProvider.adminDueAmount}` };
-     } else if (isExistServiceProvider.adminDueAmount < finalAmount) {
-          isExistServiceProvider.adminDueAmount = 0;
-          await isExistServiceProvider.save();
-          finalAmount -= isExistServiceProvider.adminDueAmount;
-     }
-
+     let updatedServiceProvider;
      let adminRevenueAmount = 0;
 
-     adminRevenueAmount = Math.ceil((finalAmount * adminRevenuePercent) / 100);
+     adminRevenueAmount = Math.ceil((toBeTransferAmount * adminRevenuePercent) / 100);
+     const serviceProviderRevenueAmount = toBeTransferAmount - adminRevenueAmount;
 
-     const serviceProviderRevenueAmount = finalAmount - adminRevenueAmount;
+     if (isExistServiceProvider.adminDueAmount > serviceProviderRevenueAmount) {
+          // isExistServiceProvider.adminDueAmount -= finalAmount;
+          // await isExistServiceProvider.save();
+          updatedServiceProvider = await User.findByIdAndUpdate(
+               isExistServiceProvider.id,
+               {
+                    $inc: {
+                         adminDueAmount: -serviceProviderRevenueAmount,
+                    },
+               },
+               { new: true },
+          );
+          console.log('🚀 ~ transferToServiceProvider ~ updatedServiceProvider:sExistServiceProvider.adminDueAmount > finalAmount', updatedServiceProvider);
+          serviceProviderRevenueAmount = 0;
+          return { transfer: null, message: `Admin due amount cleared:${serviceProviderRevenueAmount} | still due: ${isExistServiceProvider.adminDueAmount}` };
+     } else if (isExistServiceProvider.adminDueAmount < serviceProviderRevenueAmount) {
+          // isExistServiceProvider.adminDueAmount = 0;
+          // await isExistServiceProvider.save();
+          serviceProviderRevenueAmount -= updatedServiceProvider.adminDueAmount;
+          updatedServiceProvider = await User.findByIdAndUpdate(
+               isExistServiceProvider.id,
+               {
+                    $inc: {
+                         adminDueAmount: 0,
+                    },
+               },
+               { new: true },
+          );
+          console.log('🚀 ~ transferToServiceProvider ~ updatedServiceProvider:isExistServiceProvider.adminDueAmount < finalAmount', updatedServiceProvider);
+     }
 
      const balance = await stripe.balance.retrieve();
 

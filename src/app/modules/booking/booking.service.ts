@@ -362,8 +362,13 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                                    const notificationReceivers = [(bid!.serviceProvider as any)._id.toString()];
 
                                    const tobePaidAmount = isExistUser.adminDueAmount > 0 ? booking.finalAmount + isExistUser.adminDueAmount : booking.finalAmount;
+                                   console.log('🚀 ~ changeBookingStatus ~ tobePaidAmount:', tobePaidAmount);
+                                   console.log('🚀 ~ changeBookingStatus ~ booking.finalAmount:', booking.finalAmount);
+                                   console.log('🚀 ~ changeBookingStatus ~ isExistUser.adminDueAmount:', isExistUser.adminDueAmount);
 
-                                   io.emit(`reminder::${isExistUser?._id}`, `You had ${isExistUser.adminDueAmount} amount due previously so we are including that for payment`);
+                                   if (isExistUser.adminDueAmount > 0) {
+                                        global.io.emit(`reminder::${isExistUser?._id}`, `You had ${isExistUser.adminDueAmount} amount due previously so we are including that for payment`);
+                                   }
 
                                    const stripeSessionData: any = {
                                         payment_method_types: ['card'],
@@ -397,9 +402,10 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                                    const stripeSession = await stripe.checkout.sessions.create(stripeSessionData);
                                    await session.commitTransaction();
                                    return { message: 'Redirect to payment', url: stripeSession.url };
-                              } else if (booking.paymentMethod === PAYMENT_METHOD.CASH) {
-                                   await session.commitTransaction();
-                                   return { message: 'Service completed. Collect cash from customer.' };
+                              } else if (booking.paymentMethod === PAYMENT_METHOD.CASH && booking.payment == null && booking.paymentStatus == PAYMENT_STATUS.UNPAID) {
+                                   // await session.commitTransaction();
+                                   // return { message: 'Service completed. Collect cash from customer.' };
+                                   booking.paymentStatus = PAYMENT_STATUS.PAID;
                               }
                          }
                          break;
@@ -731,9 +737,10 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
           // isExistBooking by this user
           const isExistBooking = await Booking.findOne({
                _id: new Types.ObjectId(orderId),
-               status: BOOKING_STATUS.PENDING,
+               status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] },
                paymentStatus: PAYMENT_STATUS.UNPAID,
           }).session(session);
+          console.log('🚀 ~ cancelBooking ~ isExistBooking:', isExistBooking);
           if (!isExistBooking) {
                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found. Booking status must be pending and Payment must be unpaid to cancel');
           }
@@ -742,33 +749,6 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
           } else if (user.role === USER_ROLES.USER && isExistBooking.user?.toString() !== user.id) {
                throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as user to cancel this booking');
           }
-          // if (isExistBooking.acceptedBid === null && isExistBooking.payment == null) {
-          //      isExistBooking.status = BOOKING_STATUS.CANCELLED;
-          //      isExistBooking.bookingCancelReason = bookingCancelReason;
-          //      isExistBooking.cancelledBy = {
-          //           role: user.role as USER_ROLES,
-          //           id: new Types.ObjectId(user.id),
-          //      };
-          //      await isExistBooking.save({ session });
-
-          //      // Send mail notification for the manager and client
-          //      const admins = await User.find({ role: { $in: [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN] } }).session(session);
-          //      for (const receiverId of admins) {
-          //           await sendNotifications({
-          //                receiver: receiverId as unknown as Types.ObjectId,
-          //                type: NOTIFICATION_MODEL_TYPE.BOOKING,
-          //                message: `Booking cancelled by ${user.role}. Reason: ${bookingCancelReason}`,
-          //                title: NotificationTitle.BOOKING_CANCELLED,
-          //                reference: isExistBooking._id,
-          //           });
-          //      }
-
-          //      // Commit the session if no issues found
-          //      await session.commitTransaction();
-          //      return { booking: isExistBooking };
-          // }
-
-          // isExistBid
 
           // update booking for cancel
           isExistBooking.status = BOOKING_STATUS.CANCELLED;
@@ -826,9 +806,7 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
 
           if (isExistUser.role === USER_ROLES.SERVICE_PROVIDER) {
                // A warning message is shown: cancellations negatively affect the provider’s rating.
-               if (io) {
-                    io.emit(`reminder::${isExistUser?._id}`, 'cancellations negatively affect the provider’s rating.');
-               }
+               io.emit(`reminder::${isExistUser?._id}`, 'cancellations negatively affect the provider’s rating.');
                //The provider’s rating is reduced immediately.(The first cancellation does not impact rating. From the third cancellation onward, the rating will be reduced.)
                if (isExistUser?.bookingCancelCount && isExistUser?.bookingCancelCount >= 3 && isExistUser?.avgRating > 1) {
                     isExistUser.avgRating -= RATING_PANALTY;
@@ -879,6 +857,7 @@ const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | a
      try {
           const thisCustomer = await User.findOne({ _id: user.id }).session(session);
           const thisBooking = await Booking.findOne({ _id: bookingId, user: user.id }).session(session);
+          console.log('🚀 ~ acceptBid ~ thisBooking:', thisBooking);
 
           if (!thisBooking || thisBooking.status !== BOOKING_STATUS.PENDING) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid or non-pending booking');

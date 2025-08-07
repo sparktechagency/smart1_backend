@@ -69,6 +69,20 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
           const { acceptedBid, user, booking, serviceCategory, method, amount, notificationReceivers, isAcceptedBidChanged, previouslyAcceptedBidProvider }: any = session.metadata;
 
           const thisCustomer = await User.findOne({ _id: user });
+          console.log('🚀 ~ handlePaymentSucceeded ~ thisCustomer:', thisCustomer);
+          if (!thisCustomer) {
+               throw new AppError(StatusCodes.BAD_REQUEST, `Customer doesn't exist`);
+          }
+          const updatedCustomer = await User.findByIdAndUpdate(
+               thisCustomer._id, // Assuming `user` is the user ID you're passing
+               { adminDueAmount: 0 }, // The update operation (set `adminDueAmount` to 0)
+               { new: true }, // Return the updated document
+          );
+          console.log('🚀 ~ handlePaymentSucceeded ~ updatedCustomer:', updatedCustomer.adminDueAmount);
+
+          if (!updatedCustomer) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'updated Customer FAILED');
+          }
           // Parsing the 'notificationReceivers' metadata, as it was previously stringified before sending to Stripe
           const notificationReceiversParsed = JSON.parse(notificationReceivers);
           const paymentIntent = session.payment_intent as string;
@@ -102,7 +116,7 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
           isBookingExists.acceptedBid = thisAcceptedBid._id;
           isBookingExists.adminRevenuePercent = (thisAcceptedBid.serviceProvider as any)?.adminRevenuePercent;
           isBookingExists.serviceProvider = (thisAcceptedBid.serviceProvider as any)._id;
-          isBookingExists.status = BOOKING_STATUS.CONFIRMED;
+          isBookingExists.status = BOOKING_STATUS.COMPLETED;
           await isBookingExists.validate();
           isBookingExists.finalAmount = amount;
           isBookingExists.paymentStatus = PAYMENT_STATUS.PAID;
@@ -110,7 +124,7 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
 
           // Update the bid status to accepted
           thisAcceptedBid.isAccepted = true;
-          thisAcceptedBid.status = BID_STATUS.ACCEPTED;
+          thisAcceptedBid.status = BID_STATUS.COMPLETED;
           thisAcceptedBid.booking = isBookingExists._id;
           await thisAcceptedBid.save();
           console.log('thisAcceptedBid : 11', thisAcceptedBid);

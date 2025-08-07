@@ -39,11 +39,12 @@ const transferToServiceProviderService = async (bookingId: string) => {
      if (!booking || !booking.acceptedBid) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'No booking or acceptedBid found');
      }
-     const bid = await Bid.findById(booking.acceptedBid);
+     const bid = await Bid.findById(booking.acceptedBid).populate('serviceProvider', 'stripeConnectedAccount adminRevenuePercent');
      if (!bid) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'No Bid found');
      }
      let result;
+     console.log('🚀 ~ transferToServiceProviderService ~ (bid!.serviceProvider as any).stripeConnectedAccount:', (bid!.serviceProvider as any).stripeConnectedAccount);
      // Optionally handle Stripe transfer if paid
      if (booking.paymentStatus === PAYMENT_STATUS.PAID && !booking.isPaymentTransferd) {
           if ((bid!.serviceProvider as any).stripeConnectedAccount) {
@@ -54,6 +55,7 @@ const transferToServiceProviderService = async (bookingId: string) => {
                     serviceProvider: (bid!.serviceProvider as any)._id.toString(),
                     bookingId: booking._id.toString(),
                });
+               console.log('🚀 ~ transferToServiceProviderService ~ result:', result);
           } else {
                throw new AppError(StatusCodes.BAD_REQUEST, 'No connected Stripe account');
           }
