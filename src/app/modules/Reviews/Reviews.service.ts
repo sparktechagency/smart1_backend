@@ -87,7 +87,7 @@ const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IRev
 };
 
 const getAllReviewsByTypes = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IReviews[] }> => {
-     const queryBuilder = new QueryBuilder(Reviews.find({ type }), query);
+     const queryBuilder = new QueryBuilder(Reviews.find({ type }).populate('createdBy', 'image full_name'), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      if (!result) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Reviews not found.');
@@ -97,7 +97,7 @@ const getAllReviewsByTypes = async (type: string, query: Record<string, any>): P
 };
 
 const getAllUnpaginatedReviewsByType = async (type: string): Promise<IReviews[]> => {
-     const result = await Reviews.find({ type });
+     const result = await Reviews.find({ type }).populate('createdBy', 'image full_name');
      if (!result) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Reviews not found.');
      }
