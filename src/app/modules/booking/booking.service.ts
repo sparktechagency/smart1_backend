@@ -314,6 +314,9 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
           const isExistUser = await User.findById(user.id).session(session);
           if (!isExistUser) throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
 
+          const isExistServiceProvider = await User.findById(booking.serviceProvider?.toString()).session(session);
+          if (!isExistServiceProvider) throw new AppError(StatusCodes.NOT_FOUND, 'Service provider not found');
+
           if (user.role === USER_ROLES.SERVICE_PROVIDER && booking.serviceProvider?.toString() !== user.id) {
                throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as service provider to change Booking Status');
           } else if (user.role === USER_ROLES.USER && booking.user?.toString() !== user.id) {
@@ -343,7 +346,7 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                     break;
                case BOOKING_STATUS.WORK_STARTED:
                     if (status === BOOKING_STATUS.COMPLETED) {
-                         // check if booking verifyCompleteOtp true 
+                         // check if booking verifyCompleteOtp true
                          if (!booking.verifyCompleteOtp) {
                               throw new AppError(StatusCodes.BAD_REQUEST, 'Booking complete OTP not verified');
                          }
@@ -410,6 +413,9 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                               } else if (booking.paymentMethod === PAYMENT_METHOD.CASH && booking.payment == null && booking.paymentStatus == PAYMENT_STATUS.UNPAID) {
                                    // await session.commitTransaction();
                                    // return { message: 'Service completed. Collect cash from customer.' };
+                                   const adminRevenueAmount = Math.ceil((booking!.finalAmount * (booking!.serviceProvider as any).adminRevenuePercent) / 100);
+                                   isExistServiceProvider.adminDueAmount += adminRevenueAmount;
+                                   await isExistServiceProvider.save();
                                    booking.paymentStatus = PAYMENT_STATUS.PAID;
                               }
                          }

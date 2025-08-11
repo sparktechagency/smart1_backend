@@ -50,7 +50,7 @@ const transferToServiceProviderService = async (bookingId: string) => {
           if ((bid!.serviceProvider as any).stripeConnectedAccount) {
                result = await transferToServiceProvider({
                     stripeConnectedAccount: (bid!.serviceProvider as any).stripeConnectedAccount,
-                    finalAmount: booking.finalAmount,
+                    toBeTransferAmount: booking.finalAmount,
                     adminRevenuePercent: (bid!.serviceProvider as any).adminRevenuePercent,
                     serviceProvider: (bid!.serviceProvider as any)._id.toString(),
                     bookingId: booking._id.toString(),
