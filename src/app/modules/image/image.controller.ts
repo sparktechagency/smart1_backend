@@ -38,10 +38,10 @@ const getAllImages = catchAsync(async (req: Request, res: Response) => {
 
 const getAllUnpaginatedImages = catchAsync(async (req: Request, res: Response) => {
      // handlw req.query.imageType must enum ImageType
-     if (!Object.values(ImageType).includes(req.query.imageType as ImageType)) {
+     if (!Object.values(ImageType).includes(req.params.imageType as ImageType)) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid image type.Must be enum ImageType');
      }
-     const result = await imageService.getAllUnpaginatedImages(req.query.imageType as ImageType);
+     const result = await imageService.getAllUnpaginatedImages(req.params.imageType as ImageType);
 
      sendResponse<IImage[]>(res, {
           statusCode: 200,
