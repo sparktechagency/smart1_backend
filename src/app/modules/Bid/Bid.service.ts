@@ -269,6 +269,10 @@ const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJ
                     throw new AppError(StatusCodes.BAD_REQUEST, `"On The Way" bid can't be updated to ${status}, it can only be updated to "Work Started"`);
                case BID_STATUS.WORK_STARTED:
                     if (status === BID_STATUS.COMPLETED) {
+                         // check if booking verifyCompleteOtp true
+                         if (!booking.verifyCompleteOtp) {
+                              throw new AppError(StatusCodes.BAD_REQUEST, 'Booking complete OTP not verified');
+                         } 
                          // ✅ Payment trigger here
                          if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
                               if (booking.paymentMethod === PAYMENT_METHOD.ONLINE) {

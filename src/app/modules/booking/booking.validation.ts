@@ -85,11 +85,19 @@ export const reScheduleBookingSchema = z.object({
   }),
 });
 
+export const verifyBookingCompleteOtpSchema = z.object({
+  body: z.object({
+    bookingId: objectIdSchemaMendatory('bookingId'),
+    otp: z.string(),
+  }),
+});
+
 export const BookingValidation = {
   createBookingSchema,
   updateBookingStatusSchema,
   updatePaymentStatusSchema,
   acceptBidForBookingSchema,
   cancelBookingSchema,
-  reScheduleBookingSchema
+  reScheduleBookingSchema,
+  verifyBookingCompleteOtpSchema  
 }

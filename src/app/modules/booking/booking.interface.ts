@@ -45,4 +45,6 @@ export interface IBooking extends Document {
      adminRevenuePercent: number;
      reports: Types.ObjectId[];
      reviews: Types.ObjectId[];
+     completeOtp?: number;
+     verifyCompleteOtp?: boolean;
 }

@@ -31,6 +31,7 @@ import {
 import { IBooking } from './booking.interface';
 import { Booking } from './booking.model';
 import { combineBookingDateTime, cronJobs, generateTransactionId } from './booking.utils';
+import generateOTP from '../../../utils/generateOTP';
 
 //@ts-ignore
 const io = global.io;
@@ -342,6 +343,10 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                     break;
                case BOOKING_STATUS.WORK_STARTED:
                     if (status === BOOKING_STATUS.COMPLETED) {
+                         // check if booking verifyCompleteOtp true 
+                         if (!booking.verifyCompleteOtp) {
+                              throw new AppError(StatusCodes.BAD_REQUEST, 'Booking complete OTP not verified');
+                         }
                          // ✅ Payment trigger here
                          if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
                               if (booking.paymentMethod === PAYMENT_METHOD.ONLINE) {
@@ -1253,6 +1258,79 @@ const remidUserAboutTheirAdminDueAmount = async () => {
      cronJobs(users);
 };
 
+// request colose ride
+const requestCompleteOTP = async (bookingId: string, user: IJwtPayload) => {
+     const booking = await Booking.findOne({ _id: bookingId, status: BOOKING_STATUS.WORK_STARTED, serviceProvider: user.id });
+
+     if (!booking) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid booking or booking not in progress');
+     }
+
+     const otp = generateOTP();
+
+     // Save as string and mark as modified
+     booking.completeOtp = otp;
+     booking.verifyCompleteOtp = false;
+     await booking.save();
+
+     console.log('Generated OTP for bid:', booking._id, 'OTP:', booking.completeOtp, 'Type:', typeof booking.completeOtp);
+
+     return {
+          bookingId: booking._id,
+          otp: booking.completeOtp,
+          verifyCompleteOtp: booking.verifyCompleteOtp,
+     };
+};
+
+// complete ride with otp
+const verifyCompleteOTP = async (payload: any, user: IJwtPayload) => {
+     // First check if ride exists and get current OTP
+     const booking = await Booking.findOne({ _id: payload.bookingId, status: BOOKING_STATUS.WORK_STARTED, user: user.id }).select('+completeOtp'); // Explicitly include otp
+
+     if (!booking) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Booking not found');
+     }
+
+     if (!booking.completeOtp) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'No OTP generated for this booking');
+     }
+
+     // Compare as strings
+     if (booking.completeOtp.toString() !== payload.otp.toString()) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid OTP');
+     }
+
+     // Use atomic update
+     const updatedBooking = await Booking.findOneAndUpdate(
+          {
+               _id: booking._id,
+               completeOtp: booking.completeOtp, // Ensure OTP hasn't changed
+               status: BOOKING_STATUS.WORK_STARTED,
+          },
+          {
+               $set: { verifyCompleteOtp: true },
+               $unset: { completeOtp: '' },
+          },
+          { new: true },
+     );
+
+     if (!updatedBooking) {
+          throw new AppError(StatusCodes.CONFLICT, 'Booking state changed during verification');
+     }
+     // Emit ride-completed event
+     if (updatedBooking._id) {
+          sendNotifications({
+               reference: updatedBooking._id,
+               receiver: updatedBooking.user,
+               message: 'Booking complete otp request verified successfully',
+               type: NOTIFICATION_MODEL_TYPE.BOOKING,
+          });
+     }
+
+     console.log('Booking completed successfully:', updatedBooking._id);
+     return updatedBooking;
+};
+
 export const BookingService = {
      createBooking,
      getBookingDetails,
@@ -1267,4 +1345,6 @@ export const BookingService = {
      getServiceCategoryBasedBidsToAccept,
      reScheduleBookingById,
      remidUserAboutTheirAdminDueAmount,
+     requestCompleteOTP,
+     verifyCompleteOTP,
 };

@@ -133,6 +133,33 @@ const reScheduleBookingById = catchAsync(async (req: Request, res: Response) => 
      });
 });
 
+
+
+
+const requestCompleteOTP = catchAsync(async (req: Request, res: Response) => {
+   
+     const data = await BookingService.requestCompleteOTP(req.params.id, req.user as IJwtPayload);
+   
+     sendResponse(res, {
+       statusCode: StatusCodes.OK,
+       success: true,
+       message: 'OTP generated successfully',
+       data,
+     });
+   });
+
+   
+const verifyCompleteOTP = catchAsync(async (req: Request, res: Response) => {
+     const result = await BookingService.verifyCompleteOTP(req.body, req.user as IJwtPayload);
+   
+     sendResponse(res, {
+       statusCode: StatusCodes.OK,
+       success: true,
+       message: 'Bid completed successfully',
+       data: result,
+     });
+   });
+
 export const BookingController = {
      createBooking,
      getBookingDetails,
@@ -145,4 +172,6 @@ export const BookingController = {
      getBidsOfBookingByIdToAccept,
      getServiceCategoryBasedBidsToAccept,
      reScheduleBookingById,
+     requestCompleteOTP,
+     verifyCompleteOTP
 };

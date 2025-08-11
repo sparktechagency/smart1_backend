@@ -168,6 +168,8 @@ const bookingSchema = new Schema<IBooking>(
           },
           reports: [{ type: Schema.Types.ObjectId, ref: 'Report', default: [] }],
           reviews: [{ type: Schema.Types.ObjectId, ref: 'Reviews', default: [] }],
+          completeOtp: { type: Number },
+          verifyCompleteOtp: { type: Boolean, default: false },
      },
      {
           timestamps: true,
