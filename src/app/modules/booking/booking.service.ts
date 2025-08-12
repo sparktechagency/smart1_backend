@@ -49,9 +49,9 @@ const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) 
           if (!thisCustomer || !thisCustomer.stripeCustomerId) {
                throw new AppError(StatusCodes.NOT_FOUND, 'User or Stripe Customer ID not found');
           }
-          // re assign booking date and time
-          bookingData.bookingDate = combinedDateTime;
-          bookingData.bookingTime = combinedDateTime;
+          // // re assign booking date and time
+          // bookingData.bookingDate = combinedDateTime;
+          // bookingData.bookingTime = combinedDateTime;
           const booking = new Booking({
                ...bookingData,
                user: user.id,
@@ -1221,12 +1221,15 @@ const reScheduleBookingById = async (
                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found or booking either completed or cancelled or in processing');
           }
           const combinedDateTime = new Date(combineBookingDateTime(bookingData.bookingDate?.toString() as string, bookingData.bookingTime?.toString() as string));
+          const combinedOldBookingDateTime = new Date(combineBookingDateTime(thisBooking.bookingDate?.toString() as string, thisBooking.bookingTime?.toString() as string));
           // ensure booking date and time is not less than current date and time+not as same as previous booking date and time
-          if (combinedDateTime < new Date() || combinedDateTime === thisBooking.bookingDate || combinedDateTime === thisBooking.bookingTime) {
+          if (combinedDateTime < new Date() || combinedDateTime === combinedOldBookingDateTime) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'Booking date and time must be different from previous booking date and time and must be greater than current date and time');
           }
-          thisBooking.bookingDate = combinedDateTime;
-          thisBooking.bookingTime = combinedDateTime;
+          // thisBooking.bookingDate = combinedDateTime;
+          // thisBooking.bookingTime = combinedDateTime;
+          thisBooking.bookingDate = bookingData.bookingDate;
+          thisBooking.bookingTime = bookingData.bookingTime;
           await thisBooking.save({ session });
 
           // send notification to user

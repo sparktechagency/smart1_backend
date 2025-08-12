@@ -121,10 +121,24 @@ export const generateTransactionId = (): string => {
      return `${timestamp}${randomString}`;
 };
 
+// export const combineBookingDateTime = (bookingDate: string, bookingTime: string) => {
+//      // Extract the date from bookingDate and time from bookingTime
+//      const date = new Date(bookingDate).toISOString().split('T')[0]; // Extract just the date part
+//      const time = bookingTime.split('T')[1]; // Extract the time part (HH:MM:SS)
+
+//      // Combine the date and time into a valid ISO string
+//      const combinedDateTime = `${date}T${time}`;
+
+//      // Return the combined DateTime as a JavaScript Date object
+//      return new Date(combinedDateTime);
+// };
+
 export const combineBookingDateTime = (bookingDate: string, bookingTime: string) => {
-     // Extract the date from bookingDate and time from bookingTime
-     const date = new Date(bookingDate).toISOString().split('T')[0]; // Extract just the date part
-     const time = bookingTime.split('T')[1]; // Extract the time part (HH:MM:SS)
+     // Extract the date from bookingDate (already in YYYY-MM-DD format)
+     const date = bookingDate; // bookingDate is already in the correct format
+
+     // bookingTime is already in HH:MM:SS format, no need to split
+     const time = bookingTime;
 
      // Combine the date and time into a valid ISO string
      const combinedDateTime = `${date}T${time}`;
