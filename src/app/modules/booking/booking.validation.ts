@@ -31,7 +31,7 @@ export const createBookingSchema = z.object({
     images: z.array(z.string()),
     bookingDate: z.union([z.date(), z.string()]),
     bookingTime: z.union([z.date(), z.string()]),
-    serviceTaskDetails: z.string(),
+    serviceTaskDetails: z.string().optional(),
     serviceTaskAdditionalInfo: z.string(),
     servicingDestination: z.string(),
     paymentMethod: z.nativeEnum(PAYMENT_METHOD, {

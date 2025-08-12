@@ -24,7 +24,7 @@ export interface IBooking extends Document {
      bookingDate: Date;
      bookingTime: Date;
      serviceProvider?: Types.ObjectId | null; // এটা শুরু তে null থাকবে আর যখন user কারো bid accept করবে তখন সেই bidder এর id এখানে save হবে
-     serviceTaskDetails: string;
+     serviceTaskDetails?: string;
      serviceTaskAdditionalInfo: string;
      bookingCancelReason?: CANCELL_OR_REFUND_REASON | null;
      servicingDestination: string;

@@ -99,7 +99,7 @@ const bookingSchema = new Schema<IBooking>(
           }, // এটা শুরু তে null থাকবে আর যখন user কারো bid accept করবে তখন সেই bidder এর id এখানে save হবে
           serviceTaskDetails: {
                type: String,
-               required: true,
+               required: false,
           },
           serviceTaskAdditionalInfo: {
                type: String,
