@@ -33,7 +33,7 @@ export async function transferToServiceProvider({
      let adminRevenueAmount = 0;
 
      adminRevenueAmount = Math.ceil((toBeTransferAmount * adminRevenuePercent) / 100);
-     const serviceProviderRevenueAmount = toBeTransferAmount - adminRevenueAmount;
+     let serviceProviderRevenueAmount = toBeTransferAmount - adminRevenueAmount;
 
      if (isExistServiceProvider.adminDueAmount > serviceProviderRevenueAmount) {
           // isExistServiceProvider.adminDueAmount -= finalAmount;
