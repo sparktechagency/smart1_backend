@@ -16,7 +16,6 @@ const createBooking = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
-
 const getBookingDetails = catchAsync(async (req: Request, res: Response) => {
      const result = await BookingService.getBookingDetails(req.params.bookingId, req.user as IJwtPayload);
 
@@ -62,8 +61,6 @@ const cancelBooking = catchAsync(async (req: Request, res: Response) => {
           data: result,
      });
 });
-
-
 
 const acceptBid = catchAsync(async (req: Request, res: Response) => {
      const { bidId } = req.body;
@@ -133,32 +130,27 @@ const reScheduleBookingById = catchAsync(async (req: Request, res: Response) => 
      });
 });
 
-
-
-
 const requestCompleteOTP = catchAsync(async (req: Request, res: Response) => {
-   
      const data = await BookingService.requestCompleteOTP(req.params.id, req.user as IJwtPayload);
-   
-     sendResponse(res, {
-       statusCode: StatusCodes.OK,
-       success: true,
-       message: 'OTP generated successfully',
-       data,
-     });
-   });
 
-   
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'OTP generated successfully',
+          data,
+     });
+});
+
 const verifyCompleteOTP = catchAsync(async (req: Request, res: Response) => {
      const result = await BookingService.verifyCompleteOTP(req.body, req.user as IJwtPayload);
-   
+
      sendResponse(res, {
-       statusCode: StatusCodes.OK,
-       success: true,
-       message: 'Bid completed successfully',
-       data: result,
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Bid completed successfully',
+          data: result,
      });
-   });
+});
 
 export const BookingController = {
      createBooking,
@@ -173,5 +165,5 @@ export const BookingController = {
      getServiceCategoryBasedBidsToAccept,
      reScheduleBookingById,
      requestCompleteOTP,
-     verifyCompleteOTP
+     verifyCompleteOTP,
 };

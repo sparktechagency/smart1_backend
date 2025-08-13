@@ -7,6 +7,7 @@ import { sendNotifications } from '../../../helpers/notificationsHelper';
 import { emailTemplate } from '../../../shared/emailTemplate';
 import unlinkFile from '../../../shared/unlinkFile';
 import { generateBookingInvoicePDF } from '../../../utils/generateOrderInvoicePDF';
+import generateOTP from '../../../utils/generateOTP';
 import QueryBuilder from '../../builder/QueryBuilder';
 import stripe from '../../config/stripe.config';
 import { IJwtPayload } from '../auth/auth.interface';
@@ -31,7 +32,6 @@ import {
 import { IBooking } from './booking.interface';
 import { Booking } from './booking.model';
 import { combineBookingDateTime, cronJobs, generateTransactionId } from './booking.utils';
-import generateOTP from '../../../utils/generateOTP';
 
 //@ts-ignore
 const io = global.io;
@@ -50,8 +50,8 @@ const createBooking = async (bookingData: Partial<IBooking>, user: IJwtPayload) 
                throw new AppError(StatusCodes.NOT_FOUND, 'User or Stripe Customer ID not found');
           }
           // // re assign booking date and time
-          // bookingData.bookingDate = combinedDateTime;
-          // bookingData.bookingTime = combinedDateTime;
+          bookingData.bookingDate = combinedDateTime;
+          bookingData.bookingTime = combinedDateTime;
           const booking = new Booking({
                ...bookingData,
                user: user.id,
@@ -1226,10 +1226,8 @@ const reScheduleBookingById = async (
           if (combinedDateTime < new Date() || combinedDateTime === combinedOldBookingDateTime) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'Booking date and time must be different from previous booking date and time and must be greater than current date and time');
           }
-          // thisBooking.bookingDate = combinedDateTime;
-          // thisBooking.bookingTime = combinedDateTime;
-          thisBooking.bookingDate = bookingData.bookingDate;
-          thisBooking.bookingTime = bookingData.bookingTime;
+          thisBooking.bookingDate = combinedDateTime;
+          thisBooking.bookingTime = combinedDateTime;
           await thisBooking.save({ session });
 
           // send notification to user

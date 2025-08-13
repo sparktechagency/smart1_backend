@@ -122,29 +122,32 @@ export const generateTransactionId = (): string => {
 };
 
 // export const combineBookingDateTime = (bookingDate: string, bookingTime: string) => {
-//      // Extract the date from bookingDate and time from bookingTime
-//      const date = new Date(bookingDate).toISOString().split('T')[0]; // Extract just the date part
-//      const time = bookingTime.split('T')[1]; // Extract the time part (HH:MM:SS)
+//      // Extract the date from bookingDate (already in YYYY-MM-DD format)
+//      const date = bookingDate; // bookingDate is already in the correct format
+
+//      // bookingTime is already in HH:MM:SS format, no need to split
+//      const time = bookingTime;
 
 //      // Combine the date and time into a valid ISO string
 //      const combinedDateTime = `${date}T${time}`;
+//      console.log('🚀 ~ combineBookingDateTime ~ combinedDateTime:', combinedDateTime);
 
 //      // Return the combined DateTime as a JavaScript Date object
 //      return new Date(combinedDateTime);
 // };
 
-export const combineBookingDateTime = (bookingDate: string, bookingTime: string) => {
+export const combineBookingDateTime = (bookingDate: string, bookingTime: string): Date => {
      // Extract the date from bookingDate (already in YYYY-MM-DD format)
-     const date = bookingDate; // bookingDate is already in the correct format
+     const date = bookingDate;
 
-     // bookingTime is already in HH:MM:SS format, no need to split
-     const time = bookingTime;
+     // Combine the date and time into a valid ISO string (assumed to be in local time)
+     const combinedDateTime = `${date}T${bookingTime}`;
 
-     // Combine the date and time into a valid ISO string
-     const combinedDateTime = `${date}T${time}`;
+     // Create a new Date object and convert to UTC
+     const utcDateTime = new Date(combinedDateTime + 'Z'); // The 'Z' signifies that the time is in UTC
 
-     // Return the combined DateTime as a JavaScript Date object
-     return new Date(combinedDateTime);
+     // Return the Date object in UTC
+     return utcDateTime;
 };
 
 export const cronJobs = (users: IUser[]) => {
