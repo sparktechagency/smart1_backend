@@ -12,9 +12,7 @@ import { User } from '../user/user.model';
 import { BID_STATUS, DEFAULT_CURRENCY } from './Bid.enum';
 import { IBid } from './Bid.interface';
 import { Bid } from './Bid.model';
-
-//@ts-ignore
-const io = global.io;
+import { calculateDistanceInKm } from './Bid.utils';
 
 const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
      // is already user has a bid for this booking
@@ -23,7 +21,7 @@ const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
           throw new AppError(StatusCodes.CONFLICT, 'You have already placed a bid for this booking.');
      }
      // get serviceProvider
-     const serviceProvider = await User.findById(user.id).select('serviceCategories').lean();
+     const serviceProvider = await User.findById(user.id).select('serviceCategories geoLocation').lean();
      if (!serviceProvider) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Service provider not found.');
      }
@@ -32,15 +30,25 @@ const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
           throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found.');
      }
 
+     const distance = calculateDistanceInKm(isExistBooking.geoLocationOfDestination, serviceProvider.geoLocation);
+     console.log('🚀 ~ createBid ~ distance:', distance);
+
      const result = await Bid.create({ ...payload, serviceProvider: user.id, serviceCategory: isExistBooking.serviceCategory });
      if (!result) {
           throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create bid.');
      }
 
-     if (io) {
-          io.emit(`getBid::${payload?.booking}`, result);
-     }
-     return result;
+     result.distanceToDestination = distance;
+     await result.save();
+
+     // Step 2: Populate the related fields (serviceProvider and serviceCategory)
+     const populatedResult: any = await Bid.populate(result, [
+          { path: 'serviceProvider', select: 'full_name businessName image avgRating reviews' }, // Populating service provider details
+          { path: 'serviceCategory', select: 'name description' }, // Populating service category details
+     ]);
+     (global as any).io.emit(`getBid::${isExistBooking?.user}`, result);
+
+     return populatedResult;
 };
 
 const getAllBids = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IBid[] }> => {
@@ -298,7 +306,7 @@ const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJ
 
                                    const tobePaidAmount = isExistUser.adminDueAmount > 0 ? booking.finalAmount + isExistUser.adminDueAmount : booking.finalAmount;
 
-                                   io.emit(`reminder::${isExistUser?._id}`, `You had ${isExistUser.adminDueAmount} amount due previously so we are including that for payment`);
+                                   (global as any).io.emit(`reminder::${isExistUser?._id}`, `You had ${isExistUser.adminDueAmount} amount due previously so we are including that for payment`);
 
                                    const stripeSessionData: any = {
                                         payment_method_types: ['card'],

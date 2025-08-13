@@ -1,6 +1,6 @@
-import { Types } from "mongoose";
-import { BID_STATUS } from "./Bid.enum";
-import { CANCELL_OR_REFUND_REASON } from "../booking/booking.enums";
+import { Types } from 'mongoose';
+import { BID_STATUS } from './Bid.enum';
+import { CANCELL_OR_REFUND_REASON } from '../booking/booking.enums';
 
 export interface IBid {
      serviceProvider: Types.ObjectId | null;
@@ -15,6 +15,7 @@ export interface IBid {
      updatedAt: Date;
      isDeleted: boolean;
      deletedAt?: Date;
+     distanceToDestination: number;
 }
 
 export type IBidFilters = {

@@ -15,6 +15,7 @@ const BidSchema = new Schema<IBid>(
           review: { type: [Schema.Types.ObjectId], ref: 'Review', default: [] },
           isDeleted: { type: Boolean, default: false },
           deletedAt: { type: Date },
+          distanceToDestination: { type: Number, default: 0 },
      },
      { timestamps: true },
 );
