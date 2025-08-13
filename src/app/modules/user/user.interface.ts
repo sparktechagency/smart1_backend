@@ -52,6 +52,7 @@ export type IUser = {
      bookingCancelCount: number;
      reviews: Types.ObjectId[];
      avgRating: number;
+     reviewsCount: number;
 };
 
 export type UserModel = {

@@ -43,7 +43,7 @@ const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
 
      // Step 2: Populate the related fields (serviceProvider and serviceCategory)
      const populatedResult: any = await Bid.populate(result, [
-          { path: 'serviceProvider', select: 'full_name businessName image avgRating reviews' }, // Populating service provider details
+          { path: 'serviceProvider', select: 'full_name businessName image avgRating reviewsCount' }, // Populating service provider details
           { path: 'serviceCategory', select: 'name description' }, // Populating service category details
      ]);
      (global as any).io.emit(`getBid::${isExistBooking?.user}`, result);

@@ -177,6 +177,7 @@ const userSchema = new Schema<IUser, UserModel>(
                min: 0,
                default: 0,
           },
+          reviewsCount: { type: Number, default: 0 },
      },
      { timestamps: true },
 );

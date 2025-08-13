@@ -31,6 +31,7 @@ const settingsSchema = new Schema<ISettings>(
                min: 0,
                default: 0,
           },
+          reviewsCount: { type: Number, default: 0 },
      },
      { timestamps: true },
 );

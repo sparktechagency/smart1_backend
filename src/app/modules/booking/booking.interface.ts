@@ -37,7 +37,7 @@ export interface IBooking extends Document {
           id: Types.ObjectId;
      };
      cancelledAt: Date;
-     avgRating:number;
+     avgRating: number;
      createdAt?: Date;
      updatedAt?: Date;
      deletedAt?: Date;
@@ -45,6 +45,7 @@ export interface IBooking extends Document {
      adminRevenuePercent: number;
      reports: Types.ObjectId[];
      reviews: Types.ObjectId[];
+     reviewsCount: number;
      completeOtp?: number;
      verifyCompleteOtp?: boolean;
 }

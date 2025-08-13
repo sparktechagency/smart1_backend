@@ -11,4 +11,5 @@ export interface ISettings extends Document {
      reports: Types.ObjectId[];
      reviews: Types.ObjectId[];
      avgRating: number;
+     reviewsCount: number;
 }
