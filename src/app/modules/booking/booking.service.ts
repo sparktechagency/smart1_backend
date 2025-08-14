@@ -990,10 +990,15 @@ const requestCompleteOTP = async (bookingId: string, user: IJwtPayload) => {
 
      console.log('Generated OTP for bid:', booking._id, 'OTP:', booking.completeOtp, 'Type:', typeof booking.completeOtp);
 
+     await sendNotifications({
+          title: NotificationTitle.BOOKING_COMPLETED,
+          receiver: booking.user,
+          message: `Verify Otp to proceed completion.bookingId:${booking._id}; otp:${booking.completeOtp}; verifyCompleteOtp: ${booking.verifyCompleteOtp}`,
+          type: NOTIFICATION_MODEL_TYPE.BOOKING,
+     });
+
      return {
-          bookingId: booking._id,
-          otp: booking.completeOtp,
-          verifyCompleteOtp: booking.verifyCompleteOtp,
+          message: 'Otp sent',
      };
 };
 

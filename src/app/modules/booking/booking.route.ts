@@ -117,10 +117,9 @@ router.delete(
      BookingController.cancelBooking,
 );
 
-
 router.patch('/request-complete-otp/:id', auth(USER_ROLES.SERVICE_PROVIDER), BookingController.requestCompleteOTP);
 
-router.post('/verify-complete-otp', auth(USER_ROLES.USER), validateRequest(BookingValidation.verifyBookingCompleteOtpSchema), BookingController.verifyCompleteOTP);
+router.post('/verify-complete-otp', auth(USER_ROLES.SERVICE_PROVIDER), validateRequest(BookingValidation.verifyBookingCompleteOtpSchema), BookingController.verifyCompleteOTP);
 
 router.get('/:bookingId', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), BookingController.getBookingDetails);
 
