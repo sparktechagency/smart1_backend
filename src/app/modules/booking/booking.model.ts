@@ -171,6 +171,7 @@ const bookingSchema = new Schema<IBooking>(
           reviewsCount: { type: Number, default: 0 },
           completeOtp: { type: Number },
           verifyCompleteOtp: { type: Boolean, default: false },
+          isCompleteRequest: { type: Boolean, default: false },
      },
      {
           timestamps: true,

@@ -986,6 +986,7 @@ const requestCompleteOTP = async (bookingId: string, user: IJwtPayload) => {
      // Save as string and mark as modified
      booking.completeOtp = otp;
      booking.verifyCompleteOtp = false;
+     booking.isCompleteRequest = true;
      await booking.save();
 
      console.log('Generated OTP for bid:', booking._id, 'OTP:', booking.completeOtp, 'Type:', typeof booking.completeOtp);
@@ -1028,7 +1029,7 @@ const verifyCompleteOTP = async (payload: any, user: IJwtPayload) => {
                status: BOOKING_STATUS.WORK_STARTED,
           },
           {
-               $set: { verifyCompleteOtp: true },
+               $set: { verifyCompleteOtp: true, isCompleteRequest: false },
                $unset: { completeOtp: '' },
           },
           { new: true },

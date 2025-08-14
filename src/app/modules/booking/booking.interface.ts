@@ -48,4 +48,5 @@ export interface IBooking extends Document {
      reviewsCount: number;
      completeOtp?: number;
      verifyCompleteOtp?: boolean;
+     isCompleteRequest?: boolean;
 }
