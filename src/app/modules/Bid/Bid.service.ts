@@ -25,7 +25,7 @@ const createBid = async (payload: IBid, user: IJwtPayload): Promise<IBid> => {
      if (!serviceProvider) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Service provider not found.');
      }
-     const isExistBooking = await Booking.findOne({ _id: payload.booking, serviceCategory: { $in: serviceProvider.serviceCategories } });
+     const isExistBooking = await Booking.findOne({ _id: payload.booking, serviceCategory: { $in: serviceProvider.serviceCategories }, status: BOOKING_STATUS.PENDING });
      if (!isExistBooking) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found.');
      }
