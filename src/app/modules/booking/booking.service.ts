@@ -144,6 +144,9 @@ const getBookingDetails = async (bookingId: string, user: IJwtPayload) => {
                path: 'payment',
                select: 'user booking transactionId paymentIntent amount',
           },
+          {
+               path: 'serviceProvider',
+          },
      ];
 
      if (user.role === USER_ROLES.USER) {
