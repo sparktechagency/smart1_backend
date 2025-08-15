@@ -97,7 +97,7 @@ router.patch('/bid/:bookingId', validateRequest(BookingValidation.acceptBidForBo
 
 router.patch(
      '/status/:bookingId',
-     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER),
      validateRequest(BookingValidation.updateBookingStatusSchema),
      BookingController.changeBookingStatus,
 );
