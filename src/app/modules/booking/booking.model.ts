@@ -68,6 +68,14 @@ const bookingSchema = new Schema<IBooking>(
                enum: BOOKING_STATUS,
                default: BOOKING_STATUS.PENDING,
           },
+          statusChangeTimes: {
+               pendingAt: { type: Date, default: Date.now },
+               confirmedAt: { type: Date, default: null },
+               on_the_wayAt: { type: Date, default: null },
+               work_startedAt: { type: Date, default: null },
+               completedAt: { type: Date, default: null },
+               cancelledAt: { type: Date, default: null },
+          },
           geoLocationOfDestination: {
                type: {
                     type: String,

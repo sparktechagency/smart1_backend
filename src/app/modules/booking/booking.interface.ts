@@ -1,7 +1,7 @@
 import { Document, Types } from 'mongoose';
-import { IGeoLocation } from '../user/user.interface';
-import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, PAYMENT_METHOD, PAYMENT_STATUS } from './booking.enums';
 import { USER_ROLES } from '../user/user.enums';
+import { IGeoLocation } from '../user/user.interface';
+import { BOOKING_STATUS, CANCELL_OR_REFUND_REASON, PAYMENT_METHOD, PAYMENT_STATUS, TRACK_BOOKING_STATUS } from './booking.enums';
 
 export interface IBookingService {
      service: Types.ObjectId;
@@ -19,6 +19,9 @@ export interface IBooking extends Document {
      finalAmount: number;
      isPaymentTransferd: boolean;
      status: BOOKING_STATUS;
+     statusChangeTimes: {
+          [key in TRACK_BOOKING_STATUS]: Date;
+     };
      geoLocationOfDestination: IGeoLocation;
      images: string[];
      bookingDate: Date;

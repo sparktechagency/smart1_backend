@@ -362,6 +362,27 @@ const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJ
                     throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid bid status');
           }
 
+          switch (status) {
+               case BOOKING_STATUS.ON_THE_WAY:
+                    booking.statusChangeTimes.on_the_wayAt = new Date();
+                    thisBid.statusChangeTimes.on_the_wayAt = new Date();
+                    break;
+               case BOOKING_STATUS.WORK_STARTED:
+                    booking.statusChangeTimes.work_startedAt = new Date();
+                    thisBid.statusChangeTimes.work_startedAt = new Date();
+                    break;
+               case BOOKING_STATUS.COMPLETED:
+                    booking.statusChangeTimes.completedAt = new Date();
+                    thisBid.statusChangeTimes.completedAt = new Date();
+                    break;
+               case BOOKING_STATUS.CANCELLED:
+                    booking.statusChangeTimes.cancelledAt = new Date();
+                    thisBid.statusChangeTimes.cancelledAt = new Date();
+                    break;
+               default:
+                    break;
+          }
+
           // Update bid status
           thisBid.status = status;
           const updatedBid = await thisBid.save();

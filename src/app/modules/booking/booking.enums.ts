@@ -6,6 +6,16 @@
 //  * provider যখন কোণ booking cancel হবে তখন তার default booking.status হবে pending আর যেই booking.acceptedBid এর  status হবে cancelled with reason পাশাপাশি এই booking._id এর against এ যত গুলো bid আছে সেগুলো bid.status হবে pending + user& ঐসব provider রা notificatio পাবে
 //
 
+export enum TRACK_BOOKING_STATUS {
+     PENDING_AT = 'pendingAt', // bid not accepted need accept first
+     CONFIRMED_AT = 'confirmedAt',
+     ACCEPTED_AT = 'acceptedAt', // bid accepted but not started so bidChange allowed
+     ON_THE_WAY_AT = 'on_the_wayAt',
+     WORK_STARTED_AT = 'work_startedAt',
+     COMPLETED_AT = 'completedAt',
+     CANCELLED_AT = 'cancelledAt',
+}
+
 export enum BOOKING_STATUS {
      PENDING = 'pending', // bid not accepted need accept first
      CONFIRMED = 'confirmed', // bid accepted but not started so bidChange allowed

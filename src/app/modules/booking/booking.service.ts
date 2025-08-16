@@ -437,9 +437,41 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                     throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid status');
           }
 
-          const updatedBooking = await Booking.findOneAndUpdate({ _id: bookingId }, { status }, { new: true, session });
+          // const updatedBooking = await Booking.findOneAndUpdate({ _id: bookingId }, { status }, { new: true, session });
+          // const updatedBid = bid ? await Bid.findOneAndUpdate({ _id: bid._id }, { status }, { new: true, session }) : null;
 
-          const updatedBid = bid ? await Bid.findOneAndUpdate({ _id: bid._id }, { status }, { new: true, session }) : null;
+          switch (status) {
+               case BOOKING_STATUS.ON_THE_WAY:
+                    booking.statusChangeTimes.on_the_wayAt = new Date();
+                    bid!.statusChangeTimes.on_the_wayAt = new Date();
+                    break;
+               case BOOKING_STATUS.WORK_STARTED:
+                    booking.statusChangeTimes.work_startedAt = new Date();
+                    bid!.statusChangeTimes.work_startedAt = new Date();
+                    break;
+               case BOOKING_STATUS.COMPLETED:
+                    booking.statusChangeTimes.completedAt = new Date();
+                    bid!.statusChangeTimes.completedAt = new Date();
+                    break;
+               case BOOKING_STATUS.CANCELLED:
+                    booking.statusChangeTimes.cancelledAt = new Date();
+                    bid!.statusChangeTimes.cancelledAt = new Date();
+                    break;
+               default:
+                    break;
+          }
+
+          // Update bid status
+          bid!.status = status as BID_STATUS;
+          const updatedBid = await bid!.save();
+
+          // Update booking status
+          booking.status = status as BOOKING_STATUS;
+          const updatedBooking = await booking.save();
+
+          if (!updatedBooking || !updatedBid) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to update booking or bid');
+          }
 
           await session.commitTransaction();
           return { updatedBooking, updatedBid };
@@ -608,12 +640,14 @@ const acceptBid = async (bookingId: string, bidId: string, user: IJwtPayload | a
           thisBooking.serviceProvider = (isExistBid.serviceProvider as any)._id;
           thisBooking.adminRevenuePercent = (isExistBid.serviceProvider as any)?.adminRevenuePercent;
           thisBooking.status = BOOKING_STATUS.CONFIRMED;
+          thisBooking.statusChangeTimes.confirmedAt = new Date();
           await thisBooking.validate();
           const updatedBooking = await thisBooking.save({ session });
 
           isExistBid.isAccepted = true;
           isExistBid.status = BID_STATUS.ACCEPTED;
           isExistBid.booking = thisBooking._id;
+          isExistBid.statusChangeTimes.acceptedAt = new Date();
           await isExistBid.save({ session });
 
           await Bid.updateMany({ _id: { $ne: isExistBid._id }, booking: thisBooking._id }, { $set: { isAccepted: false, status: BID_STATUS.REJECTED } }, { session });
