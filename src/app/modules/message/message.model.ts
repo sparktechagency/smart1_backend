@@ -32,6 +32,10 @@ const messageSchema = new Schema<IMessage, MessageModel>(
                required: false,
                default: null,
           },
+          read: {
+               type: Boolean,
+               default: false,
+          },
           replies: {
                type: [Schema.Types.ObjectId],
                ref: 'Message',

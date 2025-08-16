@@ -11,6 +11,7 @@ export interface IMessage {
      chatId: Types.ObjectId;
      replyTo?: Types.ObjectId | null;
      replies?: Types.ObjectId[];
+     read: boolean;
      sender: Types.ObjectId;
      text?: string;
      image?: string;
