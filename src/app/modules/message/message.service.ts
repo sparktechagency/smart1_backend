@@ -11,7 +11,7 @@ import { Message } from './message.model';
 
 const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> => {
      // handle chatId exists
-     const chat = await Chat.findById(payload.chatId);
+     const chat = await Chat.findById(payload.chatId).populate('participants', 'full_name image email');
      if (!chat) {
           if (payload.image) {
                console.log(payload.image);
@@ -31,11 +31,20 @@ const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> =>
           throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to send message');
      }
 
-     //@ts-ignore
+     //@ts-expect-error
      const io = global.io;
      if (io) {
-          io.emit(`getMessage::${payload?.chatId}`, response);
+          io.emit(`getMessage::${payload.chatId}`, response);
      }
+     chat.participants.forEach((participant) => {
+          if (participant.toString() !== payload.sender?.toString()) {
+               //@ts-expect-error
+               const io = global.io;
+               if (io) {
+                    io.emit(`getMessage::${participant}`, response);
+               }
+          }
+     });
 
      return response;
 };
@@ -60,7 +69,7 @@ const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> =>
 const getMessageFromDB = async (id: any, user: IJwtPayload, query: Record<string, unknown>) => {
      // Initialize the query builder with the base query
      const queryBuilder = new QueryBuilder(Message.find({ chatId: id }).sort({ createdAt: -1 }).populate('replies', 'text image'), query);
-     
+
      // Get messages using query builder
      const messages = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      if (!messages || messages.length === 0) {
@@ -86,23 +95,18 @@ const getMessageFromDB = async (id: any, user: IJwtPayload, query: Record<string
      }
 
      // Update read status for messages not sent by current user and get updated messages
-     const messageIds = filteredMessages
-          .filter(message => message.sender.toString() !== user.id)
-          .map(message => message._id);
+     const messageIds = filteredMessages.filter((message) => message.sender.toString() !== user.id).map((message) => message._id);
 
      if (messageIds.length > 0) {
-          await Message.updateMany(
-               { _id: { $in: messageIds } },
-               { $set: { read: true } }
-          );
+          await Message.updateMany({ _id: { $in: messageIds } }, { $set: { read: true } });
      }
 
      // Fetch the updated messages to return the latest state
-     const updatedMessages = await Message.find({ 
-          _id: { $in: filteredMessages.map(msg => msg._id) } 
+     const updatedMessages = await Message.find({
+          _id: { $in: filteredMessages.map((msg) => msg._id) },
      })
-     .sort({ createdAt: -1 })
-     .populate('replies', 'text image');
+          .sort({ createdAt: -1 })
+          .populate('replies', 'text image');
 
      const meta = await queryBuilder.countTotal();
 

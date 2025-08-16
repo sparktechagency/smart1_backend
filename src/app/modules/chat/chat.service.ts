@@ -69,7 +69,7 @@ const getChatFromDB = async (user: any, search: string): Promise<IChat[]> => {
                     chatId: chat?._id,
                })
                     .sort({ createdAt: -1 })
-                    .select('text offer createdAt sender');
+                    .select('text image createdAt sender');
                // Count unread messages for the current user
                const unreadMessagesCount = await Message.countDocuments({
                     chatId: chat?._id,
