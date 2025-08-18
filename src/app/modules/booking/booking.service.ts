@@ -695,9 +695,9 @@ const getBidsOfBookingByIdToAccept = async (query: Record<string, any>, bookingI
                .populate('booking', 'servicingDestination geoLocationOfDestination serviceTaskAdditionalInfo serviceTaskDetails bookingTime bookingDate images'),
           query,
      );
-     const result = await queryBuilder.modelQuery;
+     let result = await queryBuilder.paginate().modelQuery;
      if (!result || result.length === 0) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'No bids found for this booking');
+          result = [];
      }
      const meta = await queryBuilder.countTotal();
      return { meta, result };
