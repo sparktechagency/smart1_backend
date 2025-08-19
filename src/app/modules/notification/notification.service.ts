@@ -11,8 +11,16 @@ import { Notification } from './notification.model';
 
 // get notifications
 const getNotificationFromDB = async (user: JwtPayload, query: Record<string, unknown>) => {
-     console.log({ query });
-     const queryBuilder = new QueryBuilder(Notification.find({ receiver: user.id }).populate('receiver', 'full_name email phoneNumber'), query);
+     const queryBuilder = new QueryBuilder(Notification.find({ receiver: user.id }).populate('receiver', 'full_name email phoneNumber').populate({
+          path: 'reference',
+          model: NOTIFICATION_MODEL_TYPE.BOOKING,
+          select: 'user servicingDestination geoLocationOfDestination bookingDate bookingTime',
+          populate: {
+               path: 'user',
+               model: NOTIFICATION_MODEL_TYPE.USER,
+               select: 'full_name email phone image',
+          },
+     }), query);
      const result = await queryBuilder.filter().sort().search(['title', 'message']).paginate().fields().modelQuery.exec();
      const meta = await queryBuilder.countTotal();
      const unreadCount = await Notification.countDocuments({
