@@ -38,15 +38,19 @@ export enum PAYMENT_STATUS {
 }
 
 export enum CANCELL_OR_REFUND_REASON {
-     CANCELLED_BOOKING = 'cancelled booking',
-     BID_CHANGED_BY_USER = 'bid changed by user',
-     BID_CANCELLED_BY_PROVIDER = 'bid cancelled by provider',
-     PERSONAL_REASON = 'personal reason',
-     TECHNIAL_ISSUE = 'technical issue',
-     CUSTOMER_DID_NOT_RESPOND = "customer didn't respond",
-     HEALTH_OR_EMERGENCY = 'health or emergency',
-     SCHEDULE_CONFLICT = 'schedule conflict',
-     OTHER_REASON = 'other reason',
+     CANCELLED_BOOKING = 'Cancelled booking',
+     BID_CHANGED_BY_USER = 'Bid changed by user',
+     BID_CANCELLED_BY_PROVIDER = 'Bid cancelled by provider',
+     PERSONAL_REASON = 'Personal reason',
+     TECHNIAL_ISSUE = 'Technical issue',
+     CUSTOMER_DID_NOT_RESPOND = "Customer didn't respond",
+     HEALTH_OR_EMERGENCY = 'Health or emergency',
+     SCHEDULE_CONFLICT = 'Schedule conflict',
+     OTHER_REASON = 'Other reason',
+     CHANGE_OF_PLANS = 'Change of plans',
+     SERVICE_NO_LONGER_NEEDED = 'Service no longer needed',
+     SERVICE_PROVIDER_ASKED_ME_TO_CANCEL = 'Service provider asked me to cancel',
+     I_EXPERIENCED_PAYMENT_ISSUE = 'I experienced payment issue',
 }
 
 export const DEFAULT_BOOKING_RANGE: number = 10; // in km
