@@ -45,7 +45,7 @@ const changeBookingStatus = catchAsync(async (req: Request, res: Response) => {
      sendResponse(res, {
           statusCode: StatusCodes.OK,
           success: true,
-          message: 'Booking status changed succesfully',
+          message: 'Effort successfull',
           data: result,
      });
 });
