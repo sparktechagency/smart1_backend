@@ -318,7 +318,7 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
           const booking = await Booking.findById(bookingId).session(session);
           if (!booking) throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found');
 
-          const isExistUser = await User.findById(user.id).session(session);
+          const isExistUser = await User.findById(booking.user).session(session);
           if (!isExistUser) throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
 
           const isExistServiceProvider = await User.findById(booking.serviceProvider?.toString()).session(session);
@@ -417,12 +417,12 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                                    const stripeSession = await stripe.checkout.sessions.create(stripeSessionData);
                                    await session.commitTransaction();
                                    return { message: 'Redirect to payment', url: stripeSession.url };
-                              } else if (booking.paymentMethod === PAYMENT_METHOD.CASH && booking.payment == null && booking.paymentStatus == PAYMENT_STATUS.UNPAID) {
+                              } else if (booking.paymentMethod === PAYMENT_METHOD.CASH && booking.payment == null) {
                                    // await session.commitTransaction();
                                    // return { message: 'Service completed. Collect cash from customer.' };
-                                   const adminRevenueAmount = Math.ceil((booking!.finalAmount * (booking!.serviceProvider as any).adminRevenuePercent) / 100);
+                                   const adminRevenueAmount = Math.ceil((booking!.finalAmount * isExistServiceProvider.adminRevenuePercent) / 100);
                                    isExistServiceProvider.adminDueAmount += adminRevenueAmount;
-                                   await isExistServiceProvider.save();
+                                   await User.findByIdAndUpdate(isExistServiceProvider._id, { adminDueAmount: isExistServiceProvider.adminDueAmount });
                                    booking.paymentStatus = PAYMENT_STATUS.PAID;
                               }
                          }
@@ -1085,7 +1085,6 @@ const verifyCompleteOTP = async (payload: any, user: IJwtPayload) => {
           });
      }
 
-     
      return updatedBooking;
 };
 

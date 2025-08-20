@@ -29,7 +29,7 @@ router.route('/admin/:id').patch(auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
 
 router.route('/').post(validateRequest(UserValidation.createUserZodSchema), UserController.createUser);
 router.route('/service-provider').post(validateRequest(UserValidation.createServiceProviderZodSchema), UserController.createServiceProviderToDB);
-router.delete('/delete', auth(USER_ROLES.USER), UserController.deleteProfile);
+router.delete('/delete', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), UserController.deleteProfile);
 router.get('/get-all', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), UserController.getAllRoleBasedUser);
 
 export const UserRouter = router;

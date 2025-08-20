@@ -249,7 +249,7 @@ const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJ
           }
 
           // Check if user has permission to change the bid status
-          const isExistUser = await User.findById(user.id).session(session);
+          const isExistUser = await User.findById(booking.user).session(session);
           if (!isExistUser) throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
 
           // is exist service provider
@@ -347,7 +347,7 @@ const changeBidStatus = async (bidId: string, status: BID_STATUS | any, user: IJ
                                    // return { message: 'Service completed. Collect cash from customer.' };
                                    const adminRevenueAmount = Math.ceil((booking!.finalAmount * (booking!.serviceProvider as any).adminRevenuePercent) / 100);
                                    isExistServiceProvider.adminDueAmount += adminRevenueAmount;
-                                   await isExistServiceProvider.save();
+                                   await User.findByIdAndUpdate(isExistServiceProvider._id, { adminDueAmount: isExistServiceProvider.adminDueAmount + adminRevenueAmount });
                                    booking.paymentStatus = PAYMENT_STATUS.PAID;
                               }
                          }

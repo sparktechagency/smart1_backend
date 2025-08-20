@@ -13,6 +13,10 @@ import { stripeAccountService } from '../stripeAccount/stripeAccount.service';
 import { USER_ROLES } from './user.enums';
 import { IUser } from './user.interface';
 import { User } from './user.model';
+import { BOOKING_STATUS } from '../booking/booking.enums';
+import { Booking } from '../booking/booking.model';
+import { Bid } from '../Bid/Bid.model';
+import { BID_STATUS } from '../Bid/Bid.enum';
 // create user
 const createUserToDB = async (payload: IUser): Promise<IUser> => {
      const session = await mongoose.startSession();
@@ -351,6 +355,20 @@ const deleteUser = async (id: string) => {
      const isExistUser = await User.isExistUserById(id);
      if (!isExistUser) {
           throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+     }
+
+     if (isExistUser.adminDueAmount > 0) {
+          throw new AppError(StatusCodes.BAD_REQUEST, `User can't be deleted! You have a due to admin amount ${isExistUser.adminDueAmount}`);
+     }
+
+     const activeBookingsOfUser = await Booking.find({ user: id, status: { $in: [BOOKING_STATUS.ON_THE_WAY, BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.WORK_STARTED] } });
+     if (activeBookingsOfUser.length > 0) {
+          throw new AppError(StatusCodes.BAD_REQUEST, `User can't be deleted! You have active bookings ${activeBookingsOfUser.length}`);
+     }
+
+     const activeBidsOfUser = await Bid.find({ serviceProvider: id, status: { $in: [BID_STATUS.ON_THE_WAY, BID_STATUS.ACCEPTED, BID_STATUS.WORK_STARTED] } });
+     if (activeBidsOfUser.length > 0) {
+          throw new AppError(StatusCodes.BAD_REQUEST, `User can't be deleted! You have active bids ${activeBidsOfUser.length}`);
      }
 
      await User.findByIdAndUpdate(id, {
