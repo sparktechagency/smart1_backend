@@ -134,7 +134,7 @@ const getBookingDetails = async (bookingId: string, user: IJwtPayload) => {
      const populateOptions = [
           {
                path: 'user',
-               select: 'full_name _id email phone',
+               select: 'full_name _id email phone image',
           },
           {
                path: 'services.service',
@@ -172,7 +172,7 @@ const getMyBookings = async (query: Record<string, unknown>, user: IJwtPayload) 
      const populateOptions = [
           {
                path: 'user',
-               select: 'full_name _id email phone',
+               select: 'full_name _id email phone image',
           },
           {
                path: 'serviceCategory',
