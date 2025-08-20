@@ -1043,7 +1043,7 @@ const requestCompleteOTP = async (bookingId: string, user: IJwtPayload) => {
 // complete ride with otp
 const verifyCompleteOTP = async (payload: any, user: IJwtPayload) => {
      // First check if ride exists and get current OTP
-     const booking = await Booking.findOne({ _id: payload.bookingId, status: BOOKING_STATUS.WORK_STARTED, user: user.id }).select('+completeOtp'); // Explicitly include otp
+     const booking = await Booking.findOne({ _id: payload.bookingId, status: BOOKING_STATUS.WORK_STARTED, serviceProvider: user.id }).select('+completeOtp'); // Explicitly include otp
 
      if (!booking) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'Booking not found');
@@ -1085,7 +1085,7 @@ const verifyCompleteOTP = async (payload: any, user: IJwtPayload) => {
           });
      }
 
-     console.log('Booking completed successfully:', updatedBooking._id);
+     
      return updatedBooking;
 };
 
