@@ -494,9 +494,13 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] },
                paymentStatus: PAYMENT_STATUS.UNPAID,
           }).session(session);
-          console.log('🚀 ~ cancelBooking ~ isExistBooking:', isExistBooking);
+          
           if (!isExistBooking) {
                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found. Booking status must be pending and Payment must be unpaid to cancel');
+          }
+          const isExistUser = await User.findById(user.id).session(session);
+          if (!isExistUser) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
           }
           if (user.role === USER_ROLES.SERVICE_PROVIDER && isExistBooking.serviceProvider?.toString() !== user.id) {
                throw new AppError(StatusCodes.FORBIDDEN, 'You are not authorized as service provider to cancel this booking');
@@ -524,18 +528,20 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                await isExistBid.save({ session });
           }
 
-          const isExistUser = await User.findByIdAndUpdate(
-               user.id,
-               {
-                    $inc: {
-                         adminDueAmount: 10, // Increment adminDueAmount by 10
-                         bookingCancelCount: 1, // Increment bookingCancelCount by 1
+          if (isExistUser.role === USER_ROLES.USER) {
+               const updatedUser = await User.findByIdAndUpdate(
+                    user.id,
+                    {
+                         $inc: {
+                              adminDueAmount: 10, // Increment adminDueAmount by 10
+                              bookingCancelCount: 1, // Increment bookingCancelCount by 1
+                         },
                     },
-               },
-               { new: true, session },
-          );
-          if (!isExistUser) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+                    { new: true, session },
+               );
+               if (!updatedUser) {
+                    throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+               }
           }
 
           // Send mail notification for the manager and client
@@ -564,7 +570,7 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                //The provider’s rating is reduced immediately.(The first cancellation does not impact rating. From the third cancellation onward, the rating will be reduced.)
                if (isExistUser?.bookingCancelCount && isExistUser?.bookingCancelCount >= 3 && isExistUser?.avgRating > 1) {
                     isExistUser.avgRating -= RATING_PANALTY;
-                    await isExistUser?.save();
+                    await isExistUser?.save({ session });
                }
                // If repeated, the account will be temporarily suspended.
                const sevenDaysAgo = new Date();
@@ -580,7 +586,7 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                if (cancelledBookingsCountByUserWithinLast7Days > MAXIMUM_WEEKLY_CANCEL_LIMIT) {
                     isExistUser!.status = 'blocked';
                     isExistUser!.blockedAt = new Date();
-                    await isExistUser?.save();
+                    await isExistUser?.save({ session });
                     await sendNotifications({
                          receiver: isExistUser._id,
                          type: NOTIFICATION_MODEL_TYPE.BOOKING,
