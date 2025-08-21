@@ -47,6 +47,10 @@ const notificationSchema = new Schema<INotification>(
                enum: Object.values(NOTIFICATION_MODEL_TYPE),
                required: false,
           },
+          data: {
+               type: Object,
+               required: false,
+          },
      },
      {
           timestamps: true,

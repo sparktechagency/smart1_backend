@@ -32,6 +32,8 @@ import {
 import { IBooking } from './booking.interface';
 import { Booking } from './booking.model';
 import { combineBookingDateTime, cronJobs, generateTransactionId } from './booking.utils';
+import { IUser } from '../user/user.interface';
+import { Notification } from '../notification/notification.model';
 
 //@ts-ignore
 const io = global.io;
@@ -494,7 +496,7 @@ const cancelBooking = async (orderId: string, bookingCancelReason: CANCELL_OR_RE
                status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] },
                paymentStatus: PAYMENT_STATUS.UNPAID,
           }).session(session);
-          
+
           if (!isExistBooking) {
                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found. Booking status must be pending and Payment must be unpaid to cancel');
           }
@@ -961,20 +963,21 @@ const reScheduleBookingById = async (
      bookingData: {
           bookingDate: Date;
           bookingTime: Date;
+          isAccepted?: boolean;
      },
      user: IJwtPayload,
 ) => {
      const session = await mongoose.startSession();
      session.startTransaction();
      try {
-          const thisBooking = await Booking.findOne({ _id: bookingId, user: user.id, status: { $in: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.PENDING] } }).session(session);
+          const thisBooking = await Booking.findOne({ _id: bookingId, serviceProvider: user.id, status: { $in: [BOOKING_STATUS.CONFIRMED] } }).session(session);
           if (!thisBooking) {
                throw new AppError(StatusCodes.NOT_FOUND, 'Booking not found or booking either completed or cancelled or in processing');
           }
           const combinedDateTime = new Date(combineBookingDateTime(bookingData.bookingDate?.toString() as string, bookingData.bookingTime?.toString() as string));
           const combinedOldBookingDateTime = new Date(combineBookingDateTime(thisBooking.bookingDate?.toString() as string, thisBooking.bookingTime?.toString() as string));
           // ensure booking date and time is not less than current date and time+not as same as previous booking date and time
-          if (combinedDateTime < new Date() || combinedDateTime === combinedOldBookingDateTime) {
+          if (combinedDateTime < new Date() || combinedDateTime.toString() == combinedOldBookingDateTime.toString()) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'Booking date and time must be different from previous booking date and time and must be greater than current date and time');
           }
           thisBooking.bookingDate = combinedDateTime;
@@ -983,11 +986,11 @@ const reScheduleBookingById = async (
 
           // send notification to user
           await sendNotifications({
-               receiver: user.id as unknown as Types.ObjectId,
+               receiver: thisBooking.user,
                type: NOTIFICATION_MODEL_TYPE.BOOKING,
-               message: `Booking: ${thisBooking._id} is re-scheduled for ${bookingData.bookingDate} at ${bookingData.bookingTime} by ${user.role}`,
+               message: `Booking: ${thisBooking._id} is re-scheduled on ${bookingData.bookingDate} at ${bookingData.bookingTime} by ${user.role}`,
                reference: thisBooking._id,
-               title: NotificationTitle.BOOKING_RE_SCHEDULED,
+               title: NotificationTitle.BOOKING_RE_SCHEDULE,
           });
           // commit transaction
           await session.commitTransaction();
@@ -1094,6 +1097,65 @@ const verifyCompleteOTP = async (payload: any, user: IJwtPayload) => {
      return updatedBooking;
 };
 
+const requestForRescheduleByBookingIdForServiceProvider = async (bookingId: any, bookingData: any, user: IJwtPayload) => {
+     const booking = await Booking.findOne({ _id: bookingId, status: { $in: [BOOKING_STATUS.CONFIRMED] }, user: user.id }).populate('user', 'full_name email phoneNumber');
+
+     if (!booking) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Booking not found');
+     }
+     // ensure booking date and time is not less than current date and time+not as same as previous booking date and time
+     const combinedDateTime = new Date(combineBookingDateTime(bookingData.bookingDate?.toString() as string, bookingData.bookingTime?.toString() as string));
+     if (combinedDateTime < new Date() || combinedDateTime.toString() == booking.bookingDate.toString() || combinedDateTime.toString() == booking.bookingTime.toString()) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Booking date and time must be different from previous booking date and time and must be greater than current date and time');
+     }
+
+     const notification = await sendNotifications({
+          title: NotificationTitle.BOOKING_RE_SCHEDULE,
+          receiver: booking.serviceProvider!,
+          reference: booking._id,
+          message: `${(booking.user as unknown as IUser).full_name} is requesting for re-schedule Booking: ${booking._id.toString().slice(-8)} on ${bookingData.bookingDate} at ${bookingData.bookingTime}`,
+          type: NOTIFICATION_MODEL_TYPE.BOOKING,
+          data: {
+               bookingId: booking._id,
+               bookingData: bookingData,
+          },
+     });
+     return notification;
+};
+
+const acceptRescheduleRequestByBookingId = async (bookingId: any, bookingData: any, user: IJwtPayload) => {
+     const referenceNotification = await Notification.findOne({ _id: bookingData.notificationId });
+     if (!referenceNotification) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'reference notification not found');
+     }
+
+     // handle referenceNotification booking time date matches with bookingData time date
+     if (
+          (referenceNotification.data as any)?.bookingData.bookingTime.toString() != bookingData.bookingTime.toString() ||
+          (referenceNotification.data as any)?.bookingData.bookingDate.toString() != bookingData.bookingDate.toString()
+     ) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Booking time date does not match');
+     }
+     const booking = await Booking.findOne({ _id: bookingId, status: { $in: [BOOKING_STATUS.CONFIRMED] }, serviceProvider: user.id }).populate('serviceProvider', 'full_name email phoneNumber');
+     if (!booking) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Booking not found');
+     }
+     if (!bookingData.isAccepted) {
+          const notification = await sendNotifications({
+               title: NotificationTitle.BOOKING_RE_SCHEDULE,
+               receiver: booking.user!,
+               reference: booking._id,
+               message: `${(booking.serviceProvider as unknown as IUser).full_name} rejected requests for re-schedule Booking: ${booking._id.toString().slice(-8)} on ${bookingData.bookingDate} at ${bookingData.bookingTime}`,
+               type: NOTIFICATION_MODEL_TYPE.BOOKING,
+          });
+          await Notification.findByIdAndDelete(referenceNotification._id);
+          return notification;
+     }
+
+     await Notification.findByIdAndDelete(referenceNotification._id);
+     return await reScheduleBookingById(bookingId, bookingData, user);
+};
+
 export const BookingService = {
      createBooking,
      getBookingDetails,
@@ -1110,4 +1172,6 @@ export const BookingService = {
      remidUserAboutTheirAdminDueAmount,
      requestCompleteOTP,
      verifyCompleteOTP,
+     requestForRescheduleByBookingIdForServiceProvider,
+     acceptRescheduleRequestByBookingId,
 };

@@ -52,4 +52,5 @@ export interface IBooking extends Document {
      completeOtp?: number;
      verifyCompleteOtp?: boolean;
      isCompleteRequest?: boolean;
+     isAcceptedRescheduleRequest?: boolean;
 }

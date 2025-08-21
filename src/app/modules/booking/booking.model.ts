@@ -180,6 +180,7 @@ const bookingSchema = new Schema<IBooking>(
           completeOtp: { type: Number },
           verifyCompleteOtp: { type: Boolean, default: false },
           isCompleteRequest: { type: Boolean, default: false },
+          isAcceptedRescheduleRequest: { type: Boolean, default: false },
      },
      {
           timestamps: true,

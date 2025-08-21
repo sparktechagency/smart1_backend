@@ -102,12 +102,26 @@ router.patch(
      BookingController.changeBookingStatus,
 );
 
-router.patch(
-     '/reschedule/:bookingId',
+router.post(
+     '/request-for-reschedule/:bookingId',
      validateRequest(BookingValidation.reScheduleBookingSchema),
      auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
-     BookingController.reScheduleBookingById,
+     BookingController.requestForRescheduleByBookingIdForServiceProvider,
 );
+
+router.patch(
+     '/accept-reschedule-request/:bookingId',
+     validateRequest(BookingValidation.reScheduleBookingSchema),
+     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.SERVICE_PROVIDER),
+     BookingController.acceptRescheduleRequestByBookingId,
+);
+
+// router.patch(
+//      '/reschedule/:bookingId',
+//      validateRequest(BookingValidation.reScheduleBookingSchema),
+//      auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+//      BookingController.reScheduleBookingById,
+// );
 
 // Cancel booking
 router.delete(

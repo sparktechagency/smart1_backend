@@ -9,5 +9,6 @@ export interface INotification {
      screen?: NotificationScreen;
      read?: boolean;
      type?: NOTIFICATION_MODEL_TYPE;
+     data?: object;
      title?: NotificationTitle;
 }

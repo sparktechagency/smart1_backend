@@ -82,6 +82,8 @@ export const reScheduleBookingSchema = z.object({
   body: z.object({
     bookingDate: z.union([z.date(), z.string()]),
     bookingTime: z.union([z.date(), z.string()]),
+    notificationId: objectIdSchemaOptional,
+    isAccepted: z.boolean().optional(),
   }),
 });
 

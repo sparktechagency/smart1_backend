@@ -18,7 +18,7 @@ export enum NotificationTitle {
      NEW_BOOKING = 'New Booking placed',
      BOOKING_CANCELLED = 'Booking cancelled',
      BID_CHANGED = 'Bid changed',
-     BOOKING_RE_SCHEDULED = 'Booking re-scheduled',
+     BOOKING_RE_SCHEDULE = 'Booking re-schedule',
      LOGIN = 'Login',
      // BID_ACCEPTED = 'Bid accepted',
      BOOKING_COMPLETED = 'Booking Completed',
