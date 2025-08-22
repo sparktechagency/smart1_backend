@@ -359,6 +359,9 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                          if (!booking.verifyCompleteOtp) {
                               throw new AppError(StatusCodes.BAD_REQUEST, 'Booking complete OTP not verified');
                          }
+                         if (user.role === USER_ROLES.SERVICE_PROVIDER) {
+                              throw new AppError(StatusCodes.BAD_REQUEST, 'Service provider can not complete booking');
+                         }
                          // ✅ Payment trigger here
                          if (booking.paymentStatus === PAYMENT_STATUS.UNPAID) {
                               if (booking.paymentMethod === PAYMENT_METHOD.ONLINE) {

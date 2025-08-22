@@ -53,7 +53,7 @@ export enum CANCELL_OR_REFUND_REASON {
      I_EXPERIENCED_PAYMENT_ISSUE = 'I experienced payment issue',
 }
 
-export const DEFAULT_BOOKING_RANGE: number = 10; // in km
+export const DEFAULT_BOOKING_RANGE: number = 1047570; // in km
 export const MINIMUM_ACCEPTABLE_DUE_AMOUNT: number = 200;
 export const DUE_AMOUNT_FOR_REMIND: number = 150;
 export const MAXIMUM_WEEKLY_CANCEL_LIMIT: number = 7;
