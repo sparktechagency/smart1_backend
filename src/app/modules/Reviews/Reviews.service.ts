@@ -11,79 +11,137 @@ import { ReviewsType } from './Reviews.enum';
 import { IReviews } from './Reviews.interface';
 import { Reviews } from './Reviews.model';
 
+// const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IReviews> => {
+//      // Start a session for the transaction
+//      const session = await mongoose.startSession();
+
+//      try {
+//           // Start the transaction
+//           session.startTransaction();
+//           // if payload.type = Settings then refferenceId is the id of setting
+//           if (payload.type === ReviewsType.SETTINGS) {
+//                // user mustbe a customer or service provider of any of a completed booking
+//                const hasAnyBooking = await Booking.find({ user: user.id, status: BOOKING_STATUS.COMPLETED });
+//                if (!hasAnyBooking) {
+//                     throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review. Cause you have no completed booking.');
+//                }
+//                const isExistSetting = await Settings.findOne().select('_id').session(session);
+//                if (!isExistSetting) {
+//                     throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
+//                }
+//                payload.refferenceId = isExistSetting._id as Types.ObjectId;
+//           }
+//           // step 0: check if review already exists for this refferenceId and type by the user
+//           const isExistReview = await Reviews.findOne({ refferenceId: payload.refferenceId, type: payload.type, createdBy: user.id }).session(session);
+//           if (isExistReview) {
+//                throw new AppError(StatusCodes.BAD_REQUEST, 'You have already reviewed this. Can only update the review.');
+//           }
+
+//           // Step 1: Check if the referenced document exists based on `type` and `refferenceId`
+//           const isExistRefference = await mongoose.model(payload.type).findById(payload.refferenceId).session(session); // Booking | User | Settings
+
+//           if (!isExistRefference) {
+//                throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
+//           }
+
+//           // user must be either service provider or user of the referenced document
+//           if (isExistRefference) {
+//                if (payload.type === ReviewsType.BOOKING) {
+//                     if (isExistRefference.status !== BOOKING_STATUS.COMPLETED) {
+//                          throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
+//                     }
+//                     if (isExistRefference.user.toString() !== user.id && isExistRefference.serviceProvider.toString() !== user.id) {
+//                          throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
+//                     }
+//                } else if (payload.type === ReviewsType.USER) {
+//                     // user wishing to rate the service provider
+//                     const hasAnyCommonBooking = await Booking.find({ user: user.id, serviceProvider: payload.refferenceId, status: BOOKING_STATUS.COMPLETED });
+//                     if (!hasAnyCommonBooking) {
+//                          throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to Rate the Service Provider. Cause you have no common booking completed.');
+//                     }
+//                }
+//           }
+
+//           // Step 2: Create the FAQ document
+//           payload.createdBy = new mongoose.Types.ObjectId(user.id);
+//           const result = await Reviews.create([payload], { session });
+
+//           // Step 3: Update the referenced document (add the newly created FAQ to `faqs` array)
+//           isExistRefference.reviews.push(result[0]._id); // `result[0]` because create returns an array of documents
+
+//           // Step 4: Save the referenced document with the updated `faqs` array
+//           await isExistRefference.save({ session });
+
+//           // Commit the transaction if all operations are successful
+//           await session.commitTransaction();
+
+//           return result[0]; // Return the newly created FAQ document
+//      } catch (error) {
+//           // If any error occurs, abort the transaction
+//           await session.abortTransaction();
+//           throw error; // Re-throw the error
+//      } finally {
+//           // End the session
+//           session.endSession();
+//      }
+// };
+
 const createReviews = async (payload: IReviews, user: IJwtPayload): Promise<IReviews> => {
-     // Start a session for the transaction
-     const session = await mongoose.startSession();
-
-     try {
-          // Start the transaction
-          session.startTransaction();
-          // if payload.type = Settings then refferenceId is the id of setting
-          if (payload.type === ReviewsType.SETTINGS) {
-               // user mustbe a customer or service provider of any of a completed booking
-               const hasAnyBooking = await Booking.find({ user: user.id, status: BOOKING_STATUS.COMPLETED });
-               if (!hasAnyBooking) {
-                    throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review. Cause you have no completed booking.');
-               }
-               const isExistSetting = await Settings.findOne().select('_id').session(session);
-               if (!isExistSetting) {
-                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
-               }
-               payload.refferenceId = isExistSetting._id as Types.ObjectId;
+     // if payload.type = Settings then refferenceId is the id of setting
+     if (payload.type === ReviewsType.SETTINGS) {
+          // user mustbe a customer or service provider of any of a completed booking
+          const hasAnyBooking = await Booking.find({ user: user.id, status: BOOKING_STATUS.COMPLETED });
+          if (!hasAnyBooking) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review. Cause you have no completed booking.');
           }
-          // step 0: check if review already exists for this refferenceId and type by the user
-          const isExistReview = await Reviews.findOne({ refferenceId: payload.refferenceId, type: payload.type, createdBy: user.id }).session(session);
-          if (isExistReview) {
-               throw new AppError(StatusCodes.BAD_REQUEST, 'You have already reviewed this. Can only update the review.');
-          }
-
-          // Step 1: Check if the referenced document exists based on `type` and `refferenceId`
-          const isExistRefference = await mongoose.model(payload.type).findById(payload.refferenceId).session(session); // Booking | User | Settings
-
-          if (!isExistRefference) {
+          const isExistSetting = await Settings.findOne().select('_id');
+          if (!isExistSetting) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
           }
+          payload.refferenceId = isExistSetting._id as Types.ObjectId;
+     }
+     // step 0: check if review already exists for this refferenceId and type by the user
+     const isExistReview = await Reviews.findOne({ refferenceId: payload.refferenceId, type: payload.type, createdBy: user.id });
+     if (isExistReview) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'You have already reviewed this. Can only update the review.');
+     }
 
-          // user must be either service provider or user of the referenced document
-          if (isExistRefference) {
-               if (payload.type === ReviewsType.BOOKING) {
-                    if (isExistRefference.status !== BOOKING_STATUS.COMPLETED) {
-                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
-                    }
-                    if (isExistRefference.user.toString() !== user.id && isExistRefference.serviceProvider.toString() !== user.id) {
-                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
-                    }
-               } else if (payload.type === ReviewsType.USER) {
-                    // user wishing to rate the service provider
-                    const hasAnyCommonBooking = await Booking.find({ user: user.id, serviceProvider: payload.refferenceId, status: BOOKING_STATUS.COMPLETED });
-                    if (!hasAnyCommonBooking) {
-                         throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to Rate the Service Provider. Cause you have no common booking completed.');
-                    }
+     // Step 1: Check if the referenced document exists based on `type` and `refferenceId`
+     const isExistRefference = await mongoose.model(payload.type).findById(payload.refferenceId); // Booking | User | Settings
+
+     if (!isExistRefference) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
+     }
+
+     // user must be either service provider or user of the referenced document
+     if (isExistRefference) {
+          if (payload.type === ReviewsType.BOOKING) {
+               if (isExistRefference.status !== BOOKING_STATUS.COMPLETED) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
+               }
+               if (isExistRefference.user.toString() !== user.id && isExistRefference.serviceProvider.toString() !== user.id) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to create a review.');
+               }
+          } else if (payload.type === ReviewsType.USER) {
+               // user wishing to rate the service provider
+               const hasAnyCommonBooking = await Booking.find({ user: user.id, serviceProvider: payload.refferenceId, status: BOOKING_STATUS.COMPLETED });
+               if (!hasAnyCommonBooking) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'You are not authorized to Rate the Service Provider. Cause you have no common booking completed.');
                }
           }
-
-          // Step 2: Create the FAQ document
-          payload.createdBy = new mongoose.Types.ObjectId(user.id);
-          const result = await Reviews.create([payload], { session });
-
-          // Step 3: Update the referenced document (add the newly created FAQ to `faqs` array)
-          isExistRefference.reviews.push(result[0]._id); // `result[0]` because create returns an array of documents
-
-          // Step 4: Save the referenced document with the updated `faqs` array
-          await isExistRefference.save({ session });
-
-          // Commit the transaction if all operations are successful
-          await session.commitTransaction();
-
-          return result[0]; // Return the newly created FAQ document
-     } catch (error) {
-          // If any error occurs, abort the transaction
-          await session.abortTransaction();
-          throw error; // Re-throw the error
-     } finally {
-          // End the session
-          session.endSession();
      }
+
+     // Step 2: Create the FAQ document
+     payload.createdBy = new mongoose.Types.ObjectId(user.id);
+     const result = await Reviews.create(payload);
+
+     // Step 3: Update the referenced document (add the newly created FAQ to `faqs` array)
+     const updatedRefference = await mongoose.model(payload.type).findByIdAndUpdate(payload.refferenceId, { $push: { reviews: result._id } }, { new: true });
+     if (!updatedRefference) {
+          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update referenced document');
+     }
+
+     return result; // Return the newly created FAQ document
 };
 
 const getAllReviewsByTypes = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IReviews[] }> => {
