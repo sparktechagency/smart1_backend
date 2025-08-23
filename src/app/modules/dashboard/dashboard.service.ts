@@ -413,7 +413,7 @@ class DashboardService {
             baseQuery as any,  // Type assertion to bypass strict typing
             query
         )
-            .search(['full_name', 'email'])
+            .search(['full_name', 'email', 'phone'])
             .paginate();
 
         // Apply lean() after QueryBuilder operations and execute
@@ -467,7 +467,7 @@ class DashboardService {
             baseQuery as any,  // Type assertion to bypass strict typing
             query
         )
-            .search(['full_name', 'email'])
+            .search(['full_name', 'email', 'phone'])
             .paginate();
 
         // Apply lean() after QueryBuilder operations and execute

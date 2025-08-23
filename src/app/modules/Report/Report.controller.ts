@@ -98,6 +98,18 @@ const getAllReportsByBookingId = catchAsync(async (req: Request, res: Response) 
      });
 });
 
+const changeReportStatus = catchAsync(async (req: Request, res: Response) => {
+     const { id } = req.params;
+     const result = await ReportService.changeReportStatus(id, req.body);
+
+     sendResponse<IReport>(res, {
+          statusCode: 200,
+          success: true,
+          message: 'Report status changed successfully',
+          data: result || undefined,
+     });
+});
+
 export const ReportController = {
      createReport,
      getAllReportsByType,
@@ -107,4 +119,5 @@ export const ReportController = {
      hardDeleteReport,
      getReportById,
      getAllReportsByBookingId,
+     changeReportStatus,
 };

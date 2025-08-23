@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { ReportType } from './Report.enum';
+import { ReportCategoryType, ReportStatus, ReportType } from './Report.enum';
 import { IReport } from './Report.interface';
 
 const ReportSchema = new Schema<IReport>(
@@ -11,6 +11,8 @@ const ReportSchema = new Schema<IReport>(
           refferenceId: { type: Schema.Types.ObjectId, refPath: 'type', required: true },
           images: [{ type: String, required: true }],
           isDeleted: { type: Boolean, default: false },
+          status: { type: String, enum: Object.values(ReportStatus), default: ReportStatus.UNDER_REVIEW },
+          categoryType: { type: String, enum: Object.values(ReportCategoryType), required: true },
           deletedAt: { type: Date },
      },
      { timestamps: true },

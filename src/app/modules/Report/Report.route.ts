@@ -22,6 +22,8 @@ router.get('/booking/:bookingId', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN)
 
 router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.hardDeleteReport);
 router.get('/details/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), ReportController.getReportById);
+// change report status
+router.patch('/status/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), validateRequest(ReportValidation.changeReportStatusZodSchema), ReportController.changeReportStatus);
 router.get('/:type', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), ReportController.getAllReportsByType);
 
 router.patch('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), fileUploadHandler(),

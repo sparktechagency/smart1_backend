@@ -10,9 +10,6 @@ import Settings from '../settings/settings.model';
 import { IReport } from './Report.interface';
 import { Report } from './Report.model';
 
-
-
-
 const createReport = async (payload: IReport, user: IJwtPayload): Promise<IReport> => {
      // Start a session for the transaction
      const session = await mongoose.startSession();
@@ -28,7 +25,6 @@ const createReport = async (payload: IReport, user: IJwtPayload): Promise<IRepor
                }
                payload.refferenceId = isExistSetting._id as Types.ObjectId;
           }
-
 
           // step 0: check if report already exists for this refferenceId and type by the user
           const isExistReport = await Report.findOne({ refferenceId: payload.refferenceId, type: payload.type, createdBy: user.id }).session(session);
@@ -114,7 +110,7 @@ const createReport = async (payload: IReport, user: IJwtPayload): Promise<IRepor
      }
 };
 
-const getAllReportsByType = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IReport[]; }> => {
+const getAllReportsByType = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IReport[] }> => {
      const queryBuilder = new QueryBuilder(Report.find({ type }), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      if (!result) {
@@ -153,7 +149,6 @@ const updateReport = async (id: string, payload: Partial<IReport>): Promise<IRep
      return await Report.findByIdAndUpdate(id, payload, { new: true });
 };
 
-
 const deleteReport = async (id: string): Promise<IReport | null> => {
      const session = await mongoose.startSession();
      session.startTransaction();
@@ -188,8 +183,6 @@ const deleteReport = async (id: string): Promise<IReport | null> => {
           throw err;
      }
 };
-
-
 
 const hardDeleteReport = async (id: string): Promise<IReport | null> => {
      const session = await mongoose.startSession();
@@ -233,7 +226,6 @@ const hardDeleteReport = async (id: string): Promise<IReport | null> => {
      }
 };
 
-
 const getReportById = async (id: string): Promise<IReport | null> => {
      const result = await Report.findById(id);
      if (!result) {
@@ -242,11 +234,19 @@ const getReportById = async (id: string): Promise<IReport | null> => {
      return result;
 };
 
-const getAllReportsByBookingId = async (bookingId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IReport[]; }> => {
+const getAllReportsByBookingId = async (bookingId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IReport[] }> => {
      const queryBuilder = new QueryBuilder(Report.find(), query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      const meta = await queryBuilder.countTotal();
      return { meta, result };
+};
+
+const changeReportStatus = async (id: string, payload: Partial<IReport>): Promise<IReport | null> => {
+     const isExist = await Report.findById(id);
+     if (!isExist) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Report not found.');
+     }
+     return await Report.findByIdAndUpdate(id, payload, { new: true });
 };
 
 export const ReportService = {
@@ -257,5 +257,6 @@ export const ReportService = {
      deleteReport,
      hardDeleteReport,
      getReportById,
-     getAllReportsByBookingId
+     getAllReportsByBookingId,
+     changeReportStatus,
 };

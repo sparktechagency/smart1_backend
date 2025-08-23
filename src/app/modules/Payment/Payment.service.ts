@@ -19,15 +19,18 @@ const createPayment = async (payload: Partial<IPayment>): Promise<IPayment> => {
      return result;
 };
 
-const getAllPayments = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IPayment[] }> => {
-     const queryBuilder = new QueryBuilder(Payment.find(), query);
-     const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
+const getAllPayments = async (query: Record<string, any>) => {
+     const queryBuilder = new QueryBuilder(Payment.find().populate('user', 'full_name email image').select('-gatewayResponse'), query);
+     const result = await queryBuilder.search(['transactionId']).filter().sort().paginate().fields().modelQuery;
+     if (!result) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Payments not found!');
+     }
      const meta = await queryBuilder.countTotal();
      return { meta, result };
 };
 
 const getAllUnpaginatedPayments = async (): Promise<IPayment[]> => {
-     const result = await Payment.find();
+     const result = await Payment.find().select('-gatewayResponse');
      return result;
 };
 

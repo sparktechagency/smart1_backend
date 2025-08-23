@@ -991,7 +991,7 @@ const reScheduleBookingById = async (
           await sendNotifications({
                receiver: thisBooking.user,
                type: NOTIFICATION_MODEL_TYPE.BOOKING,
-               message: `Re-schedule request is accepted by Service Provider}`,
+               message: `Re-schedule request is accepted by Service Provider`,
                reference: thisBooking._id,
                title: NotificationTitle.BOOKING_RE_SCHEDULE,
           });

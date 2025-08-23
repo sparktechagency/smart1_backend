@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
-import { ReportType } from './Report.enum';
+import { ReportCategoryType, ReportType } from './Report.enum';
+import { ReportStatus } from 'aws-sdk/clients/inspector';
 
 export interface IReport {
      id: Types.ObjectId;
@@ -8,6 +9,8 @@ export interface IReport {
      type: ReportType;
      report_type: string;
      refferenceId: Types.ObjectId;
+     categoryType: ReportCategoryType;
+     status: ReportStatus;
      images: string[];
      createdAt: Date;
      updatedAt: Date;
