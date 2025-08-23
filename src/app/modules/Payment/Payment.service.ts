@@ -20,13 +20,48 @@ const createPayment = async (payload: Partial<IPayment>): Promise<IPayment> => {
 };
 
 const getAllPayments = async (query: Record<string, any>) => {
-     const queryBuilder = new QueryBuilder(Payment.find().populate('user', 'full_name email image').select('-gatewayResponse'), query);
-     const result = await queryBuilder.search(['transactionId']).filter().sort().paginate().fields().modelQuery;
-     if (!result) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Payments not found!');
-     }
-     const meta = await queryBuilder.countTotal();
-     return { meta, result };
+    const { searchTerm, ...otherQueryParams } = query;
+    
+    // Base query without search
+    let paymentQuery = Payment.find().populate('user', 'full_name email image').select('-gatewayResponse');
+    
+    // If there's a search term, find matching users first
+    if (searchTerm) {
+           
+        // Find users matching the search term
+        const matchingUsers = await User.find({
+            $or: [
+                { full_name: { $regex: searchTerm, $options: 'i' } },
+                { email: { $regex: searchTerm, $options: 'i' } }
+            ]
+        }).select('_id');
+        
+        // Create a query that searches in transactionId or user references
+        paymentQuery = Payment.find({
+            $or: [
+                { transactionId: { $regex: searchTerm, $options: 'i' } },
+                { user: { $in: matchingUsers.map(u => u._id) } }
+            ]
+        }).populate('user', 'full_name email image').select('-gatewayResponse');
+    }
+    
+    // Create query builder with the modified query
+    const queryBuilder = new QueryBuilder(paymentQuery, otherQueryParams);
+    
+    // Apply other query operations (filter, sort, paginate, fields)
+    const result = await queryBuilder
+        .filter()
+        .sort()
+        .paginate()
+        .fields()
+        .modelQuery;
+    
+    if (!result || result.length === 0) {
+        throw new AppError(StatusCodes.NOT_FOUND, 'Payments not found!');
+    }
+    
+    const meta = await queryBuilder.countTotal();
+    return { meta, result };
 };
 
 const getAllUnpaginatedPayments = async (): Promise<IPayment[]> => {
