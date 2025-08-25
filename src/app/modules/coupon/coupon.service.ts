@@ -27,7 +27,7 @@ const createCoupon = async (couponData: Partial<ICoupon>, user: IJwtPayload) => 
 };
 
 const getAllCoupon = async (query: Record<string, unknown>) => {
-    const brandQuery = new QueryBuilder(Coupon.find(), query)
+    const brandQuery = new QueryBuilder(Coupon.find().populate('serviceCategory'), query)
         .search(['code'])
         .filter()
         .sort()

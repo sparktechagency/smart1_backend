@@ -32,6 +32,16 @@ const settingsSchema = new Schema<ISettings>(
                default: 0,
           },
           reviewsCount: { type: Number, default: 0 },
+          contactInfo: {
+               email: { type: String, required: true },
+               phone: { type: String, required: true },
+               address: { type: String, required: true },
+               facebook: { type: String },
+               twitter: { type: String },
+               instagram: { type: String },
+               linkedin: { type: String },
+               whatsapp: { type: String },
+          },
      },
      { timestamps: true },
 );

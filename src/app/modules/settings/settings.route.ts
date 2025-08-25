@@ -13,6 +13,7 @@ SettingsRoutes.put('/', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), settings
      .get('/support', settingsController.getSupport)
      .get('/terms-and-conditions', settingsController.getTermsAndConditions)
      .get('/app-version', settingsController.getAppVersion)
+     .get('/contact-info', settingsController.getContactInfo)
      .get('/faqs/:type', FaqController.getAllFaqsByType);
 
 export default SettingsRoutes;

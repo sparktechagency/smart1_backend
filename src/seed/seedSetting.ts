@@ -10,6 +10,16 @@ interface ISettingsSeed {
     support: string;
     termsAndConditions: string;
     appVersion: string;
+    contactInfo: {
+        email: string;
+        phone: string;
+        address: string;
+        facebook?: string;
+        twitter?: string;
+        instagram?: string;
+        linkedin?: string;
+        whatsapp?: string;
+    };
 }
 
 // Settings data for seeding
@@ -20,6 +30,16 @@ const settingsData: ISettingsSeed[] = [
         support: '<a href="/support" title="Customer Support"><h4>الدعم الفني</h4><p>إذا كنت بحاجة إلى مساعدة، تواصل مع فريق الدعم الفني للحصول على الإجابة على جميع استفساراتك.</p></a>',
         termsAndConditions: '<a href="/terms-and-conditions" title="Read our Terms & Conditions"><h4>الشروط والأحكام</h4><p>يرجى قراءة الشروط والأحكام بعناية قبل استخدام تطبيق Smart S1. هذه الشروط تنظم استخدامك للخدمات.</p></a>',
         appVersion: '1.0.0',
+        contactInfo: {
+            email: 'info@smart-s1.com',
+            phone: '+966 123 456 789',
+            address: '123 Smart Street, Riyadh, Saudi Arabia',
+            facebook: 'https://www.facebook.com/smart-s1',
+            twitter: 'https://twitter.com/smart_s1',
+            instagram: 'https://www.instagram.com/smart_s1',
+            linkedin: 'https://www.linkedin.com/company/smart-s1',
+            whatsapp: '+880123456789',
+        },
     },
 ];
 

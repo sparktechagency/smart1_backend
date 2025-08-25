@@ -79,6 +79,16 @@ const getAppVersion = catchAsync(async (req, res): Promise<void> => {
 //   const htmlContent = await settingsService.getSupport();
 //   res.sendFile(htmlContent);
 // });
+
+const getContactInfo = catchAsync(async (req, res): Promise<void> => {
+     const result = await settingsService.getContactInfo();
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Contact Info retrieved successfully',
+          data: result,
+     });
+});
 export const settingsController = {
      getSettings,
      getPrivacyPolicy,
@@ -87,4 +97,5 @@ export const settingsController = {
      addSetting,
      getTermsAndConditions,
      getAppVersion,
-};
+     getContactInfo,
+     };

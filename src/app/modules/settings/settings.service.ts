@@ -77,6 +77,14 @@ const getAppVersion = async () => {
 // const getSupport = async () => {
 //   return path.join(__dirname, '..', 'htmlResponse', 'support.html');
 // };
+
+const getContactInfo = async () => {
+     const settings: any = await Settings.findOne();
+     if (!settings) {
+          return '';
+     }
+     return settings.contactInfo;
+};
 export const settingsService = {
      upsertSettings,
      getSettings,
@@ -86,4 +94,5 @@ export const settingsService = {
      getTermsAndConditions,
      getAboutUs,
      getAppVersion,
+     getContactInfo,
 };

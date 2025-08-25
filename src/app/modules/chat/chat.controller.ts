@@ -4,6 +4,8 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { IJwtPayload } from '../auth/auth.interface';
 import { ChatService } from './chat.service';
+import { User } from '../user/user.model';
+import { USER_ROLES } from '../user/user.enums';
 
 const createOneToOneChat = catchAsync(async (req: Request, res: Response) => {
      const user = req.user as IJwtPayload;
@@ -47,8 +49,24 @@ const createGroupChat = catchAsync(async (req: Request, res: Response) => {
      });
 });
 
+const createChatWithAdmin = catchAsync(async (req: Request, res: Response) => {
+     const user = req.user as IJwtPayload;
+     const admins = await User.find({ role: {$in:[USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN]} }).select("_id");
+
+     const participants = [user?.id, ...admins];
+     const chat = await ChatService.createGroupChatToDB(participants);
+
+     sendResponse(res, {
+          statusCode: StatusCodes.OK,
+          success: true,
+          message: 'Create Chat Successfully',
+          data: chat,
+     });
+});
+
 export const ChatController = {
      createOneToOneChat,
      getChat,
      createGroupChat,
+     createChatWithAdmin,
 };
