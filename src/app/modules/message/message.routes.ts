@@ -9,24 +9,24 @@ import { messageValidation } from './message.validation';
 const router = express.Router();
 
 // Basic message operations
-router.post('/', fileUploadHandler(), auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(messageValidation.createMessageSchema), MessageController.sendMessage);
+router.post('/', fileUploadHandler(), auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER,USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN), validateRequest(messageValidation.createMessageSchema), MessageController.sendMessage);
 
 // Reaction routes
-router.patch('/reaction/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(messageValidation.reactionSchema), MessageController.addRemoveEditReaction);
+router.patch('/reaction/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER,USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN), validateRequest(messageValidation.reactionSchema), MessageController.addRemoveEditReaction);
 
 // Pin routes
-router.patch('/pin/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.pinUpinMessageToggler);
-router.get('/pinned/:chatId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.getPinnedMessages);
+router.patch('/pin/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER,USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN), MessageController.pinUpinMessageToggler);
+router.get('/pinned/:chatId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER,USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN), MessageController.getPinnedMessages);
 
 // Delete routes
-router.delete('/delete-for-me/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.deleteMessageForMe);
-router.delete('/delete-for-everyone/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.deleteMessageForEveryone);
-router.delete('/chat/delete-for-me/:chatId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.deleteChatForMe);
+router.delete('/delete-for-me/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER,USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN), MessageController.deleteMessageForMe);
+router.delete('/delete-for-everyone/:messageId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER,USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN), MessageController.deleteMessageForEveryone);
+router.delete('/chat/delete-for-me/:chatId', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER,USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN), MessageController.deleteChatForMe);
 
 // replyMessageRoute
-router.post('/reply/:messageId', fileUploadHandler(), auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), validateRequest(messageValidation.replyMessageSchema), MessageController.replyMessage);
+router.post('/reply/:messageId', fileUploadHandler(), auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER,USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN), validateRequest(messageValidation.replyMessageSchema), MessageController.replyMessage);
 
-router.get('/:id', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER), MessageController.getMessage);
+router.get('/:id', auth(USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER,USER_ROLES.ADMIN,USER_ROLES.SUPER_ADMIN), MessageController.getMessage);
 
 
 
