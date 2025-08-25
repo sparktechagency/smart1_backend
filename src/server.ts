@@ -41,7 +41,7 @@ export async function startServer() {
           // Set up Socket.io server
           socketServer = new SocketServer({
                cors: {
-                    origin: config.allowed_origins || '*',
+                    origin: ['http://10.10.7.102:5000'],
                },
           });
 

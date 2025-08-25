@@ -21,7 +21,7 @@ app.use(Morgan.errorHandler);
 //body parser
 app.use(
      cors({
-          origin: '*',
+          origin: ['http://10.10.7.102:5000'],
           credentials: true,
      }),
 );
