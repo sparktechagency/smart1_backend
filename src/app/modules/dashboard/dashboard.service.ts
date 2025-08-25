@@ -309,8 +309,6 @@ class DashboardService {
           return totalRevenue;
      }
 
-     
-
      async getDateWiseAndStatusWiseBookingSummary(query: Record<string, any>) {
           console.log('🚀 ~ DashboardService ~ getDateWiseAndStatusWiseBookingSummary ~ query:', query);
           const { date, searchTerm } = query;
@@ -345,7 +343,6 @@ class DashboardService {
 
           // If there's a search term, find matching users and service providers first
           if (searchTerm) {
-
                // Find users matching the search term
                const matchingUsers = await User.find({
                     full_name: { $regex: searchTerm, $options: 'i' },
@@ -368,18 +365,19 @@ class DashboardService {
           const bookingQuery = new QueryBuilder(Booking.find(baseQuery).populate(populateOptions), query).paginate();
 
           const result = await bookingQuery.modelQuery.exec();
-
+          const meta = await bookingQuery.countTotal();
           // Check if no results are found
           if (!result || result.length === 0) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'No bookings found');
+               return {
+                    meta,
+                    result: [],
+               };
           }
-
-          const meta = await bookingQuery.countTotal();
 
           // Modify the status of bookings based on their current status
           result.forEach((booking) => {
                if (![BOOKING_STATUS.COMPLETED, BOOKING_STATUS.CANCELLED].includes(booking.status)) {
-                    booking.status = 'inProgress' as unknown as BOOKING_STATUS;
+                    booking.status = 'in Progress' as unknown as BOOKING_STATUS;
                }
           });
 
