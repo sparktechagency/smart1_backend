@@ -113,6 +113,7 @@ const createReport = async (payload: IReport, user: IJwtPayload): Promise<IRepor
 };
 
 const getAllReportsByType = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IReport[] }> => {
+     console.log("🚀 ~ getAllReportsByType ~ query:", query)
      let queryBuilder;
      if (type == ReportType.SETTINGS) {
           queryBuilder = new QueryBuilder(Report.find({ type }).populate('createdBy', 'full_name image'), query);
@@ -131,7 +132,7 @@ const getAllReportsByType = async (type: string, query: Record<string, any>): Pr
                query,
           );
      }
-     const result = await queryBuilder!.filter().sort().paginate().fields().modelQuery;
+     const result = await queryBuilder!.filter().search(["description","status"]).sort().paginate().fields().modelQuery;
      const meta = await queryBuilder!.countTotal();
      return { meta, result };
 };
