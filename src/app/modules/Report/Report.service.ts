@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { model, Types } from 'mongoose';
 import AppError from '../../../errors/AppError';
 import unlinkFile from '../../../shared/unlinkFile';
 import QueryBuilder from '../../builder/QueryBuilder';
@@ -9,6 +9,8 @@ import { Booking } from '../booking/booking.model';
 import Settings from '../settings/settings.model';
 import { IReport } from './Report.interface';
 import { Report } from './Report.model';
+import { populate } from 'dotenv';
+import { ReportType } from './Report.enum';
 
 const createReport = async (payload: IReport, user: IJwtPayload): Promise<IReport> => {
      // Start a session for the transaction
@@ -111,12 +113,26 @@ const createReport = async (payload: IReport, user: IJwtPayload): Promise<IRepor
 };
 
 const getAllReportsByType = async (type: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IReport[] }> => {
-     const queryBuilder = new QueryBuilder(Report.find({ type }), query);
-     const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
-     if (!result) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Reports not found.');
+     let queryBuilder;
+     if (type == ReportType.SETTINGS) {
+          queryBuilder = new QueryBuilder(Report.find({ type }).populate('createdBy', 'full_name image'), query);
+     } else if (type !== ReportType.SETTINGS) {
+          queryBuilder = new QueryBuilder(
+               Report.find({ type }).populate('createdBy', 'full_name image').populate({
+                    path: 'refferenceId',
+                    select:"serviceProvider",
+                    model: type,
+                    populate:{
+                         model:"User",
+                         path: "serviceProvider",
+                         select: "full_name image"
+                    }
+               }),
+               query,
+          );
      }
-     const meta = await queryBuilder.countTotal();
+     const result = await queryBuilder!.filter().sort().paginate().fields().modelQuery;
+     const meta = await queryBuilder!.countTotal();
      return { meta, result };
 };
 
