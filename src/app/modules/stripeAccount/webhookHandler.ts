@@ -17,6 +17,7 @@ import { Payment } from '../Payment/Payment.model';
 import { PaymentService } from '../Payment/Payment.service';
 import { Service } from '../Service/Service.model';
 import { User } from '../user/user.model';
+import { earningsService } from '../earnings/earnings.service';
 
 const webhookHandler = async (req: Request, res: Response): Promise<void> => {
      console.log('Webhook received');
@@ -66,7 +67,7 @@ export default webhookHandler;
 // Function for handling a successful payment
 const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
      try {
-          const { acceptedBid, user, booking, serviceCategory, method, amount, notificationReceivers, isAcceptedBidChanged, previouslyAcceptedBidProvider }: any = session.metadata;
+          const { acceptedBid, user, booking, serviceCategory, method, amount, adminRevenueAmount, notificationReceivers, isAcceptedBidChanged, previouslyAcceptedBidProvider }: any = session.metadata;
 
           const thisCustomer = await User.findOne({ _id: user });
           console.log('🚀 ~ handlePaymentSucceeded ~ thisCustomer:', thisCustomer);
@@ -128,6 +129,9 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
           thisAcceptedBid.booking = isBookingExists._id;
           await thisAcceptedBid.save();
           console.log('thisAcceptedBid : 11', thisAcceptedBid);
+
+          // update earnings of service provider
+          await earningsService.updateEarningsOnPayment(isBookingExists.serviceProvider!, Number(amount), Number(adminRevenueAmount));
 
           // Update all other bids to rejected
           await Bid.updateMany({ _id: { $ne: thisAcceptedBid._id }, booking: isBookingExists._id }, { $set: { isAccepted: false, status: BID_STATUS.REJECTED } });
@@ -215,6 +219,9 @@ const handleTransferCreated = async (transfer: Stripe.Transfer) => {
           }
           isExistPayment.status = PAYMENT_STATUS.PAID;
           await isExistPayment.save();
+
+          // updatet earnign of serviceprovider
+          await earningsService.updateOnFundTransfer(booking.serviceProvider!, Number(transfer.metadata?.serviceProviderRevenueAmount));
      } catch (error) {
           console.error('Error in handleTransferCreated:', error);
      }

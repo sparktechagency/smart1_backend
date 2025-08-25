@@ -34,6 +34,7 @@ import { Booking } from './booking.model';
 import { combineBookingDateTime, cronJobs, generateTransactionId } from './booking.utils';
 import { IUser } from '../user/user.interface';
 import { Notification } from '../notification/notification.model';
+import { earningsService } from '../earnings/earnings.service';
 
 //@ts-ignore
 const io = global.io;
@@ -411,6 +412,7 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                                              serviceCategory: booking.serviceCategory.toString(),
                                              method: booking.paymentMethod,
                                              amount: booking.finalAmount,
+                                             adminRevenueAmount: Math.ceil((booking!.finalAmount * isExistServiceProvider.adminRevenuePercent) / 100),
                                              notificationReceivers: JSON.stringify(notificationReceivers),
                                              isAcceptedBidChanged: false,
                                              previouslyAcceptedBidProvider: '',
@@ -429,6 +431,9 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                                    isExistServiceProvider.adminDueAmount += adminRevenueAmount;
                                    await User.findByIdAndUpdate(isExistServiceProvider._id, { adminDueAmount: isExistServiceProvider.adminDueAmount });
                                    booking.paymentStatus = PAYMENT_STATUS.PAID;
+
+                                   // update earnings for offline payment
+                                   await earningsService.updateOnFundTransfer(isExistServiceProvider._id,booking!.finalAmount)
                               }
                          }
                          break;

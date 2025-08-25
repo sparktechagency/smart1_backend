@@ -84,6 +84,7 @@ export async function transferToServiceProvider({
           destination: stripeConnectedAccount,
           metadata: {
                bookingId,
+               serviceProviderRevenueAmount,
           },
           transfer_group: `booking_${bookingId}`,
      });
