@@ -55,10 +55,7 @@ const getAllPayments = async (query: Record<string, any>) => {
         .paginate()
         .fields()
         .modelQuery;
-    
-    if (!result || result.length === 0) {
-        throw new AppError(StatusCodes.NOT_FOUND, 'Payments not found!');
-    }
+        
     
     const meta = await queryBuilder.countTotal();
     return { meta, result };
