@@ -366,13 +366,7 @@ class DashboardService {
 
           const result = await bookingQuery.modelQuery.exec();
           const meta = await bookingQuery.countTotal();
-          // Check if no results are found
-          if (!result || result.length === 0) {
-               return {
-                    meta,
-                    result: [],
-               };
-          }
+          
 
           // Modify the status of bookings based on their current status
           result.forEach((booking) => {
@@ -414,10 +408,7 @@ class DashboardService {
           // Apply lean() after QueryBuilder operations and execute
           const result = (await customerQuery.modelQuery.lean().exec()) as any[];
 
-          // Check if no results are found
-          if (!result || result.length === 0) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'No customers found');
-          }
+          
 
           // For each customer, include the total paid amount for their bookings
           const customersWithTotalAmount = await Promise.all(
@@ -470,10 +461,7 @@ class DashboardService {
           // Apply lean() after QueryBuilder operations and execute
           const result = (await serviceProviderQuery.modelQuery.lean().exec()) as any[];
 
-          // Check if no results are found
-          if (!result || result.length === 0) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'No service providers found');
-          }
+          
 
           // For each service provider, include the total earned amount from their bookings
           const serviceProvidersWithTotalEarn = await Promise.all(
