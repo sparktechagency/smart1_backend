@@ -119,6 +119,30 @@ const createAdminToDB = catchAsync(async (req, res) => {
      });
 });
 
+const toggleUserStatus = catchAsync(async (req, res) => {
+     const { id } = req.params;
+     const result = await UserService.toggleUserStatus(id);
+
+     sendResponse(res, {
+          success: true,
+          statusCode: StatusCodes.OK,
+          message: 'User status toggled successfully',
+          data: result,
+     });
+});
+
+const deleteUser = catchAsync(async (req, res) => {
+     const { id } = req.params;
+     const result = await UserService.deleteUser(id);
+
+     sendResponse(res, {
+          success: true,
+          statusCode: StatusCodes.OK,
+          message: 'User deleted successfully',
+          data: result,
+     });
+});
+
 export const UserController = {
      createUser,
      createServiceProviderToDB,
@@ -127,5 +151,7 @@ export const UserController = {
      deleteProfile,
      getAllRoleBasedUser,
      updateUserById,
-     createAdminToDB
+     createAdminToDB,
+     toggleUserStatus,
+     deleteUser
 };

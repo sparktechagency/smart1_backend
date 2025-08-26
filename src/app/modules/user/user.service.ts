@@ -358,17 +358,17 @@ const deleteUser = async (id: string) => {
      }
 
      if (isExistUser.adminDueAmount > 0) {
-          throw new AppError(StatusCodes.BAD_REQUEST, `User can't be deleted! You have a due to admin amount ${isExistUser.adminDueAmount}`);
+          throw new AppError(StatusCodes.BAD_REQUEST, `User can't be deleted! Have a due to admin amount ${isExistUser.adminDueAmount}`);
      }
 
      const activeBookingsOfUser = await Booking.find({ user: id, status: { $in: [BOOKING_STATUS.ON_THE_WAY, BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.WORK_STARTED] } });
      if (activeBookingsOfUser.length > 0) {
-          throw new AppError(StatusCodes.BAD_REQUEST, `User can't be deleted! You have active bookings ${activeBookingsOfUser.length}`);
+          throw new AppError(StatusCodes.BAD_REQUEST, `User can't be deleted! Have active bookings ${activeBookingsOfUser.length}`);
      }
 
      const activeBidsOfUser = await Bid.find({ serviceProvider: id, status: { $in: [BID_STATUS.ON_THE_WAY, BID_STATUS.ACCEPTED, BID_STATUS.WORK_STARTED] } });
      if (activeBidsOfUser.length > 0) {
-          throw new AppError(StatusCodes.BAD_REQUEST, `User can't be deleted! You have active bids ${activeBidsOfUser.length}`);
+          throw new AppError(StatusCodes.BAD_REQUEST, `User can't be deleted! Have active bids ${activeBidsOfUser.length}`);
      }
 
      await User.findByIdAndUpdate(id, {
@@ -414,6 +414,31 @@ const updateUserByIdToDB = async (id: string, payload: Partial<IUser>) => {
      return updateDoc;
 };
 
+const toggleUserStatus = async (id: string) => {
+     const isExistUser = await User.isExistUserById(id);
+
+     if (!isExistUser) {
+          const updateDoc = await User.findOneAndUpdate(
+               { _id: id },
+               { $set: { status: 'active' } },
+               {
+                    new: true,
+               },
+          );
+          return updateDoc;
+     }
+
+     const updateDoc = await User.findOneAndUpdate(
+          { _id: id },
+          { $set: { status: isExistUser.status === 'active' ? 'blocked' : 'active' } },
+          {
+               new: true,
+          },
+     );
+
+     return updateDoc;
+};
+
 export const UserService = {
      createUserToDB,
      createServiceProviderToDB,
@@ -424,4 +449,5 @@ export const UserService = {
      verifyUserPassword,
      getAllRoleBasedUser,
      updateUserByIdToDB,
+     toggleUserStatus,
 };
