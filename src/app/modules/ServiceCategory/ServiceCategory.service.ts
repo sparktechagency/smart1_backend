@@ -13,7 +13,7 @@ const createServiceCategory = async (payload: IServiceCategory): Promise<IServic
 
 const getAllServiceCategorys = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: Array<IServiceCategory & { serviceCount: number; priceRange: { lowest: number; highest: number } }>; }> => {
     // First get the paginated categories
-    const queryBuilder = new QueryBuilder(ServiceCategory.find(), query);
+    const queryBuilder = new QueryBuilder(ServiceCategory.find().populate('services', 'name serviceCharge description image'), query);
     const categories = await queryBuilder.filter().sort().paginate().fields().modelQuery;
     const meta = await queryBuilder.countTotal();
 
@@ -109,7 +109,7 @@ const hardDeleteServiceCategory = async (id: string): Promise<IServiceCategory |
 };
 
 const getServiceCategoryById = async (id: string): Promise<IServiceCategory | null> => {
-     const result = await ServiceCategory.findById(id);
+     const result = await ServiceCategory.findById(id).populate('services', 'name serviceCharge description image');
      if (!result) {
           throw new AppError(StatusCodes.NOT_FOUND, 'ServiceCategory not found.');
      }

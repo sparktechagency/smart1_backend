@@ -15,6 +15,8 @@ const createService = async (payload: IService): Promise<IService> => {
           throw new AppError(StatusCodes.NOT_FOUND, 'Service category not found.');
      }
      const result = await Service.create(payload);
+     isExistServiceCategory.services?.push(result._id);
+     await isExistServiceCategory.save();
      return result;
 };
 
@@ -65,6 +67,14 @@ const deleteService = async (id: string): Promise<IService | null> => {
           }
      );
 
+     // Step 2: Remove service from service category
+     if (result.serviceCategory) {
+          await ServiceCategory.findByIdAndUpdate(
+               result.serviceCategory,
+               { $pull: { services: result._id } }
+          );
+     }
+
      return result;
 };
 
@@ -77,6 +87,14 @@ const hardDeleteService = async (id: string): Promise<IService | null> => {
 
      // use hard delete many
      await Faq.deleteMany({ refferenceId: id });
+
+     // Step 2: Remove service from service category
+     if (result.serviceCategory) {
+          await ServiceCategory.findByIdAndUpdate(
+               result.serviceCategory,
+               { $pull: { services: result._id } }
+          );
+     }
 
      return result;
 };

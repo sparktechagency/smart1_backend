@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 export interface IServiceCategory {
      name: string;
      logo: string;
@@ -5,6 +6,7 @@ export interface IServiceCategory {
      updatedAt: Date;
      isDeleted: boolean;
      deletedAt?: Date;
+     services?: Types.ObjectId[];
 }
 
 export type IServiceCategoryFilters = {
