@@ -396,7 +396,7 @@ class DashboardService {
 
      async getCustomers(query: Record<string, any>) {
           // Create the base query without lean() first
-          const baseQuery = User.find({ role: USER_ROLES.USER }).select('full_name email phone address image');
+          const baseQuery = User.find({ role: USER_ROLES.USER }).select('full_name email phone address image status');
 
           const customerQuery = new QueryBuilder(
                baseQuery as any, // Type assertion to bypass strict typing
