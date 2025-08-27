@@ -48,15 +48,24 @@ const createFaq = async (payload: IFaq, user: IJwtPayload): Promise<IFaq> => {
      }
 };
 
-const getAllFaqsByType = async (query: Record<string, any>, type: string): Promise<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }> => {
-     const queryBuilder = new QueryBuilder(Faq.find({ type }).populate('refferenceId', 'name'), query);
+const getAllFaqsByType = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }> => {
+     const operation = Faq.find({}).populate('refferenceId', 'name');
+     if (query.type) {
+          operation.where({ type: query.type });
+     }
+     const queryBuilder = new QueryBuilder(operation, query);
      const result = await queryBuilder.filter().sort().paginate().fields().modelQuery;
      const meta = await queryBuilder.countTotal();
      return { meta, result };
 };
 
-const getAllUnpaginatedFaqsByType = async (type: string): Promise<IFaq[]> => {
-     const result = await Faq.find({ type });
+const getAllUnpaginatedFaqsByType = async (query: Record<string, any>): Promise<IFaq[]> => {
+     const { type } = query;
+     const operation = Faq.find({}).populate('refferenceId', 'name');
+     if (type) {
+          operation.where({ type });
+     }
+     const result = await operation;
      if (!result) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Faqs not found.');
      }

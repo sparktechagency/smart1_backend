@@ -17,7 +17,7 @@ const createFaq = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllFaqsByType = catchAsync(async (req: Request, res: Response) => {
-     const result = await FaqService.getAllFaqsByType(req.query, req.params.type);
+     const result = await FaqService.getAllFaqsByType(req.query);
 
      sendResponse<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }>(res, {
           statusCode: 200,
@@ -28,7 +28,7 @@ const getAllFaqsByType = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllUnpaginatedFaqsByType = catchAsync(async (req: Request, res: Response) => {
-     const result = await FaqService.getAllUnpaginatedFaqsByType(req.params.type);
+     const result = await FaqService.getAllUnpaginatedFaqsByType(req.query);
 
      sendResponse<IFaq[]>(res, {
           statusCode: 200,

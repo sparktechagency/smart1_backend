@@ -7,16 +7,14 @@ import { FaqValidation } from './Faq.validation';
 
 const router = express.Router();
 
-router.post('/', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
-    validateRequest(FaqValidation.createFaqZodSchema), FaqController.createFaq);
+router.post('/', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), validateRequest(FaqValidation.createFaqZodSchema), FaqController.createFaq);
 
-router.get('/unpaginated/:type', FaqController.getAllUnpaginatedFaqsByType);
+router.get('/', FaqController.getAllFaqsByType);
+router.get('/unpaginated', FaqController.getAllUnpaginatedFaqsByType);
 router.delete('/hard-delete/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), FaqController.hardDeleteFaq);
 router.get('/service/:serviceId', FaqController.getAllFaqsByServiceId);
 
-router.get('/:type', FaqController.getAllFaqsByType);
-router.patch('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
-    validateRequest(FaqValidation.updateFaqZodSchema), FaqController.updateFaq);
+router.patch('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), validateRequest(FaqValidation.updateFaqZodSchema), FaqController.updateFaq);
 
 router.delete('/:id', auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), FaqController.deleteFaq);
 router.get('/:id', FaqController.getFaqById);
