@@ -2,7 +2,7 @@ import { FAQType } from "./Faq.enum";
 import { Types } from "mongoose";
 export interface IFaq {
      id: Types.ObjectId;
-     createdBy: Types.ObjectId;
+     createdBy?: Types.ObjectId;
      question: string;
      answer: string;
      type: FAQType;

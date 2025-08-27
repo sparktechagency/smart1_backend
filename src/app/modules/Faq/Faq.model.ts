@@ -3,7 +3,7 @@ import { IFaq } from './Faq.interface';
 import { FAQType } from './Faq.enum';
 
 const FaqSchema = new Schema<IFaq>({
-     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: false },
      question: { type: String, required: true },
      answer: { type: String, required: true },
      type: { type: String, enum: Object.values(FAQType), required: true },
