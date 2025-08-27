@@ -12,7 +12,7 @@ const createReportZodSchema = z.object({
           report_type: z.string({ required_error: 'Report Type is required' }),
           refferenceId: z.string({ required_error: 'Refference ID is required' }).optional(),
           categoryType: z.nativeEnum(ReportCategoryType, { required_error: 'Category Type is required' }),
-          status: z.nativeEnum(ReportStatus, { required_error: 'Status is required' }),
+          status: z.nativeEnum(ReportStatus).optional(),
      }),
 });
 
