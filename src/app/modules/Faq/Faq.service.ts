@@ -6,8 +6,8 @@ import { Service } from '../Service/Service.model';
 import { IJwtPayload } from '../auth/auth.interface';
 import { IFaq } from './Faq.interface';
 import { Faq } from './Faq.model';
-
-
+import Settings from '../settings/settings.model';
+import { Types } from 'mongoose';
 
 const createFaq = async (payload: IFaq, user: IJwtPayload): Promise<IFaq> => {
      // Start a session for the transaction
@@ -16,6 +16,13 @@ const createFaq = async (payload: IFaq, user: IJwtPayload): Promise<IFaq> => {
      try {
           // Start the transaction
           session.startTransaction();
+          if (payload.type === 'Settings') {
+               const isExistSetting = await Settings.findOne().select('_id').session(session);
+               if (!isExistSetting) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
+               }
+               payload.refferenceId = isExistSetting._id as Types.ObjectId;
+          }
 
           // Step 1: Check if the referenced document exists based on `type` and `refferenceId`
           const isExistRefference = await mongoose.model(payload.type).findById(payload.refferenceId).session(session);
@@ -48,7 +55,7 @@ const createFaq = async (payload: IFaq, user: IJwtPayload): Promise<IFaq> => {
      }
 };
 
-const getAllFaqsByType = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }> => {
+const getAllFaqsByType = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IFaq[] }> => {
      const operation = Faq.find({}).populate('refferenceId', 'name');
      if (query.type) {
           operation.where({ type: query.type });
@@ -80,7 +87,6 @@ const updateFaq = async (id: string, payload: Partial<IFaq>): Promise<IFaq | nul
 
      return await Faq.findByIdAndUpdate(id, payload, { new: true });
 };
-
 
 const deleteFaq = async (id: string): Promise<IFaq | null> => {
      const session = await mongoose.startSession();
@@ -117,7 +123,6 @@ const deleteFaq = async (id: string): Promise<IFaq | null> => {
      }
 };
 
-
 const hardDeleteFaq = async (id: string): Promise<IFaq | null> => {
      const session = await mongoose.startSession();
      session.startTransaction();
@@ -149,7 +154,6 @@ const hardDeleteFaq = async (id: string): Promise<IFaq | null> => {
      }
 };
 
-
 const getFaqById = async (id: string): Promise<IFaq | null> => {
      const result = await Faq.findById(id);
      if (!result) {
@@ -158,7 +162,7 @@ const getFaqById = async (id: string): Promise<IFaq | null> => {
      return result;
 };
 
-const getAllFaqsByServiceId = async (serviceId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IFaq[]; }> => {
+const getAllFaqsByServiceId = async (serviceId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IFaq[] }> => {
      const isExistService = await Service.findById(serviceId);
      if (!isExistService) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Service not found.');
@@ -177,5 +181,5 @@ export const FaqService = {
      deleteFaq,
      hardDeleteFaq,
      getFaqById,
-     getAllFaqsByServiceId
+     getAllFaqsByServiceId,
 };
