@@ -21,6 +21,7 @@ import SettingsRoutes from '../app/modules/settings/settings.route';
 import stripeAccountRoutes from '../app/modules/stripeAccount/stripeAccount.route';
 import { UserRouter } from '../app/modules/user/user.route';
 import { ReportRoutes } from '../app/modules/Report/Report.route';
+import { PushNotificationRoutes } from '../app/modules/pushNotification/pushNotification.route';
 const router = express.Router();
 const routes = [
      {
@@ -110,6 +111,10 @@ const routes = [
      {
           path: '/report',
           route: ReportRoutes,
+     },
+     {
+          path: '/push-notification',
+          route: PushNotificationRoutes,
      },
 ];
 
