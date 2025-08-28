@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ImageType } from './image.enum';
 const createImageZodSchema = z.object({
      body: z.object({
-          image: z.string({ required_error: 'Image is required' }).optional(),
+          image: z.string({ required_error: 'Image is required' }),
           logo: z.string({ required_error: 'Logo is required' }).optional(),
           altText: z.string({ required_error: 'Alt text is required' }),
           title: z.string({ required_error: 'title text is required' }),
