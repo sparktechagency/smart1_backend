@@ -379,7 +379,7 @@ const deleteUser = async (id: string) => {
 };
 
 const getAllRoleBasedUser = async () => {
-     const result = await User.find({}, { _id: 1, role: 1, name: 1, email: 1 }).lean();
+     const result = await User.find({}, { _id: 1, role: 1, full_name: 1, email: 1 }).lean();
 
      const users = result.reduce<Record<USER_ROLES, { data: (typeof result)[0][]; count: number }>>(
           (acc, curr) => {
