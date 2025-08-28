@@ -28,7 +28,7 @@ router.route('/admin').post(auth(USER_ROLES.SUPER_ADMIN), validateRequest(UserVa
 router.route('/admin/:id').patch(auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), validateRequest(UserValidation.updateUserByIdZodSchema), UserController.updateUserById);
 // make two route for delete and block user by admin
 router.route('/admin/toggle-block/:id').patch(auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), UserController.toggleUserStatus);
-router.route('/admin/delete/:id').delete(auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN), UserController.deleteUser);
+router.route('/admin/delete/:id').delete(auth(USER_ROLES.SUPER_ADMIN), UserController.deleteUser);
 
 router.route('/').post(validateRequest(UserValidation.createUserZodSchema), UserController.createUser);
 router.route('/service-provider').post(validateRequest(UserValidation.createServiceProviderZodSchema), UserController.createServiceProviderToDB);
