@@ -241,10 +241,10 @@ userSchema.pre('save', async function (next) {
 });
 
 // Query Middleware to exclude deleted users
-userSchema.pre('find', function (next) {
-     this.find({ isDeleted: { $ne: true }, status: { $ne: 'blocked' } });
-     next();
-});
+// userSchema.pre('find', function (next) {
+//      this.find({ isDeleted: { $ne: true }, status: { $ne: 'blocked' } });
+//      next();
+// });
 
 userSchema.pre('findOne', function (next) {
      this.find({ isDeleted: { $ne: true }, status: { $ne: 'blocked' } });
