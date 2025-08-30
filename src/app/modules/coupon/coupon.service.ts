@@ -163,8 +163,9 @@ const deleteCouponHard = async (couponId: string, user: IJwtPayload) => {
 // Function to deactivate expired coupons
 const deactivateExpiredCoupons = async () => {
      try {
+          console.log('deactivating expired coupons..started..');
           // Find coupons where endDate is in the past and isActive is true
-          const expiredCoupons = await Coupon.updateMany(
+          await Coupon.updateMany(
                {
                     endDate: { $lt: new Date() },
                     isActive: true,
@@ -177,7 +178,7 @@ const deactivateExpiredCoupons = async () => {
 };
 
 // Function to initialize the cron job
-const scheduleCouponDeactivation = () => {
+export const scheduleCouponDeactivation = () => {
      cron.schedule('0 * * * *', deactivateExpiredCoupons);
 };
 

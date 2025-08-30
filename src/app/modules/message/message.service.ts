@@ -68,7 +68,7 @@ const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> =>
 
 const getMessageFromDB = async (id: any, user: IJwtPayload, query: Record<string, unknown>) => {
      // Initialize the query builder with the base query
-     const queryBuilder = new QueryBuilder(Message.find({ chatId: id }).sort({ createdAt: -1 }).populate('replies', 'text image'), query);
+     const queryBuilder = new QueryBuilder(Message.find({ chatId: id }).sort({ createdAt: -1 }).populate('replies', 'text image').populate('sender', 'full_name image email role'), query);
 
      // Get messages using query builder
      const messages = await queryBuilder.filter().sort().paginate().fields().modelQuery;
@@ -106,7 +106,8 @@ const getMessageFromDB = async (id: any, user: IJwtPayload, query: Record<string
           _id: { $in: filteredMessages.map((msg) => msg._id) },
      })
           .sort({ createdAt: -1 })
-          .populate('replies', 'text image');
+          .populate('replies', 'text image')
+          .populate('sender', 'full_name image email role');
 
      const meta = await queryBuilder.countTotal();
 

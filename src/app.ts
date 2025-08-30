@@ -10,6 +10,7 @@ import webhookHandler from './app/modules/stripeAccount/webhookHandler';
 import session from 'express-session';
 import config from './config';
 import passport from 'passport';
+import { scheduleCouponDeactivation } from './app/modules/coupon/coupon.service';
 const app: Application = express();
 
 app.set('view engine', 'ejs');
@@ -66,5 +67,10 @@ app.use(globalErrorHandler);
 
 //handle not found route;
 app.use(notFound);
+
+// handling cronjobs
+scheduleCouponDeactivation();
+
+
 // setupTrialManagement();
 export default app;
