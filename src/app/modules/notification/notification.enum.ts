@@ -22,4 +22,5 @@ export enum NotificationTitle {
      LOGIN = 'Login',
      // BID_ACCEPTED = 'Bid accepted',
      BOOKING_COMPLETED = 'Booking Completed',
+     ADMIN_NOTIFICATION = 'Admin Notification',
 }
