@@ -7,6 +7,7 @@ import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
 import { IService } from './Service.interface';
 import { Service } from './Service.model';
 import { FAQType } from '../Faq/Faq.enum';
+import mongoose from 'mongoose';
 
 const createService = async (payload: IService): Promise<IService> => {
      // check is exist serviceCategory
@@ -18,25 +19,49 @@ const createService = async (payload: IService): Promise<IService> => {
      // ensure all the faqs are valid
      let isExistFaqs = [];
      if (payload.faqs) {
-          isExistFaqs = await Faq.find({ _id: { $in: payload.faqs }, type: FAQType.SERVICE, refferenceId:null });
+          isExistFaqs = await Faq.find({ _id: { $in: payload.faqs }, type: FAQType.SERVICE, refferenceId: null });
           if (!isExistFaqs || isExistFaqs.length !== payload.faqs.length) {
                unlinkFile(payload.image!);
                throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid faq ids.');
           }
      }
-     const result = await Service.create(payload);
-     if (!result) {
-          unlinkFile(payload.image!);
-          throw new AppError(StatusCodes.BAD_REQUEST, 'Service not created.');
-     }
-     isExistServiceCategory.services?.push(result._id);
-     await isExistServiceCategory.save();
+     const session = await mongoose.startSession();
+     session.startTransaction();
+     try {
+          // Create the service
+          const result = await Service.create([payload], { session });
+          if (!result) {
+               unlinkFile(payload.image!);
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Service not created.');
+          }
 
-     // update faqs
-     if (payload.faqs) {
-          await Faq.updateMany({ _id: { $in: payload.faqs }, refferenceId:null, type: FAQType.SERVICE }, { $set: { refferenceId: result._id, type: FAQType.SERVICE } });
+          // Update the service category to include the new service
+          isExistServiceCategory.services?.push(result[0]._id);
+          await isExistServiceCategory.save({ session });
+
+          // Update FAQs with the reference ID
+          if (payload.faqs) {
+               await Faq.updateMany({ _id: { $in: payload.faqs }, refferenceId: null, type: FAQType.SERVICE }, { $set: { refferenceId: result[0]._id, type: FAQType.SERVICE } }, { session });
+          }
+
+          // Commit the transaction
+          await session.commitTransaction();
+          session.endSession();
+
+          return result[0]; // Return the created service
+     } catch (error) {
+          // If any error occurs, abort the transaction
+          await session.abortTransaction();
+          session.endSession();
+
+          // Handle file cleanup (if necessary)
+          if (payload.image) {
+               unlinkFile(payload.image!);
+          }
+
+          // Rethrow the error
+          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Service not created.');
      }
-     return result;
 };
 
 const getAllServices = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IService[] }> => {
@@ -64,15 +89,44 @@ const updateService = async (id: string, payload: Partial<IService>): Promise<IS
                throw new AppError(StatusCodes.NOT_FOUND, 'Service category not found.');
           }
      }
-     if (payload.faqs) {
-          // make the olds faqs null
-          await Faq.updateMany({ refferenceId: id }, { $set: { refferenceId: null } });
-          // update the new faqs
-          await Faq.updateMany({ _id: { $in: payload.faqs }, refferenceId:null, type: FAQType.SERVICE }, { $set: { refferenceId: id, type: FAQType.SERVICE } });
-     }
+     const session = await mongoose.startSession();
+     session.startTransaction();
+     try {
+          // Handle FAQs: remove old references and update with new ones
+          if (payload.faqs) {
+               // Set old FAQs' `refferenceId` to null
+               await Faq.updateMany({ refferenceId: id }, { $set: { refferenceId: null } }, { session });
 
-     unlinkFile(isExistService.image!); // Unlink the old image
-     return await Service.findByIdAndUpdate(id, payload, { new: true });
+               // Set new FAQs' `refferenceId` to the service ID
+               await Faq.updateMany({ _id: { $in: payload.faqs }, refferenceId: null, type: FAQType.SERVICE }, { $set: { refferenceId: id, type: FAQType.SERVICE } }, { session });
+          }
+
+          // Unlink the old image before updating the service
+          if (isExistService.image) {
+               unlinkFile(isExistService.image);
+          }
+
+          // Update the service with the new data
+          const updatedService = await Service.findByIdAndUpdate(id, payload, { new: true, session });
+
+          // Commit the transaction
+          await session.commitTransaction();
+          session.endSession();
+
+          return updatedService;
+     } catch (error) {
+          // If any error occurs, abort the transaction
+          await session.abortTransaction();
+          session.endSession();
+
+          // Handle file cleanup if necessary
+          if (payload.image) {
+               unlinkFile(payload.image!);
+          }
+
+          // Rethrow the error
+          throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Service not updated.');
+     }
 };
 
 const deleteService = async (id: string): Promise<IService | null> => {
