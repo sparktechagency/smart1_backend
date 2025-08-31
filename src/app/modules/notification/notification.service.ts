@@ -100,7 +100,7 @@ const readAlladminReadNotificationsToDB = async (user: JwtPayload): Promise<INot
 
 
 const sendNotificationAdminByAdminToDB = async (payload: any) => {
-     const { title, message, receiver } = payload;
+     const { title, message, receiver, heading } = payload;
 
 
 
@@ -116,6 +116,7 @@ const sendNotificationAdminByAdminToDB = async (payload: any) => {
                message: message!,
                type: NOTIFICATION_MODEL_TYPE.NOTIFICATION,
                receiver,
+               heading,
           };
           try {
                const result = await sendNotifications(notificationData);
@@ -138,6 +139,7 @@ const sendNotificationAdminByAdminToDB = async (payload: any) => {
                     message: message!,
                     type: NOTIFICATION_MODEL_TYPE.NOTIFICATION,
                     receiver: user._id,
+                    heading,
                };
                return sendNotifications(notificationData);
           });

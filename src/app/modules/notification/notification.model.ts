@@ -10,6 +10,7 @@ const notificationSchema = new Schema<INotification>(
           heading: {
                type: String,
                required: false,
+               default: '',
           },
           message: {
                type: String,
