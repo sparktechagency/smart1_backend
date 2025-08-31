@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { objectIdSchemaOptional } from "../user/user.validation";
 import { NOTIFICATION_MODEL_TYPE, NotificationScreen, NotificationTitle } from "./notification.enum";
-
+import { USER_ROLES } from "../user/user.enums";
 // receiver
 // type
 // title
@@ -15,7 +15,7 @@ const sendNotificationSchema = z.object({
         heading: z.string().optional(),
         title: z.nativeEnum(NotificationTitle).optional(),
         message: z.string().min(1, 'Message is required').optional(),
-        receiver: objectIdSchemaOptional,
+        receiverRole: z.nativeEnum(USER_ROLES).optional(),
         type: z.nativeEnum(NOTIFICATION_MODEL_TYPE).optional(),
         reference: objectIdSchemaOptional,
         referenceModel: z.nativeEnum(NOTIFICATION_MODEL_TYPE).optional(),

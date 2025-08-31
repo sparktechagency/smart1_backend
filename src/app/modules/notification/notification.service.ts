@@ -11,16 +11,21 @@ import { Notification } from './notification.model';
 
 // get notifications
 const getNotificationFromDB = async (user: JwtPayload, query: Record<string, unknown>) => {
-     const queryBuilder = new QueryBuilder(Notification.find({ receiver: user.id }).populate('receiver', 'full_name email phoneNumber').populate({
-          path: 'reference',
-          model: NOTIFICATION_MODEL_TYPE.BOOKING,
-          select: 'user servicingDestination geoLocationOfDestination bookingDate bookingTime',
-          populate: {
-               path: 'user',
-               model: NOTIFICATION_MODEL_TYPE.USER,
-               select: 'full_name email phone image',
-          },
-     }), query);
+     const queryBuilder = new QueryBuilder(
+          Notification.find({ receiver: user.id })
+               .populate('receiver', 'full_name email phoneNumber')
+               .populate({
+                    path: 'reference',
+                    model: NOTIFICATION_MODEL_TYPE.BOOKING,
+                    select: 'user servicingDestination geoLocationOfDestination bookingDate bookingTime',
+                    populate: {
+                         path: 'user',
+                         model: NOTIFICATION_MODEL_TYPE.USER,
+                         select: 'full_name email phone image',
+                    },
+               }),
+          query,
+     );
      const result = await queryBuilder.filter().sort().search(['title', 'message']).paginate().fields().modelQuery.exec();
      const meta = await queryBuilder.countTotal();
      const unreadCount = await Notification.countDocuments({
@@ -47,12 +52,12 @@ const readAllNotificationAsUserToDB = async (user: JwtPayload): Promise<INotific
 };
 const readNotificationSingleToDB = async (id: string, user: JwtPayload): Promise<INotification | undefined> => {
      const query: {
-          _id: string,
-          receiver?: string
-     } = { _id: id }
+          _id: string;
+          receiver?: string;
+     } = { _id: id };
 
      if (user.role === USER_ROLES.USER || user.role === USER_ROLES.SERVICE_PROVIDER) {
-          query.receiver = user.id
+          query.receiver = user.id;
      }
 
      const result: any = await Notification.findOneAndUpdate(
@@ -98,34 +103,37 @@ const readAlladminReadNotificationsToDB = async (user: JwtPayload): Promise<INot
      return result;
 };
 
-
 const sendNotificationAdminByAdminToDB = async (payload: any) => {
-     const { title, message, receiver, heading } = payload;
-
-
+     const { title, message, receiverRole, heading } = payload;
 
      // Handle specific receiver if provided
-     if (receiver) {
-          // handle reciver exist
-          const isExistReviever = await User.findById(receiver);
-          if (!isExistReviever) {
-               throw new AppError(StatusCodes.NOT_FOUND, 'User not found');
+     if (receiverRole) {
+          // Fetch users with role 'USER' and 'SERVICE_PROVIDER'
+          const users = await User.find({ role: receiverRole });
+          if (!users || users.length === 0) {
+               throw new AppError(StatusCodes.NOT_FOUND, 'No users found');
           }
-          const notificationData = {
-               title,
-               message: message!,
-               type: NOTIFICATION_MODEL_TYPE.NOTIFICATION,
-               receiver,
-               heading,
-          };
+
+          // Send notification to all users
+          const notificationPromises = users.map((user) => {
+               const notificationData = {
+                    title,
+                    message: message!,
+                    type: NOTIFICATION_MODEL_TYPE.NOTIFICATION,
+                    receiver: user._id,
+                    heading,
+               };
+               return sendNotifications(notificationData);
+          });
+
           try {
-               const result = await sendNotifications(notificationData);
+               const result = await Promise.all(notificationPromises);
                return result;
-          } catch (error) {
-               throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Error sending notification to receiver');
+          } catch (error: any) {
+               console.log(error);
+               throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Error sending notifications to users');
           }
      } else {
-
           // Fetch users with role 'USER' and 'SERVICE_PROVIDER'
           const users = await User.find({ role: { $in: [USER_ROLES.USER, USER_ROLES.SERVICE_PROVIDER] } });
           if (!users || users.length === 0) {
@@ -147,7 +155,8 @@ const sendNotificationAdminByAdminToDB = async (payload: any) => {
           try {
                const result = await Promise.all(notificationPromises);
                return result;
-          } catch (error) {
+          } catch (error: any) {
+               console.log(error);
                throw new AppError(StatusCodes.INTERNAL_SERVER_ERROR, 'Error sending notifications to users');
           }
      }
