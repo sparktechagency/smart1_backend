@@ -6,7 +6,7 @@ export interface IFaq {
      question: string;
      answer: string;
      type: FAQType;
-     refferenceId: Types.ObjectId;
+     refferenceId?: Types.ObjectId | null;
      createdAt: Date;
      updatedAt: Date;
      isDeleted: boolean;

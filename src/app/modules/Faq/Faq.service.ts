@@ -7,7 +7,6 @@ import { IJwtPayload } from '../auth/auth.interface';
 import { IFaq } from './Faq.interface';
 import { Faq } from './Faq.model';
 import Settings from '../settings/settings.model';
-import { Types } from 'mongoose';
 
 const createFaq = async (payload: IFaq, user: IJwtPayload): Promise<IFaq> => {
      // Start a session for the transaction
@@ -16,34 +15,20 @@ const createFaq = async (payload: IFaq, user: IJwtPayload): Promise<IFaq> => {
      try {
           // Start the transaction
           session.startTransaction();
-          if (payload.type === 'Settings') {
-               const isExistSetting = await Settings.findOne().select('_id').session(session);
-               if (!isExistSetting) {
-                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
-               }
-               payload.refferenceId = isExistSetting._id as Types.ObjectId;
-          }
-
-          // Step 1: Check if the referenced document exists based on `type` and `refferenceId`
-          const isExistRefference = await mongoose.model(payload.type).findById(payload.refferenceId).session(session);
-
-          if (!isExistRefference) {
-               throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
-          }
-
           // Step 2: Create the FAQ document
           payload.createdBy = new mongoose.Types.ObjectId(user.id);
           const result = await Faq.create([payload], { session });
-
-          // Step 3: Update the referenced document (add the newly created FAQ to `faqs` array)
-          isExistRefference.faqs.push(result[0]._id); // `result[0]` because create returns an array of documents
-
-          // Step 4: Save the referenced document with the updated `faqs` array
-          await isExistRefference.save({ session });
-
-          // Commit the transaction if all operations are successful
+          if (payload.type === 'Settings') {
+               // insert the faq in the settings document
+               const isExistSetting = await Settings.findOne().select('_id faqs').session(session);
+               if (!isExistSetting) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid referenceId.');
+               }
+               isExistSetting.faqs.push(result[0]._id);
+               await isExistSetting.save({ session });
+          }
           await session.commitTransaction();
-
+          session.endSession();
           return result[0]; // Return the newly created FAQ document
      } catch (error) {
           // If any error occurs, abort the transaction
@@ -81,6 +66,7 @@ const getAllUnpaginatedFaqsByType = async (query: Record<string, any>): Promise<
 
 const updateFaq = async (id: string, payload: Partial<IFaq>): Promise<IFaq | null> => {
      const isExist = await Faq.findById(id);
+     console.log("🚀 ~ updateFaq ~ isExist:", isExist)
      if (!isExist) {
           throw new AppError(StatusCodes.NOT_FOUND, 'Faq not found.');
      }

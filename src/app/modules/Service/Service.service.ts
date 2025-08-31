@@ -6,21 +6,40 @@ import { Faq } from '../Faq/Faq.model';
 import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
 import { IService } from './Service.interface';
 import { Service } from './Service.model';
+import { FAQType } from '../Faq/Faq.enum';
 
 const createService = async (payload: IService): Promise<IService> => {
-     // check is exist serviceCategory 
+     // check is exist serviceCategory
      const isExistServiceCategory = await ServiceCategory.findById(payload.serviceCategory);
      if (!isExistServiceCategory) {
           unlinkFile(payload.image!);
           throw new AppError(StatusCodes.NOT_FOUND, 'Service category not found.');
      }
+     // ensure all the faqs are valid
+     let isExistFaqs = [];
+     if (payload.faqs) {
+          isExistFaqs = await Faq.find({ _id: { $in: payload.faqs }, type: FAQType.SERVICE, refferenceId:null });
+          if (!isExistFaqs || isExistFaqs.length !== payload.faqs.length) {
+               unlinkFile(payload.image!);
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid faq ids.');
+          }
+     }
      const result = await Service.create(payload);
+     if (!result) {
+          unlinkFile(payload.image!);
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Service not created.');
+     }
      isExistServiceCategory.services?.push(result._id);
      await isExistServiceCategory.save();
+
+     // update faqs
+     if (payload.faqs) {
+          await Faq.updateMany({ _id: { $in: payload.faqs }, refferenceId:null, type: FAQType.SERVICE }, { $set: { refferenceId: result._id, type: FAQType.SERVICE } });
+     }
      return result;
 };
 
-const getAllServices = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IService[]; }> => {
+const getAllServices = async (query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IService[] }> => {
      const queryBuilder = new QueryBuilder(Service.find().populate('serviceCategory', 'name').populate('faqs', 'question answer'), query);
      const result = await queryBuilder.search(['name', 'description', 'serviceCategory.name']).filter().sort().paginate().fields().modelQuery;
      const meta = await queryBuilder.countTotal();
@@ -45,6 +64,12 @@ const updateService = async (id: string, payload: Partial<IService>): Promise<IS
                throw new AppError(StatusCodes.NOT_FOUND, 'Service category not found.');
           }
      }
+     if (payload.faqs) {
+          // make the olds faqs null
+          await Faq.updateMany({ refferenceId: id }, { $set: { refferenceId: null } });
+          // update the new faqs
+          await Faq.updateMany({ _id: { $in: payload.faqs }, refferenceId:null, type: FAQType.SERVICE }, { $set: { refferenceId: id, type: FAQType.SERVICE } });
+     }
 
      unlinkFile(isExistService.image!); // Unlink the old image
      return await Service.findByIdAndUpdate(id, payload, { new: true });
@@ -63,16 +88,13 @@ const deleteService = async (id: string): Promise<IService | null> => {
      await Faq.updateMany(
           { refferenceId: id },
           {
-               $set: { isDeleted: true, deletedAt: new Date() }
-          }
+               $set: { isDeleted: true, deletedAt: new Date() },
+          },
      );
 
      // Step 2: Remove service from service category
      if (result.serviceCategory) {
-          await ServiceCategory.findByIdAndUpdate(
-               result.serviceCategory,
-               { $pull: { services: result._id } }
-          );
+          await ServiceCategory.findByIdAndUpdate(result.serviceCategory, { $pull: { services: result._id } });
      }
 
      return result;
@@ -90,10 +112,7 @@ const hardDeleteService = async (id: string): Promise<IService | null> => {
 
      // Step 2: Remove service from service category
      if (result.serviceCategory) {
-          await ServiceCategory.findByIdAndUpdate(
-               result.serviceCategory,
-               { $pull: { services: result._id } }
-          );
+          await ServiceCategory.findByIdAndUpdate(result.serviceCategory, { $pull: { services: result._id } });
      }
 
      return result;
@@ -107,7 +126,7 @@ const getServiceById = async (id: string): Promise<IService | null> => {
      return result;
 };
 
-const getAllServicesByServiceCategoryId = async (serviceCategoryId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number; }; result: IService[]; }> => {
+const getAllServicesByServiceCategoryId = async (serviceCategoryId: string, query: Record<string, any>): Promise<{ meta: { total: number; page: number; limit: number }; result: IService[] }> => {
      const queryBuilder = new QueryBuilder(Service.find({ serviceCategory: serviceCategoryId }).populate('serviceCategory', 'name').populate('faqs', 'question answer'), query);
      const result = await queryBuilder.search(['name', 'description', 'serviceCategory.name']).filter().sort().paginate().fields().modelQuery;
      if (!result) {
@@ -125,5 +144,5 @@ export const ServiceService = {
      deleteService,
      hardDeleteService,
      getServiceById,
-     getAllServicesByServiceCategoryId
+     getAllServicesByServiceCategoryId,
 };

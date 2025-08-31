@@ -6,8 +6,8 @@ const FaqSchema = new Schema<IFaq>({
      createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: false },
      question: { type: String, required: true },
      answer: { type: String, required: true },
-     type: { type: String, enum: Object.values(FAQType), required: true },
-     refferenceId: { type: Schema.Types.ObjectId, refPath: 'type', required: true },
+     type: { type: String, enum: Object.values(FAQType), required: true, immutable: true },
+     refferenceId: { type: Schema.Types.ObjectId, refPath: 'type', required: false, default: null },
      isDeleted: { type: Boolean, default: false },
      deletedAt: { type: Date },
 }, { timestamps: true });
