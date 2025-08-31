@@ -7,6 +7,10 @@ import { INotification } from './notification.interface';
 
 const notificationSchema = new Schema<INotification>(
      {
+          heading: {
+               type: String,
+               required: false,
+          },
           message: {
                type: String,
                required: false,

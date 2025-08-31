@@ -12,6 +12,7 @@ import { NOTIFICATION_MODEL_TYPE, NotificationScreen, NotificationTitle } from "
 
 const sendNotificationSchema = z.object({
     body: z.object({
+        heading: z.string().optional(),
         title: z.nativeEnum(NotificationTitle).optional(),
         message: z.string().min(1, 'Message is required').optional(),
         receiver: objectIdSchemaOptional,
