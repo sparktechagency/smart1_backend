@@ -7,7 +7,7 @@ import { emailHelper } from '../../../helpers/emailHelper';
 import { jwtHelper } from '../../../helpers/jwtHelper';
 import { sendNotifications } from '../../../helpers/notificationsHelper';
 import { emailTemplate } from '../../../shared/emailTemplate';
-import { IAuthResetPassword, IChangePassword, ILoginData, IVerifyEmail } from '../../../types/auth';
+import { IAuthResetPassword, IChangePassword, ILoginData, ILoginOtpRequest, ILoginOtpVerify, IVerifyEmail } from '../../../types/auth';
 import { createToken } from '../../../utils/createToken';
 import cryptoToken from '../../../utils/cryptoToken';
 import generateOTP from '../../../utils/generateOTP';
@@ -30,20 +30,21 @@ const loginUserFromDB = async (payload: ILoginData) => {
      if (!isExistUser) {
           throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
      }
-     const getAdmin = await User.findOne({ role: USER_ROLES.SUPER_ADMIN });
-     if (!getAdmin) {
-          throw new AppError(StatusCodes.NOT_FOUND, 'Admin not found!');
-     }
+
      // Check if the user is verified
      if (!isExistUser.verified) {
           const otp = generateOTP(4);
-          const value = { otp, email: isExistUser.email };
-          const forgetPassword = emailTemplate.resetPassword(value);
-          emailHelper.sendEmail(forgetPassword);
+          const value = { 
+               otp, 
+               email: isExistUser.email,
+               name: isExistUser.full_name 
+          };
+          const loginOtpEmail = emailTemplate.loginOtp(value);
+          await emailHelper.sendEmail(loginOtpEmail);
 
           const authentication = {
                oneTimeCode: otp,
-               expireAt: new Date(Date.now() + 3 * 60000),
+               expireAt: new Date(Date.now() + 5 * 60000),
           };
           await User.findOneAndUpdate({ email }, { $set: { authentication } });
 
@@ -52,12 +53,114 @@ const loginUserFromDB = async (payload: ILoginData) => {
 
      // Check if the user account is blocked
      if (isExistUser?.status === 'blocked') {
-          throw new AppError(StatusCodes.BAD_REQUEST, 'You don’t have permission to access this content. It looks like your account has been blocked.');
+          throw new AppError(StatusCodes.BAD_REQUEST, `You don't have permission to access this content. It looks like your account has been blocked.`);
      }
 
      // Check if the password matches
      if (!(await User.isMatchPassword(password, isExistUser.password))) {
           throw new AppError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
+     }
+
+     // Enforce OTP-based login for all verified users
+     throw new AppError(StatusCodes.BAD_REQUEST, 'Please use the OTP-based login. Submit your credentials to /auth/login/request-otp to receive an OTP via email.');
+};
+
+// OTP-based login - Step 1: Request OTP
+const requestLoginOtpToDB = async (payload: ILoginOtpRequest) => {
+     const { email, password } = payload;
+     
+     if (!password) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Password is required!');
+     }
+
+     // Find user with password
+     const isExistUser = await User.findOne({ email }).select('+password');
+     if (!isExistUser) {
+          throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+     }
+
+     // Check if the user is verified
+     if (!isExistUser.verified) {
+          throw new AppError(StatusCodes.CONFLICT, 'Please verify your account first');
+     }
+
+     // Check if the user account is blocked
+     if (isExistUser?.status === 'blocked') {
+          throw new AppError(StatusCodes.BAD_REQUEST, `You don't have permission to access this content. It looks like your account has been blocked.`);
+     }
+
+     // Check if the password matches
+     if (!(await User.isMatchPassword(password, isExistUser.password))) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
+     }
+
+     // Generate and send OTP
+     const otp = generateOTP(4);
+     const value = { 
+          otp, 
+          email: isExistUser.email,
+          name: isExistUser.full_name 
+     };
+     
+     // Use login OTP email template
+     const loginOtpEmail = emailTemplate.loginOtp(value);
+     await emailHelper.sendEmail(loginOtpEmail);
+
+     // Save OTP to database with 5 minute expiry
+     const authentication = {
+          oneTimeCode: otp,
+          expireAt: new Date(Date.now() + 5 * 60000), // 5 minutes
+     };
+     await User.findOneAndUpdate({ email }, { $set: { authentication } });
+
+     return { 
+          message: 'OTP sent to your email. Please verify to complete login.',
+          email: isExistUser.email 
+     };
+};
+
+// OTP-based login - Step 2: Verify OTP and complete login
+const verifyLoginOtpToDB = async (payload: ILoginOtpVerify) => {
+     const { email, otp } = payload;
+
+     // Find user with authentication data
+     const isExistUser = await User.findOne({ email }).select('+authentication +tokenVersion');
+     if (!isExistUser) {
+          throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+     }
+
+     // Check if OTP exists
+     if (!isExistUser.authentication?.oneTimeCode) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'No OTP found. Please request a new OTP.');
+     }
+
+     // Verify OTP
+     if (isExistUser.authentication.oneTimeCode !== otp) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid OTP provided');
+     }
+
+     // Check if OTP is expired
+     const currentTime = new Date();
+     if (currentTime > isExistUser.authentication.expireAt) {
+          throw new AppError(StatusCodes.BAD_REQUEST, 'OTP has expired. Please request a new OTP.');
+     }
+
+     // Clear the OTP after successful verification
+     await User.findOneAndUpdate(
+          { email }, 
+          { 
+               $set: { 
+                    authentication: { 
+                         oneTimeCode: null, 
+                         expireAt: null 
+                    } 
+               } 
+          }
+     );
+
+     const getAdmin = await User.findOne({ role: USER_ROLES.SUPER_ADMIN });
+     if (!getAdmin) {
+          throw new AppError(StatusCodes.NOT_FOUND, 'Admin not found!');
      }
 
      const today = new Date().toLocaleDateString();
@@ -70,13 +173,15 @@ const loginUserFromDB = async (payload: ILoginData) => {
      // Update last login to now
      await User.findByIdAndUpdate(isExistUser._id, { $set: { lastLogin: new Date() } }, { new: true });
 
-     // Generate JWT tokens including tokenVersion
+     // Generate JWT tokens
      const jwtData = {
           id: isExistUser._id.toString() as string,
           role: isExistUser.role,
           email: isExistUser.email,
-          tokenVersion: isExistUser.tokenVersion ?? 0, // <-- include tokenVersion here
+          tokenVersion: isExistUser.tokenVersion ?? 0,
      };
+
+     // Send notifications based on role
      if (isExistUser.role === USER_ROLES.ADMIN) {
           await sendNotifications({
                title: NotificationTitle.LOGIN,
@@ -93,7 +198,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
                type: NOTIFICATION_MODEL_TYPE.MESSAGE,
           });
      }
-
      if (isExistUser.role === USER_ROLES.USER) {
           await sendNotifications({
                title: NotificationTitle.LOGIN,
@@ -102,10 +206,16 @@ const loginUserFromDB = async (payload: ILoginData) => {
                type: NOTIFICATION_MODEL_TYPE.MESSAGE,
           });
      }
+
      const accessToken = jwtHelper.createToken(jwtData, config.jwt.jwt_secret as Secret, config.jwt.jwt_expire_in as string);
      const refreshToken = jwtHelper.createToken(jwtData, config.jwt.jwt_refresh_secret as string, config.jwt.jwt_refresh_expire_in as string);
 
-     return { accessToken, refreshToken, role: isExistUser.role };
+     return { 
+          accessToken, 
+          refreshToken, 
+          role: isExistUser.role,
+          message: 'Login successful'
+     };
 };
 
 //SocialLoginUserFromDB
@@ -127,13 +237,17 @@ const SocialLoginUserFromDB = async (payload: ILoginData) => {
      // Check if the user is verified
      if (!isExistUser.verified) {
           const otp = generateOTP(4);
-          const value = { otp, email: isExistUser.email };
-          const forgetPassword = emailTemplate.resetPassword(value);
-          emailHelper.sendEmail(forgetPassword);
+          const value = { 
+               otp, 
+               email: isExistUser.email,
+               name: isExistUser.full_name 
+          };
+          const loginOtpEmail = emailTemplate.loginOtp(value);
+          await emailHelper.sendEmail(loginOtpEmail);
 
           const authentication = {
                oneTimeCode: otp,
-               expireAt: new Date(Date.now() + 3 * 60000),
+               expireAt: new Date(Date.now() + 5 * 60000),
           };
           await User.findOneAndUpdate({ email }, { $set: { authentication } });
 
@@ -142,7 +256,7 @@ const SocialLoginUserFromDB = async (payload: ILoginData) => {
 
      // Check if the user account is blocked
      if (isExistUser?.status === 'blocked') {
-          throw new AppError(StatusCodes.BAD_REQUEST, 'You don’t have permission to access this content. It looks like your account has been blocked.');
+          throw new AppError(StatusCodes.BAD_REQUEST, `You don't have permission to access this content. It looks like your account has been blocked.`);
      }
 
      const today = new Date().toLocaleDateString();
@@ -508,4 +622,6 @@ export const AuthService = {
      resendOtpFromDb,
      refreshToken,
      SocialLoginUserFromDB,
+     requestLoginOtpToDB,
+     verifyLoginOtpToDB,
 };

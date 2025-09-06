@@ -8,6 +8,16 @@ export type ILoginData = {
      password?: string;
 };
 
+export type ILoginOtpRequest = {
+     email: string;
+     password: string;
+};
+
+export type ILoginOtpVerify = {
+     email: string;
+     otp: number;
+};
+
 export type IAuthResetPassword = {
      newPassword: string;
      confirmPassword: string;

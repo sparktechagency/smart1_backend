@@ -42,11 +42,7 @@ const loginUser = catchAsync(async (req, res) => {
           success: true,
           statusCode: StatusCodes.OK,
           message: 'User logged in successfully.',
-          data: {
-               accessToken: result.accessToken,
-               refreshToken: result.refreshToken,
-               role: result.role,
-          },
+          data: result,
      });
 });
 
@@ -138,7 +134,46 @@ const refreshToken = catchAsync(async (req, res) => {
      });
 });
 
+// Request OTP for login
+const requestLoginOtp = catchAsync(async (req, res) => {
+     const { ...loginData } = req.body;
+     const result = await AuthService.requestLoginOtpToDB(loginData);
 
+     sendResponse(res, {
+          success: true,
+          statusCode: StatusCodes.OK,
+          message: result.message,
+          data: {
+               email: result.email,
+          },
+     });
+});
+
+// Verify OTP and complete login
+const verifyLoginOtp = catchAsync(async (req, res) => {
+     const { ...otpData } = req.body;
+     const result = await AuthService.verifyLoginOtpToDB(otpData);
+     const cookieOptions: any = {
+          secure: false,
+          httpOnly: true,
+          maxAge: 31536000000,
+     };
+
+     if (config.node_env === 'production') {
+          cookieOptions.sameSite = 'none';
+     }
+
+     sendResponse(res, {
+          success: true,
+          statusCode: StatusCodes.OK,
+          message: result.message,
+          data: {
+               accessToken: result.accessToken,
+               refreshToken: result.refreshToken,
+               role: result.role,
+          },
+     });
+});
 
 const googleAuth = passport.authenticate("google", {
      scope: ["profile", "email"],
@@ -220,6 +255,8 @@ export const AuthController = {
      resetPasswordByUrl,
      resendOtp,
      refreshToken,
+     requestLoginOtp,
+     verifyLoginOtp,
      googleAuth,
      googleCallback,
      facebookAuth,
