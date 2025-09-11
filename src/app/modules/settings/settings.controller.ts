@@ -32,6 +32,10 @@ const getPrivacyPolicy = catchAsync(async (req, res): Promise<void> => {
           data: result,
      });
 });
+const getPrivacyPolicyForApp = catchAsync(async (req, res): Promise<void> => {
+     const result = await settingsService.getPrivacyPolicy();
+     return res.render('settings.ejs', { content: result });
+});
 const getTermsAndConditions = catchAsync(async (req, res): Promise<void> => {
      const result = await settingsService.getTermsAndConditions();
      sendResponse(res, {
@@ -40,6 +44,10 @@ const getTermsAndConditions = catchAsync(async (req, res): Promise<void> => {
           message: 'Terms and Conditions retrieved successfully',
           data: result,
      });
+});
+const getTermsAndConditionsForApp = catchAsync(async (req, res): Promise<void> => {
+     const result = await settingsService.getTermsAndConditions();
+     return res.render('settings.ejs', { content: result });
 });
 const getSupport = catchAsync(async (req, res): Promise<void> => {
      const result = await settingsService.getSupport();
@@ -50,6 +58,10 @@ const getSupport = catchAsync(async (req, res): Promise<void> => {
           data: result,
      });
 });
+const getSupportForApp = catchAsync(async (req, res): Promise<void> => {
+     const result = await settingsService.getSupport();
+     return res.render('settings.ejs', { content: result });
+});
 const getAboutUs = catchAsync(async (req, res): Promise<void> => {
      const result = await settingsService.getAboutUs();
      sendResponse(res, {
@@ -59,7 +71,10 @@ const getAboutUs = catchAsync(async (req, res): Promise<void> => {
           data: result,
      });
 });
-
+const getAboutUsForApp = catchAsync(async (req, res): Promise<void> => {
+     const result = await settingsService.getAboutUs();
+     return res.render('settings.ejs', { content: result });
+});
 const getAppVersion = catchAsync(async (req, res): Promise<void> => {
      const result = await settingsService.getAppVersion();
      sendResponse(res, {
@@ -89,13 +104,24 @@ const getContactInfo = catchAsync(async (req, res): Promise<void> => {
           data: result,
      });
 });
+
+const getContactInfoForApp = catchAsync(async (req, res): Promise<void> => {
+     const result = await settingsService.getContactInfo();
+     return res.render('settings.ejs', { content: result });
+});
+
 export const settingsController = {
      getSettings,
      getPrivacyPolicy,
+     getPrivacyPolicyForApp,
      getAboutUs,
+     getAboutUsForApp,
      getSupport,
+     getSupportForApp,
      addSetting,
      getTermsAndConditions,
+     getTermsAndConditionsForApp,
      getAppVersion,
      getContactInfo,
-     };
+     getContactInfoForApp,
+};
