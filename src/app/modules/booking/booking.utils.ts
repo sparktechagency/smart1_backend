@@ -47,13 +47,12 @@ export async function transferToServiceProvider({
                },
                { new: true },
           );
-          console.log('🚀 ~ transferToServiceProvider ~ updatedServiceProvider:sExistServiceProvider.adminDueAmount > finalAmount', updatedServiceProvider);
           serviceProviderRevenueAmount = 0;
           return { transfer: null, message: `Admin due amount cleared:${serviceProviderRevenueAmount} | still due: ${isExistServiceProvider.adminDueAmount}` };
      } else if (isExistServiceProvider.adminDueAmount < serviceProviderRevenueAmount) {
           // isExistServiceProvider.adminDueAmount = 0;
           // await isExistServiceProvider.save();
-          serviceProviderRevenueAmount -= updatedServiceProvider.adminDueAmount;
+          serviceProviderRevenueAmount -= isExistServiceProvider?.adminDueAmount;
           updatedServiceProvider = await User.findByIdAndUpdate(
                isExistServiceProvider.id,
                {

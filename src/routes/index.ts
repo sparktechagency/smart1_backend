@@ -16,7 +16,6 @@ import { imageRoutes } from '../app/modules/image/image.route';
 import { MessageRoutes } from '../app/modules/message/message.routes';
 import { NotificationRoutes } from '../app/modules/notification/notification.routes';
 import { OfferedRoutes } from '../app/modules/offered/offered.route';
-import { paymentCardRoutes } from '../app/modules/paymentCard/paymentCard.route';
 import SettingsRoutes from '../app/modules/settings/settings.route';
 import stripeAccountRoutes from '../app/modules/stripeAccount/stripeAccount.route';
 import { UserRouter } from '../app/modules/user/user.route';
@@ -91,10 +90,6 @@ const routes = [
      {
           path: '/contact',
           route: ContactRoutes,
-     },
-     {
-          path: '/payment-card',
-          route: paymentCardRoutes,
      },
      {
           path: '/app-download',

@@ -388,7 +388,8 @@ const changeBookingStatus = async (bookingId: string, status: string, user: IJwt
                                    console.log('🚀 ~ changeBookingStatus ~ isExistUser.adminDueAmount:', isExistUser.adminDueAmount);
 
                                    if (isExistUser.adminDueAmount > 0) {
-                                        global.io.emit(`reminder::${isExistUser?._id}`, `You had ${isExistUser.adminDueAmount} amount due previously so we are including that for payment`);
+                                        // global.io.emit(`reminder::${isExistUser?._id}`, `You had ${isExistUser.adminDueAmount} amount due previously so we are including that for payment`);
+                                        io.emit(`reminder::${isExistUser?._id}`, `You had ${isExistUser.adminDueAmount} amount due previously so we are including that for payment`);
                                    }
 
                                    const stripeSessionData: any = {

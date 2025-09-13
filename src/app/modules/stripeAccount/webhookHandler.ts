@@ -79,7 +79,6 @@ const handlePaymentSucceeded = async (session: Stripe.Checkout.Session) => {
                { adminDueAmount: 0 }, // The update operation (set `adminDueAmount` to 0)
                { new: true }, // Return the updated document
           );
-          console.log('🚀 ~ handlePaymentSucceeded ~ updatedCustomer:', updatedCustomer.adminDueAmount);
 
           if (!updatedCustomer) {
                throw new AppError(StatusCodes.BAD_REQUEST, 'updated Customer FAILED');
