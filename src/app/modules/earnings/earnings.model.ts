@@ -56,6 +56,6 @@ const earningsSchema = new Schema<IEarnings>(
 );
 
 // Index for faster querying
-earningsSchema.index({ serviceProvider: 1 });
+// earningsSchema.index({ serviceProvider: 1 });
 
 export const Earnings = model<IEarnings>('Earnings', earningsSchema);
