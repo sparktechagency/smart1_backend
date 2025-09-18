@@ -17,7 +17,7 @@ import { logger } from '../shared/logger';
  * click "Get started"
  * give app name e.g "kappes2App" and give user support email e.g "asifaowadud@gmail.com" >>next audienc>>  click "External" >>next contact info>> email address e.g "asifaowadud@gmail.com" >>next finish >> tik on agree checkbox >> click continue >> click "create"
  * click "Create 0Auth client"
- * select Applicaiton type as "Web application" >>next name >> give name e.g "kappes2App" >>next Authorized redirect URIs >> give url e.g "http://localhost:7003/api/v1/auth/google/callback" >>next>> click "Create"
+ * select Applicaiton type as "Web application" >>next name >> give name e.g "kappes2App" >>next Authorized redirect URIs >> give url e.g "http://localhost:3000/api/v1/auth/google/callback" >>next>> click "Create"
  * a pop up will open copy the clinet id and click "OK" >> it will automatically redirect to link : https://console.cloud.google.com/auth/clients?inv=1&invt=Ab1egg&orgonly=true&project=kappes2&supportedpurview=project,organizationId,folder
  * select the recent created project i.e "kappes2App" from the table list it will redirect to link : https://console.cloud.google.com/auth/clients/3728050386-jtd9meu32rbkq1994sq4s9b9kninhofv.apps.googleusercontent.com?inv=1&invt=Ab1egg&orgonly=true&project=kappes2&supportedpurview=project,organizationId,folder
  * at middle right will get the client id and client secret copy them and paste them in the config file
