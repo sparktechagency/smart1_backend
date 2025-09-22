@@ -62,6 +62,12 @@ const getSupportForApp = catchAsync(async (req, res): Promise<void> => {
      const result = await settingsService.getSupport();
      return res.render('settings.ejs', { content: result });
 });
+
+const getAccountDeletePolicyForApp = catchAsync(async (req, res): Promise<void> => {
+     const result = await settingsService.getAccountDeletePolicy();
+     return res.render('settings.ejs', { content: result });
+});
+
 const getAboutUs = catchAsync(async (req, res): Promise<void> => {
      const result = await settingsService.getAboutUs();
      sendResponse(res, {
@@ -118,6 +124,7 @@ export const settingsController = {
      getAboutUsForApp,
      getSupport,
      getSupportForApp,
+     getAccountDeletePolicyForApp,
      addSetting,
      getTermsAndConditions,
      getTermsAndConditionsForApp,

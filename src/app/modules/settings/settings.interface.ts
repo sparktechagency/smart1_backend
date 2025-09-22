@@ -5,6 +5,7 @@ export interface ISettings extends Document {
      privacyPolicy: string;
      aboutUs: string;
      support: string;
+     accountDeletePolicy: string;
      termsAndConditions: string;
      appVersion: string;
      faqs: Types.ObjectId[];

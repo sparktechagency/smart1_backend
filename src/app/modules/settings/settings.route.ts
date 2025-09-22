@@ -14,6 +14,7 @@ SettingsRoutes.put('/', auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), settings
      .get('/app/about-us', settingsController.getAboutUsForApp)
      .get('/support', settingsController.getSupport)
      .get('/app/support', settingsController.getSupportForApp)
+     .get('/app/account-delete-policy', settingsController.getAccountDeletePolicyForApp)
      .get('/terms-and-conditions', settingsController.getTermsAndConditions)
      .get('/app/terms-and-conditions', settingsController.getTermsAndConditionsForApp)
      .get('/app-version', settingsController.getAppVersion)

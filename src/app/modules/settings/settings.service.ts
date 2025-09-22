@@ -42,6 +42,15 @@ const getSupport = async () => {
      }
      return settings.support;
 };
+const getAccountDeletePolicy = async () => {
+     const settings: any = await Settings.findOne();
+
+     if (!settings) {
+          return '';
+     }
+     console.log("🚀 ~ getAccountDeletePolicy ~ settings.accountDeletePolicy:", settings.accountDeletePolicy)
+     return settings.accountDeletePolicy;
+};
 const getPrivacyPolicy = async () => {
      const settings: any = await Settings.findOne();
 
@@ -91,6 +100,7 @@ export const settingsService = {
      getPrivacyPolicy,
      getAccountDelete,
      getSupport,
+     getAccountDeletePolicy,
      getTermsAndConditions,
      getAboutUs,
      getAppVersion,

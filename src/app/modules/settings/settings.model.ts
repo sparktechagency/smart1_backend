@@ -14,6 +14,10 @@ const settingsSchema = new Schema<ISettings>(
                type: String,
                default: '',
           },
+          accountDeletePolicy: {
+               type: String,
+               default: '',
+          },
           termsAndConditions: {
                type: String,
                default: '',
