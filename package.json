@@ -11,9 +11,7 @@
           "format": "prettier . --write",
           "seed:admin": "ts-node src/seed/seedAdmin.ts",
           "seed:setting": "ts-node src/seed/seedSetting.ts",
-          "build": "tsc",
-          "stripe": "stripe listen --forward-to=http://13.48.53.49:3000/api/v1/stripe/webhook",
-          "dev:stripe": "concurrently \"ts-node-dev --respawn --transpile-only src/server.ts\" \"npm run stripe\""
+          "build": "tsc"
      },
      "keywords": [],
      "author": "",
