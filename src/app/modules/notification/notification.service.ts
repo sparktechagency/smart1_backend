@@ -99,7 +99,8 @@ const adminNotificationFromDB = async (userId: string, query: Record<string, unk
 
 // read notifications only for admin
 const readAlladminReadNotificationsToDB = async (user: JwtPayload): Promise<INotification | null> => {
-     const result: any = await Notification.updateMany({ receiver: user.id, read: false }, { $set: { read: true } }, { new: true });
+     // const result: any = await Notification.updateMany({ receiver: user.id, read: false }, { $set: { read: true } }, { new: true });
+     const result: any = await Notification.updateMany({ receiver: user.id, read: false }, { $set: { read: true } });
      return result;
 };
 
