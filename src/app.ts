@@ -1,16 +1,16 @@
 import cors from 'cors';
 import express, { Application, Request, Response } from 'express';
+import session from 'express-session';
+import passport from 'passport';
+import path from 'path';
+import { notFound } from './app/middleware/notFound';
+import { scheduleCouponDeactivation } from './app/modules/coupon/coupon.service';
+import webhookHandler from './app/modules/stripeAccount/webhookHandler';
+import config from './config';
+import globalErrorHandler from './globalErrorHandler/globalErrorHandler';
 import router from './routes';
 import { Morgan } from './shared/morgan';
-import globalErrorHandler from './globalErrorHandler/globalErrorHandler';
-import { notFound } from './app/middleware/notFound';
 import { welcome } from './utils/welcome';
-import path from 'path';
-import webhookHandler from './app/modules/stripeAccount/webhookHandler';
-import session from 'express-session';
-import config from './config';
-import passport from 'passport';
-import { scheduleCouponDeactivation } from './app/modules/coupon/coupon.service';
 const app: Application = express();
 
 app.set('view engine', 'ejs');
@@ -22,7 +22,16 @@ app.use(Morgan.errorHandler);
 //body parser
 app.use(
      cors({
-          origin: ['http://10.10.7.102:5000'],
+          origin: [
+               'http://172.31.11.225:3000',
+               'https://172.31.11.225:3000',
+               'http://157.241.34.32:3000',
+               'https://157.241.34.32:3000',
+               'http://click-serve.com',
+               'https://click-serve.com',
+               'http://www.click-serve.com',
+               'https://www.click-serve.com',
+          ],
           credentials: true,
      }),
 );
@@ -70,7 +79,6 @@ app.use(notFound);
 
 // handling cronjobs
 scheduleCouponDeactivation();
-
 
 // setupTrialManagement();
 export default app;
