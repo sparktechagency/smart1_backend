@@ -25,8 +25,8 @@ app.use(
           origin: [
                'http://172.31.11.225:3000',
                'https://172.31.11.225:3000',
-               'http://157.241.34.32:3000',
-               'https://157.241.34.32:3000',
+               'http://157.241.91.8:3000',
+               'https://157.241.91.8:3000',
                'http://click-serve.com',
                'https://click-serve.com',
                'http://www.click-serve.com',
