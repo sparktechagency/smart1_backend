@@ -21,17 +21,21 @@ app.use(Morgan.errorHandler);
 
 //body parser
 app.use(
+     // cors({
+     //      origin: [
+     //           'http://172.31.11.225:3000',
+     //           'https://172.31.11.225:3000',
+     //           'http://157.241.91.8:3000',
+     //           'https://157.241.91.8:3000',
+     //           'http://click-serve.com',
+     //           'https://click-serve.com',
+     //           'http://www.click-serve.com',
+     //           'https://www.click-serve.com',
+     //      ],
+     //      credentials: true,
+     // }),
      cors({
-          origin: [
-               'http://172.31.11.225:3000',
-               'https://172.31.11.225:3000',
-               'http://157.241.91.8:3000',
-               'https://157.241.91.8:3000',
-               'http://click-serve.com',
-               'https://click-serve.com',
-               'http://www.click-serve.com',
-               'https://www.click-serve.com',
-          ],
+          origin: '*',
           credentials: true,
      }),
 );
