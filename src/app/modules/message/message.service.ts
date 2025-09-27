@@ -41,7 +41,7 @@ const sendMessageToDB = async (payload: Partial<IMessage>): Promise<IMessage> =>
                //@ts-expect-error
                const io = global.io;
                if (io) {
-                    io.emit(`getMessage::${participant}`, response);
+                    io.emit(`getMessage::${participant._id}`, response);
                }
           }
      });
