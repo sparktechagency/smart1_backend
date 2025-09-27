@@ -21,23 +21,21 @@ app.use(Morgan.errorHandler);
 
 //body parser
 app.use(
-     // cors({
-     //      origin: [
-     //           'http://172.31.11.225:3000',
-     //           'https://172.31.11.225:3000',
-     //           'http://157.241.91.8:3000',
-     //           'https://157.241.91.8:3000',
-     //           'http://click-serve.com',
-     //           'https://click-serve.com',
-     //           'http://www.click-serve.com',
-     //           'https://www.click-serve.com',
-     //      ],
-     //      credentials: true,
-     // }),
      cors({
-          origin: '*',
+          origin: [
+               'http://dashboard.click-serve.com',
+               'https://dashboard.click-serve.com',
+               'http://157.241.91.8:3001',
+               'https://157.241.91.8:3001',
+               'http://10.10.7.102:3001',
+               'https://10.10.7.102:3001',
+          ],
           credentials: true,
      }),
+     // cors({
+     //      origin: '*',
+     //      credentials: true,
+     // }),
 );
 // app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 app.post('/api/v1/stripe/webhook', express.raw({ type: 'application/json' }), webhookHandler);
