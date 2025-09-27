@@ -11,7 +11,7 @@
           "format": "prettier . --write",
           "seed:admin": "ts-node src/seed/seedAdmin.ts",
           "seed:setting": "ts-node src/seed/seedSetting.ts",
-          "build": "tsc"
+          "build": "tsc && npx cpx \"src/views/**/*\" dist/views"
      },
      "keywords": [],
      "author": "",
