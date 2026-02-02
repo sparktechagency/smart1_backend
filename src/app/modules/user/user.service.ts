@@ -33,15 +33,11 @@ const createUserToDB = async (payload: IUser): Promise<IUser> => {
           payload.role = USER_ROLES.USER;
 
           // Create user
-          let createUser;
-          try {
-               const createUser = await User.create([payload], { session });
-               if (!createUser || createUser.length === 0) {
-                    throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
-               }
-          } catch (error) {
-               console.log('🚀 ~ createUserToDB ~ error:', error);
+          const createUser = await User.create([payload], { session });
+          if (!createUser || createUser.length === 0) {
+               throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
           }
+
           const createdUser = createUser[0];
 
           // Generate OTP and prepare authentication object
@@ -85,7 +81,6 @@ const createUserToDB = async (payload: IUser): Promise<IUser> => {
           // Return the created user (with latest info)
           return createdUser; // fresh fetch with updates
      } catch (error) {
-          console.log('🚀 ~ createUserToDB ~ error:', error);
           await session.abortTransaction();
           session.endSession();
           throw error;
