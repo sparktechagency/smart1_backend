@@ -142,6 +142,14 @@ const createServiceProviderToDB = async (payload: IUser, host: string, protocol:
                throw new AppError(StatusCodes.CONFLICT, 'Email already exists');
           }
 
+          // if businessName taken
+          if (payload.businessName) {
+               const isBusinessNameTaken = await User.findOne({ businessName: payload.businessName });
+               if (isBusinessNameTaken) {
+                    throw new AppError(StatusCodes.CONFLICT, 'Business name already exists');
+               }
+          }
+
           // Validate service categories
           const serviceCategories = await ServiceCategory.find({
                _id: { $in: payload.serviceCategories },

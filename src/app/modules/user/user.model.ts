@@ -35,7 +35,6 @@ const userSchema = new Schema<IUser, UserModel>(
           businessName: {
                type: String,
                trim: true,
-               unique: true,
           }, // for provider
           serviceCategories: {
                type: [String],
