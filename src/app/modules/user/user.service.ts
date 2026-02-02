@@ -8,15 +8,15 @@ import { emailTemplate } from '../../../shared/emailTemplate';
 import unlinkFile from '../../../shared/unlinkFile';
 import generateOTP from '../../../utils/generateOTP';
 import stripe from '../../config/stripe.config';
+import { BID_STATUS } from '../Bid/Bid.enum';
+import { Bid } from '../Bid/Bid.model';
+import { BOOKING_STATUS } from '../booking/booking.enums';
+import { Booking } from '../booking/booking.model';
 import { ServiceCategory } from '../ServiceCategory/ServiceCategory.model';
 import { stripeAccountService } from '../stripeAccount/stripeAccount.service';
 import { USER_ROLES } from './user.enums';
 import { IUser } from './user.interface';
 import { User } from './user.model';
-import { BOOKING_STATUS } from '../booking/booking.enums';
-import { Booking } from '../booking/booking.model';
-import { Bid } from '../Bid/Bid.model';
-import { BID_STATUS } from '../Bid/Bid.enum';
 // create user
 const createUserToDB = async (payload: IUser): Promise<IUser> => {
      const session = await mongoose.startSession();
@@ -33,11 +33,15 @@ const createUserToDB = async (payload: IUser): Promise<IUser> => {
           payload.role = USER_ROLES.USER;
 
           // Create user
-          const createUser = await User.create([payload], { session });
-          if (!createUser || createUser.length === 0) {
-               throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
+          let createUser;
+          try {
+               const createUser = await User.create([payload], { session });
+               if (!createUser || createUser.length === 0) {
+                    throw new AppError(StatusCodes.BAD_REQUEST, 'Failed to create account');
+               }
+          } catch (error) {
+               console.log('🚀 ~ createUserToDB ~ error:', error);
           }
-
           const createdUser = createUser[0];
 
           // Generate OTP and prepare authentication object
@@ -81,6 +85,7 @@ const createUserToDB = async (payload: IUser): Promise<IUser> => {
           // Return the created user (with latest info)
           return createdUser; // fresh fetch with updates
      } catch (error) {
+          console.log('🚀 ~ createUserToDB ~ error:', error);
           await session.abortTransaction();
           session.endSession();
           throw error;
